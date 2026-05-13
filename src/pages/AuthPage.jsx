@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import HCaptcha from '../components/HCaptcha.jsx';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { supabase } from '../lib/supabaseClient.js';
 import { useAuth } from '../state/AuthContext.jsx';
@@ -15,18 +16,36 @@ export default function AuthPage() {
   const [mode, setMode] = useState('sign-in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
 
   async function handleEmail(event) {
     event.preventDefault();
+    if (!captchaToken) {
+      setMessage('Please complete the security check before continuing.');
+      return;
+    }
     setBusy(true);
     setMessage('');
     const action = mode === 'sign-up'
-      ? supabase.auth.signUp({ email, password })
-      : supabase.auth.signInWithPassword({ email, password });
+      ? supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            captchaToken,
+            emailRedirectTo: `${window.location.origin}${nextPath()}`,
+          },
+        })
+      : supabase.auth.signInWithPassword({
+          email,
+          password,
+          options: { captchaToken },
+        });
     const { error } = await action;
     setBusy(false);
+    window.hcaptcha?.reset?.();
+    setCaptchaToken('');
     if (error) {
       setMessage(error.message || 'We could not complete sign in.');
       return;
@@ -97,6 +116,15 @@ export default function AuthPage() {
                 <span className="tech-label text-ash">Password</span>
                 <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={6} required className="mt-2 w-full border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none focus:border-purple-200/60" />
               </label>
+              <div className="mt-5 rounded-3xl border border-white/10 bg-white/[0.035] p-4">
+                <p className="tech-label text-ash">Security check</p>
+                <div className="mt-3">
+                  <HCaptcha
+                    onVerify={setCaptchaToken}
+                    onError={(errorMessage) => setMessage(errorMessage)}
+                  />
+                </div>
+              </div>
               <button disabled={busy} className="glass-button mt-6 w-full px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone disabled:opacity-50">
                 {busy ? 'Working…' : mode === 'sign-up' ? 'Create account' : 'Sign in'}
               </button>

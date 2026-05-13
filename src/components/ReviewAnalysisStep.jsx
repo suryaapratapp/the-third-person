@@ -1,16 +1,12 @@
 import { detectPromptInjection } from '../lib/promptInjectionFilter.js';
 import { parseConversationText, prepareConversationForAnalysis } from '../lib/conversationPreprocessor.js';
 import { generateRelationshipAnalysis } from '../lib/relationshipAnalysisEngine.js';
-import { runPuterRelationshipAnalysis } from '../lib/puterAnalysisService.js';
 import { useMemo, useState } from 'react';
 import { filterSensitiveData } from '../lib/sensitiveDataFilter.js';
 import { createConversationFingerprint, findCachedAnalysis, saveCachedAnalysis } from '../lib/conversationFingerprint.js';
 import { getUserProfile } from '../lib/profileStore.js';
 import { buildZodiacCompatibility, getZodiacElement, getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
-import { getPuterMonthlyUsage } from '../lib/puterUsageService.js';
-import UsageWarningModal from './UsageWarningModal.jsx';
 import { generateRelationshipReportViaSupabase } from '../lib/backendAiService.js';
-import { saveRelationshipReportToSupabase } from '../lib/supabaseDataService.js';
 
 function mergeAnalysisFallback(fallback, candidate) {
   if (!candidate || typeof candidate !== 'object') return fallback;
@@ -55,7 +51,6 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
   const [processingStage, setProcessingStage] = useState('');
-  const [usageWarning, setUsageWarning] = useState(null);
   const reviewPrep = useMemo(() => {
     if (!flow.chatText.trim()) return null;
     const sensitive = filterSensitiveData(flow.chatText);
@@ -81,20 +76,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
   async function startAnalysis({ skipUsageCheck = false } = {}) {
     setIsGenerating(true);
     setAnalysisError('');
-    setProcessingStage('Checking free analysis access…');
-    if (!skipUsageCheck) {
-      const usage = await getPuterMonthlyUsage();
-      if (usage.status === 'exhausted') {
-        setIsGenerating(false);
-        setUsageWarning(usage);
-        return;
-      }
-      if (usage.status === 'warning' || usage.status === 'critical') {
-        setIsGenerating(false);
-        setUsageWarning(usage);
-        return;
-      }
-    }
+    setProcessingStage(skipUsageCheck ? 'Preparing private relationship intelligence…' : 'Checking secure analysis access…');
     setProcessingStage('Preparing private relationship intelligence…');
     const sensitiveData = filterSensitiveData(flow.chatText);
     const scan = detectPromptInjection(sensitiveData.protectedText);
@@ -171,13 +153,14 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       setProcessingStage('');
       return;
     }
-    const aiResult = backendResult?.analysis
-      ? { analysis: backendResult.analysis, error: '' }
-      : await runPuterRelationshipAnalysis({ preparedConversation, promptScan: scan, sensitiveData, userProfile });
-    const analysisResult = mergeAnalysisFallback(fallbackAnalysis, aiResult.analysis);
-    if (!backendResult?.report) {
-      await saveRelationshipReportToSupabase({ analysis: analysisResult, preparedConversation });
+    if (!backendResult?.analysis || !backendResult?.report) {
+      setAnalysisError('Secure analysis is temporarily unavailable. Please try again in a moment.');
+      setIsGenerating(false);
+      setProcessingStage('');
+      return;
     }
+    const aiResult = { analysis: backendResult.analysis, error: '' };
+    const analysisResult = mergeAnalysisFallback(fallbackAnalysis, aiResult.analysis);
     saveCachedAnalysis(fingerprintData, { analysisResult, preparedConversation });
     updateFlow({
       promptScan: scan,
@@ -187,7 +170,6 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       sensitiveData,
       cacheNotice: '',
     });
-    if (aiResult.error) setAnalysisError('AI analysis is temporarily unavailable, so ThirdPerson AI prepared a careful local relationship intelligence summary.');
     setIsGenerating(false);
     setProcessingStage('');
     onStart('/analysis/loading');
@@ -197,17 +179,6 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
 
   return (
     <div className="relative grid gap-6 lg:grid-cols-[1fr_360px]">
-      {usageWarning && (
-        <UsageWarningModal
-          status={usageWarning.status}
-          onPlans={() => onStart('/pricing?reason=usage-limit')}
-          onBack={() => onStart('/reports')}
-          onContinue={() => {
-            setUsageWarning(null);
-            startAnalysis({ skipUsageCheck: true });
-          }}
-        />
-      )}
       {isGenerating && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 px-4 backdrop-blur">
           <div className="accent-panel max-w-lg p-7 text-center">

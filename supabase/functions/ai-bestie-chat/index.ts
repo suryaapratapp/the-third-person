@@ -14,14 +14,8 @@ function safeBestieReply(message: string, context: Record<string, any>) {
 async function openAiBestieReply(message: string, context: Record<string, any>, body: Record<string, any>) {
   const apiKey = Deno.env.get('OPENAI_API_KEY');
   if (!apiKey) return null;
-  const system = [
-    'You are ThirdPerson Bestie, a caring relationship clarity companion inside ThirdPerson AI.',
-    'Speak like the user’s emotionally intelligent best friend: warm, honest, protective, playful in a controlled way, and clear.',
-    'Use the analysis chain context. Match Hindi, Hinglish, Indian English, or English naturally when appropriate.',
-    'Do not encourage delusion, stalking, manipulation, emotional control, harassment, coercion, or revenge.',
-    'Do not diagnose anyone or claim certainty about feelings, intent, loyalty, cheating, or future behaviour.',
-    'Use simple words, short paragraphs, and careful wording like “this may suggest”, “it looks like”, and “based on the chats”.',
-  ].join(' ');
+  const system = Deno.env.get('THIRDPERSON_BESTIE_SYSTEM_PROMPT')
+    || 'Reply as a safe, caring relationship clarity companion. Be gentle, concise, and never claim certainty.';
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {

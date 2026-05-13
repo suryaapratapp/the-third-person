@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ParticleBackground from '../components/ParticleBackground.jsx';
-import UsageWarningModal from '../components/UsageWarningModal.jsx';
 import { askBestieViaSupabase } from '../lib/backendAiService.js';
-import { askPuterBestieBot } from '../lib/puterBestieBotService.js';
 import { buildAnalysisChainContext, getChainById, groupReports } from '../lib/reportsStore.js';
 import { getUserProfile } from '../lib/profileStore.js';
 import { fetchRelationshipReports } from '../lib/supabaseDataService.js';
-import { getPuterMonthlyUsage } from '../lib/puterUsageService.js';
 import { getZodiacSign } from '../lib/zodiac.js';
 import { useRouter } from '../state/RouterContext.jsx';
 
@@ -35,8 +32,6 @@ export default function BestieBotPage({ chainId }) {
   const [isThinking, setIsThinking] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [toast, setToast] = useState('');
-  const [usageWarning, setUsageWarning] = useState(null);
-  const [pendingQuestion, setPendingQuestion] = useState('');
   const bottomRef = useRef(null);
   const [messages, setMessages] = useState([
     {
@@ -98,24 +93,9 @@ export default function BestieBotPage({ chainId }) {
     setToast('Bestie reply copied.');
   }
 
-  async function send(text = input, { skipUsageCheck = false } = {}) {
+  async function send(text = input) {
     const trimmed = text.trim();
     if (!trimmed || !context || isThinking) return;
-    if (!skipUsageCheck) {
-      setStatusText('Checking usage…');
-      const usage = await getPuterMonthlyUsage();
-      setStatusText('');
-      if (usage.status === 'exhausted') {
-        setPendingQuestion(trimmed);
-        setUsageWarning(usage);
-        return;
-      }
-      if (usage.status === 'warning' || usage.status === 'critical') {
-        setPendingQuestion(trimmed);
-        setUsageWarning(usage);
-        return;
-      }
-    }
     setInput('');
     setMessages((current) => [...current, { role: 'user', text: trimmed }]);
     setIsThinking(true);
@@ -135,17 +115,13 @@ export default function BestieBotPage({ chainId }) {
       setIsThinking(false);
       return;
     }
-    const response = backendResponse?.text
-      ? backendResponse
-      : await askPuterBestieBot({
-          chainId,
-          userMessage: trimmed,
-          analysisChainContext: context,
-          userProfile,
-          detectedLanguageStyle: context.languageStyle,
-          relationshipType: context.relationshipType,
-          otherPersonName: context.personName,
-        });
+    if (!backendResponse?.text) {
+      setStatusText('');
+      setMessages((current) => [...current, { role: 'bot', text: 'Bestie is temporarily unavailable. Please try again in a moment.' }]);
+      setIsThinking(false);
+      return;
+    }
+    const response = backendResponse;
     setStatusText('');
     setMessages((current) => [...current, { role: 'bot', text: response.text }]);
     setIsThinking(false);
@@ -171,19 +147,6 @@ export default function BestieBotPage({ chainId }) {
 
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
-      {usageWarning && (
-        <UsageWarningModal
-          status={usageWarning.status}
-          onPlans={() => navigate('/pricing?reason=usage-limit')}
-          onBack={() => navigate('/reports')}
-          onContinue={() => {
-            const next = pendingQuestion;
-            setUsageWarning(null);
-            setPendingQuestion('');
-            send(next, { skipUsageCheck: true });
-          }}
-        />
-      )}
       <ParticleBackground className="opacity-45" />
       <div className="relative mx-auto max-w-[1280px]">
         <div className="accent-panel overflow-hidden rounded-[34px] p-4 sm:p-7">
