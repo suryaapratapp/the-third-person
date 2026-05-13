@@ -1,12 +1,17 @@
 import { detectPromptInjection } from '../lib/promptInjectionFilter.js';
 import { parseConversationText, prepareConversationForAnalysis } from '../lib/conversationPreprocessor.js';
 import { generateRelationshipAnalysis } from '../lib/relationshipAnalysisEngine.js';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { filterSensitiveData } from '../lib/sensitiveDataFilter.js';
 import { createConversationFingerprint, findCachedAnalysis, saveCachedAnalysis } from '../lib/conversationFingerprint.js';
 import { getUserProfile } from '../lib/profileStore.js';
 import { buildZodiacCompatibility, getZodiacElement, getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
 import { generateRelationshipReportViaSupabase } from '../lib/backendAiService.js';
+import { fetchUsageEntitlements } from '../lib/creditsService.js';
+import UsageWarningModal from './UsageWarningModal.jsx';
+import { useRouter } from '../state/RouterContext.jsx';
+import { generateFreeRelationshipAnalysisViaPuter } from '../lib/puterFreeAiService.js';
+import { saveRelationshipReportToSupabase } from '../lib/supabaseDataService.js';
 
 function mergeAnalysisFallback(fallback, candidate) {
   if (!candidate || typeof candidate !== 'object') return fallback;
@@ -48,9 +53,12 @@ function mergeAnalysisFallback(fallback, candidate) {
 }
 
 export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
+  const { navigate } = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
   const [processingStage, setProcessingStage] = useState('');
+  const [creditBlock, setCreditBlock] = useState(null);
+  const [entitlements, setEntitlements] = useState(null);
   const reviewPrep = useMemo(() => {
     if (!flow.chatText.trim()) return null;
     const sensitive = filterSensitiveData(flow.chatText);
@@ -72,6 +80,16 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
     ['Message count', reviewPrep?.parsed.messageCount?.toLocaleString() || '0'],
     ['Zodiac layer', [userZodiac && `You: ${getZodiacGlyph(userZodiac)} ${userZodiac}`, otherZodiac && `${flow.personName || 'Other'}: ${getZodiacGlyph(otherZodiac)} ${otherZodiac}`].filter(Boolean).join(' • ') || 'Optional'],
   ];
+
+  useEffect(() => {
+    let mounted = true;
+    fetchUsageEntitlements().then((result) => {
+      if (mounted) setEntitlements(result);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   async function startAnalysis({ skipUsageCheck = false } = {}) {
     setIsGenerating(true);
@@ -137,29 +155,85 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       promptRiskLevel: scan.riskLevel,
     });
 
-    setProcessingStage('Creating secure relationship report…');
-    const backendResult = await generateRelationshipReportViaSupabase({
-      preparedConversation,
-      promptScan: scan,
-      sensitiveData,
-      userProfile,
-      analysisDraft: fallbackAnalysis,
-    }).catch((error) => {
-      return { blocked: true, error: error.message || 'Your current plan does not have enough analysis access.' };
-    });
-    if (backendResult?.blocked) {
-      setAnalysisError(backendResult.error);
+    const latestEntitlements = await fetchUsageEntitlements();
+    setEntitlements(latestEntitlements);
+    const runtimeContext = {
+      selectedRelationshipType: flow.relationshipType,
+      selectedMessagingApp: flow.platform,
+      selectedPersonName: flow.personName,
+      userStatus: latestEntitlements.hasPaidPack ? 'paid' : 'free',
+      paidCredits: {
+        relationshipReportsLeft: latestEntitlements.paidRelationshipReportsLeft,
+        bestieChatsLeft: latestEntitlements.paidBestieChatsLeft,
+      },
+      freeAnalysesUsed: latestEntitlements.freeAnalysesUsed,
+      freeAnalysesRemaining: latestEntitlements.freeAnalysesRemaining,
+      detectedLanguageStyle: preparedConversation.languageStyle || 'Mixed / inferred from chat',
+      participants: preparedConversation.participants || preparedConversation.participantNames,
+      dateRange: preparedConversation.estimatedDateRange,
+      messageCount: preparedConversation.messageCount,
+      senderStats: preparedConversation.senderStats,
+      dayNightConversationPatterns: preparedConversation.dailyNightBreakdown,
+      sensitiveDataSummary: sensitiveData.protectionSummary,
+      importantMoments: preparedConversation.importantMoments,
+      topWords: preparedConversation.topWords,
+    };
+
+    let aiResult = null;
+    if (latestEntitlements.paidRelationshipReportsLeft > 0) {
+      setProcessingStage('Creating paid relationship intelligence…');
+      const backendResult = await generateRelationshipReportViaSupabase({
+        preparedConversation,
+        promptScan: scan,
+        sensitiveData,
+        userProfile,
+        analysisDraft: fallbackAnalysis,
+        runtimeContext,
+      }).catch((error) => {
+        if (error.code === 'OUT_OF_CREDITS') {
+          setCreditBlock('report');
+        }
+        return { blocked: true, error: error.message || 'You’re out of Relationship Reports. Top up to generate more relationship intelligence summaries.' };
+      });
+      if (backendResult?.blocked) {
+        setAnalysisError(backendResult.error);
+        setIsGenerating(false);
+        setProcessingStage('');
+        return;
+      }
+      if (!backendResult?.analysis || !backendResult?.report) {
+        setAnalysisError('Paid relationship intelligence is temporarily unavailable. Please try again in a moment.');
+        setIsGenerating(false);
+        setProcessingStage('');
+        return;
+      }
+      aiResult = { analysis: { ...backendResult.analysis, providerMode: 'paid' }, error: '' };
+    } else if (!latestEntitlements.hasPaidPack && latestEntitlements.freeAnalysesRemaining > 0) {
+      setProcessingStage('Creating your free relationship analysis…');
+      const freeAnalysis = await generateFreeRelationshipAnalysisViaPuter({
+        preparedConversation,
+        promptScan: scan,
+        sensitiveData,
+        userProfile,
+        analysisDraft: fallbackAnalysis,
+        runtimeContext,
+      }).catch(() => null);
+      const markedFreeAnalysis = {
+        ...(freeAnalysis || fallbackAnalysis),
+        providerMode: 'free',
+        generationTier: 'free_relationship_analysis',
+        freeAnalysisNotice: freeAnalysis ? '' : 'We prepared a lighter free analysis because the deeper read took too long. You can still view the report now.',
+      };
+      await saveRelationshipReportToSupabase({ analysis: markedFreeAnalysis, preparedConversation });
+      aiResult = { analysis: markedFreeAnalysis, error: markedFreeAnalysis.freeAnalysisNotice || '' };
+    } else {
+      setCreditBlock('report');
+      setAnalysisError('You’re out of Relationship Reports. Top up to generate more relationship intelligence summaries.');
       setIsGenerating(false);
       setProcessingStage('');
       return;
     }
-    if (!backendResult?.analysis || !backendResult?.report) {
-      setAnalysisError('Secure analysis is temporarily unavailable. Please try again in a moment.');
-      setIsGenerating(false);
-      setProcessingStage('');
-      return;
-    }
-    const aiResult = { analysis: backendResult.analysis, error: '' };
+
     const analysisResult = mergeAnalysisFallback(fallbackAnalysis, aiResult.analysis);
     saveCachedAnalysis(fingerprintData, { analysisResult, preparedConversation });
     updateFlow({
@@ -179,6 +253,15 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
 
   return (
     <div className="relative grid gap-6 lg:grid-cols-[1fr_360px]">
+      {creditBlock && (
+        <UsageWarningModal
+          feature="report"
+          status="exhausted"
+          onPlans={() => navigate('/pricing?reason=usage-limit')}
+          onBack={() => navigate('/reports')}
+          onContinue={() => setCreditBlock(null)}
+        />
+      )}
       {isGenerating && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 px-4 backdrop-blur">
           <div className="accent-panel max-w-lg p-7 text-center">
@@ -215,6 +298,9 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         <p className="mt-4 border border-purple-300/15 bg-purple-300/5 p-3 font-mono text-xs uppercase tracking-[0.12em] text-smoke">
           Preparing secure analysis
         </p>
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-xs leading-6 text-smoke">
+          {entitlements ? `${entitlements.paidRelationshipReportsLeft} paid Relationship Reports left • ${entitlements.paidBestieChatsLeft} paid Bestie Chats left • ${entitlements.freeAnalysesRemaining} free analyses left` : 'Checking your credit balance…'}
+        </div>
         <button
           disabled={!canStart || isGenerating}
           onClick={startAnalysis}

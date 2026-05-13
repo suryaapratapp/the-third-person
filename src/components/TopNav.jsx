@@ -46,7 +46,7 @@ export default function TopNav() {
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 px-3 py-3 sm:px-6">
-      <div className="mx-auto flex max-w-[1540px] items-center justify-between border border-white/10 bg-black/70 px-4 py-3 backdrop-blur-xl sm:px-7">
+      <div className="mx-auto flex max-w-[1540px] items-center justify-between border border-purple-200/18 bg-gradient-to-r from-[#20172d]/86 via-[#171523]/82 to-[#221322]/86 px-4 py-3 shadow-[0_18px_70px_rgba(168,85,247,0.12)] backdrop-blur-xl sm:px-7">
         <button
           onClick={() => navigate('/')}
           className="font-mono text-[0.72rem] uppercase tracking-[0.28em] text-bone sm:text-sm"
@@ -62,7 +62,7 @@ export default function TopNav() {
               Product
             </button>
             {productOpen && (
-              <div className="absolute left-0 top-8 w-64 border border-purple-300/20 bg-black/95 p-2 shadow-glow backdrop-blur-xl">
+              <div className="absolute left-0 top-8 w-64 border border-purple-300/24 bg-[#17111f]/95 p-2 shadow-glow backdrop-blur-xl">
                 {[
                   ['Start Analysis', '/analysis/new'],
                   ['Relationship Reports', '/reports'],
@@ -113,11 +113,11 @@ export default function TopNav() {
             className="grid h-9 w-9 grid-cols-3 gap-1 border border-purple-300/20 p-2 transition hover:border-purple-300/60"
           >
             {Array.from({ length: 9 }).map((_, index) => (
-              <span key={index} className="h-1 w-1 rounded-full bg-bone/80" />
+                <span key={index} className="h-1 w-1 rounded-full bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100" />
             ))}
           </button>
           {open && (
-            <div className="absolute right-0 top-12 w-64 border border-purple-300/20 bg-black/95 p-2 shadow-glow backdrop-blur-xl">
+            <div className="absolute right-0 top-12 w-64 border border-purple-300/24 bg-[#17111f]/95 p-2 shadow-glow backdrop-blur-xl">
               {[
                 ['Profile', '/profile'],
                 ['Personality Card', '/personality-card'],

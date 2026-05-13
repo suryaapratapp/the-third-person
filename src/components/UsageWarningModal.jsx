@@ -1,29 +1,32 @@
-export default function UsageWarningModal({ status = 'warning', onContinue, onPlans, onBack }) {
-  const copy = {
-    warning: {
-      title: 'Your free relationship insights are almost finished',
-      body: 'You’re close to the end of your free analysis allowance. Upgrade to continue generating deeper Relationship Intelligence Summaries, ask more Bestie questions, and unlock stronger ThirdPerson POV insights.',
-      primary: 'View Plans',
-      secondary: 'Continue for now',
-    },
-    critical: {
-      title: 'Your free demo is nearly complete',
-      body: 'You have very little free analysis usage remaining. Upgrade to keep your Bestie chat active and continue creating detailed relationship reports with better intelligence.',
-      primary: 'Upgrade ThirdPerson',
-      secondary: 'Use remaining free access',
-    },
-    exhausted: {
-      title: 'Your free relationship intelligence access has ended',
-      body: 'You’ve used your available free analysis allowance. Upgrade to continue using Bestie Chat, Relationship Intelligence Summaries, Personality insights, and ThirdPerson POV guidance.',
-      primary: 'See Paid Plans',
-      secondary: 'Back to Reports',
-    },
-  }[status] || {
-    title: 'Your free relationship insights are almost finished',
-    body: 'Upgrade to continue generating deeper ThirdPerson POV insights.',
-    primary: 'View Plans',
-    secondary: 'Continue for now',
-  };
+export default function UsageWarningModal({ status = 'exhausted', feature = 'report', onContinue, onPlans, onBack }) {
+  const isBestie = feature === 'bestie';
+  const exhaustedCopy = isBestie
+    ? {
+        title: 'You’re out of Bestie Chats',
+        body: 'You’re out of Bestie Chats. Top up to keep asking your Bestie for guidance.',
+        primary: 'Top up Bestie Chats',
+        secondary: 'Back to Reports',
+      }
+    : {
+        title: 'You’re out of Relationship Reports',
+        body: 'You’re out of Relationship Reports. Top up to generate more relationship intelligence summaries.',
+        primary: 'Top up Reports',
+        secondary: 'Back to Reports',
+      };
+  const nearingCopy = isBestie
+    ? {
+        title: 'Your Bestie Chat balance is running low',
+        body: 'Top up anytime to keep asking for guidance without interrupting your relationship clarity flow.',
+        primary: 'View Packs',
+        secondary: 'Continue for now',
+      }
+    : {
+        title: 'Your Relationship Report balance is running low',
+        body: 'Top up anytime to keep generating deeper ThirdPerson POV reports when you need clarity.',
+        primary: 'View Packs',
+        secondary: 'Continue for now',
+      };
+  const copy = status === 'exhausted' ? exhaustedCopy : nearingCopy;
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 px-4 backdrop-blur-md">
@@ -35,7 +38,7 @@ export default function UsageWarningModal({ status = 'warning', onContinue, onPl
           <h2 className="serif-title mt-4 text-4xl leading-tight text-bone sm:text-5xl">{copy.title}</h2>
           <p className="mt-5 text-sm leading-8 text-smoke">{copy.body}</p>
           <p className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs leading-6 text-ash">
-            Paid plans unlock higher-quality analysis, more Bestie messages, and deeper ThirdPerson POV insights.
+            Pay-as-you-go packs add separate credits for Relationship Reports and Bestie Chats, so you only top up what you need next.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <button onClick={onPlans} className="rounded-full border border-purple-200/40 bg-purple-300/14 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone hover:border-purple-100/80">

@@ -14,18 +14,44 @@ import ShareableInsights from '../components/ShareableInsights.jsx';
 import CommunicationStyleSignals from '../components/CommunicationStyleSignals.jsx';
 import ZodiacCompatibilityCard from '../components/ZodiacCompatibilityCard.jsx';
 import { getZodiacGlyph } from '../lib/zodiac.js';
+import { exportElementAsImage } from '../lib/exportElementAsImage.js';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
+
+function DownloadIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M12 3v12" strokeLinecap="round" />
+      <path d="m7 10 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 20h14" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function ResultPage() {
   const { flow } = useAnalysis();
   const { navigate } = useRouter();
   const [selectedTimeline, setSelectedTimeline] = useState(0);
+  const [isExportingReport, setIsExportingReport] = useState(false);
+  const [reportMessage, setReportMessage] = useState('');
   const analysis = useMemo(() => flow.analysisResult, [flow.analysisResult]);
   const prepared = flow.preparedConversation;
   const meta = prepared?.metadata || analysis?.conversationRecap || {};
   const profileName = [prepared?.metadata?.userProfile?.firstName, prepared?.metadata?.userProfile?.lastName].filter(Boolean).join(' ');
-  const personName = meta.personName || flow.personName || analysis.participants?.selectedOtherPerson || 'Their';
+  const personName = meta.personName || flow.personName || analysis?.participants?.selectedOtherPerson || 'Their';
+
+  async function exportFullReport() {
+    try {
+      setIsExportingReport(true);
+      const date = new Date().toISOString().slice(0, 10);
+      await exportElementAsImage('relationship-report-export', `thirdperson-relationship-report-${date}.png`);
+      setReportMessage('Report image downloaded.');
+    } catch {
+      setReportMessage('Could not export the full report on this device. Please try again on desktop.');
+    } finally {
+      setIsExportingReport(false);
+    }
+  }
 
   if (!analysis) {
     return (
@@ -50,23 +76,36 @@ export default function ResultPage() {
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <ParticleBackground className="opacity-50" />
-      <div className="relative mx-auto max-w-[1540px]">
-        <header className="mb-8 border border-white/14 bg-black/45 p-5">
+      <div id="relationship-report-export" data-export-bg="#15101f" className="relative mx-auto max-w-[1540px] rounded-[34px] bg-[#15101f]/60 p-2 sm:p-4">
+        <header className="mb-8 overflow-hidden rounded-[28px] border border-purple-200/20 bg-gradient-to-br from-white/[0.09] via-purple-300/[0.055] to-pink-300/[0.04] p-5 shadow-[0_22px_90px_rgba(168,85,247,0.10)]">
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div>
               <p className="tech-label text-smoke">ThirdPerson AI</p>
               <h1 className="serif-title mt-3 text-5xl leading-none sm:text-7xl">Relationship Intelligence Summary</h1>
             </div>
-            <div className="grid gap-2 font-mono text-xs uppercase tracking-[0.13em] text-smoke sm:text-right">
-              <span>{meta.platform || flow.platform}</span>
-              <span>{meta.relationshipType || flow.relationshipType}</span>
-              <span>{meta.personName || flow.personName}</span>
-              <span>{prepared?.estimatedDateRange || 'Date range unavailable'}</span>
-              <span>Private by design • Reflective insights</span>
+            <div className="flex items-start gap-4">
+              <div className="grid gap-2 font-mono text-xs uppercase tracking-[0.13em] text-smoke sm:text-right">
+                <span>{meta.platform || flow.platform}</span>
+                <span>{meta.relationshipType || flow.relationshipType}</span>
+                <span>{meta.personName || flow.personName}</span>
+                <span>{prepared?.estimatedDateRange || 'Date range unavailable'}</span>
+                <span>Private by design • Reflective insights</span>
+              </div>
+              <button
+                data-export-ignore
+                onClick={exportFullReport}
+                disabled={isExportingReport}
+                aria-label="Download full relationship report"
+                title="Download full relationship report"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-purple-200/30 bg-purple-300/12 text-bone shadow-[0_0_35px_rgba(168,85,247,0.18)] transition hover:border-pink-200/60 hover:bg-pink-300/14 disabled:opacity-50"
+              >
+                <DownloadIcon />
+              </button>
             </div>
           </div>
           {flow.analysisError && <p className="mt-5 border-t border-white/10 pt-4 text-sm leading-7 text-smoke">{flow.analysisError}</p>}
           {flow.cacheNotice && <p className="mt-5 border-t border-purple-300/15 pt-4 text-sm leading-7 text-purple-100">{flow.cacheNotice}</p>}
+          {reportMessage && <p data-export-ignore className="mt-5 border-t border-pink-300/15 pt-4 text-sm leading-7 text-pink-100">{reportMessage}</p>}
         </header>
 
         <div className="grid gap-5">

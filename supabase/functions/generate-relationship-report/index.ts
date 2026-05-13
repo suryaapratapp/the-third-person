@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts';
-import { consumeCredit, createAdminClient, getAuthenticatedUser } from '../_shared/usage.ts';
+import { consumeCredit, createAdminClient, getAuthenticatedUser, getCreditBalance, logBlockedCredit } from '../_shared/usage.ts';
 
 function chainIdFor(personName = 'relationship', relationshipType = 'relationship', platform = 'chat') {
   return `${personName}-${relationshipType}-${platform}`
@@ -46,6 +46,10 @@ async function openAiAnalysis(body: Record<string, any>) {
     topWords: prepared.topWords,
     zodiacContext: prepared.metadata?.zodiacCompatibility,
     safeConversationSummary: prepared.compressedConversation,
+    runtimeContext: body.runtimeContext,
+    paidFreeStatus: body.runtimeContext?.userStatus,
+    freeAnalysesUsed: body.runtimeContext?.freeAnalysesUsed,
+    remainingPaidCredits: body.runtimeContext?.paidCredits,
     expectedShape: body.analysisDraft,
   });
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -55,7 +59,7 @@ async function openAiAnalysis(body: Record<string, any>) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: Deno.env.get('OPENAI_REPORT_MODEL') || 'gpt-4o-mini',
+      model: Deno.env.get('OPENAI_REPORT_MODEL') || 'gpt-5-nano',
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user },
@@ -80,14 +84,23 @@ Deno.serve(async (req: Request) => {
     if (!user) return jsonResponse({ error: 'Please sign in to continue.' }, 401);
 
     const admin = createAdminClient();
-    const credit = await consumeCredit(admin, user.id, 'relationship_report');
-    if (!credit.allowed) {
-      return jsonResponse({ error: 'No analysis credits available. Please upgrade or check your plan.' }, 402);
+    const availableReports = await getCreditBalance(admin, user.id, 'relationship_report');
+    if (availableReports <= 0) {
+      await logBlockedCredit(admin, user.id, 'relationship_report');
+      return jsonResponse({
+        code: 'OUT_OF_CREDITS',
+        creditType: 'relationship_report',
+        error: 'You’re out of Relationship Reports. Top up to generate more relationship intelligence summaries.',
+      }, 402);
     }
 
     const body = await req.json();
     const prepared = body.preparedConversation || {};
-    const analysis = await openAiAnalysis(body).catch(() => null) || fallbackAnalysis(body);
+    const analysis = {
+      ...(await openAiAnalysis(body).catch(() => null) || fallbackAnalysis(body)),
+      providerMode: 'paid',
+      generationTier: 'paid_relationship_intelligence',
+    };
     const recap = analysis.conversationRecap || {};
     const meta = prepared.metadata || {};
     const personName = recap.personName || meta.personName || 'Unknown person';
@@ -116,6 +129,22 @@ Deno.serve(async (req: Request) => {
       .select('*')
       .single();
     if (reportError) throw reportError;
+
+    let credit;
+    try {
+      credit = await consumeCredit(admin, user.id, 'relationship_report');
+    } catch (creditError) {
+      await admin.from('relationship_reports').delete().eq('id', report.id);
+      throw creditError;
+    }
+    if (!credit.allowed) {
+      await admin.from('relationship_reports').delete().eq('id', report.id);
+      return jsonResponse({
+        code: 'OUT_OF_CREDITS',
+        creditType: 'relationship_report',
+        error: 'You’re out of Relationship Reports. Top up to generate more relationship intelligence summaries.',
+      }, 402);
+    }
 
     await admin.from('ai_usage_logs').insert({
       user_id: user.id,

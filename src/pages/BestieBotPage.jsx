@@ -6,6 +6,8 @@ import { getUserProfile } from '../lib/profileStore.js';
 import { fetchRelationshipReports } from '../lib/supabaseDataService.js';
 import { getZodiacSign } from '../lib/zodiac.js';
 import { useRouter } from '../state/RouterContext.jsx';
+import { fetchCreditBalances } from '../lib/creditsService.js';
+import UsageWarningModal from '../components/UsageWarningModal.jsx';
 
 const starters = [
   'Is this person into me?',
@@ -32,6 +34,8 @@ export default function BestieBotPage({ chainId }) {
   const [isThinking, setIsThinking] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [toast, setToast] = useState('');
+  const [creditBlock, setCreditBlock] = useState(null);
+  const [balances, setBalances] = useState(null);
   const bottomRef = useRef(null);
   const [messages, setMessages] = useState([
     {
@@ -63,6 +67,16 @@ export default function BestieBotPage({ chainId }) {
       }];
     });
   }, [context]);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchCreditBalances().then((result) => {
+      if (mounted) setBalances(result);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -99,6 +113,7 @@ export default function BestieBotPage({ chainId }) {
     setInput('');
     setMessages((current) => [...current, { role: 'user', text: trimmed }]);
     setIsThinking(true);
+    setStatusText('Checking Bestie Chat balance…');
     setStatusText('Preparing Bestie reply…');
     const backendResponse = await askBestieViaSupabase({
       chainId,
@@ -108,7 +123,10 @@ export default function BestieBotPage({ chainId }) {
       detectedLanguageStyle: context.languageStyle,
       relationshipType: context.relationshipType,
       otherPersonName: context.personName,
-    }).catch((error) => ({ error: error.message }));
+    }).catch((error) => {
+      if (error.code === 'OUT_OF_CREDITS') setCreditBlock('bestie');
+      return { error: error.message };
+    });
     if (backendResponse?.error) {
       setStatusText('');
       setMessages((current) => [...current, { role: 'bot', text: backendResponse.error }]);
@@ -124,6 +142,11 @@ export default function BestieBotPage({ chainId }) {
     const response = backendResponse;
     setStatusText('');
     setMessages((current) => [...current, { role: 'bot', text: response.text }]);
+    setBalances((current) => current ? {
+      ...current,
+      bestieChatsLeft: Math.max(current.bestieChatsLeft - 1, 0),
+      paidBestieChatsLeft: Math.max(current.paidBestieChatsLeft - 1, 0),
+    } : current);
     setIsThinking(false);
   }
 
@@ -147,6 +170,15 @@ export default function BestieBotPage({ chainId }) {
 
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
+      {creditBlock && (
+        <UsageWarningModal
+          feature="bestie"
+          status="exhausted"
+          onPlans={() => navigate('/pricing?reason=usage-limit')}
+          onBack={() => navigate('/reports')}
+          onContinue={() => setCreditBlock(null)}
+        />
+      )}
       <ParticleBackground className="opacity-45" />
       <div className="relative mx-auto max-w-[1280px]">
         <div className="accent-panel overflow-hidden rounded-[34px] p-4 sm:p-7">
@@ -191,6 +223,9 @@ export default function BestieBotPage({ chainId }) {
               </div>
               <div className="mt-5 rounded-3xl border border-orange-300/15 bg-orange-300/[0.04] p-4 text-sm leading-7 text-smoke">
                 Zodiac, if available, is treated as a fun reflection layer. The real chat patterns matter more.
+              </div>
+              <div className="mt-3 rounded-3xl border border-purple-300/15 bg-purple-300/[0.05] p-4 text-sm leading-7 text-smoke">
+                {balances ? `${balances.paidRelationshipReportsLeft} paid Relationship Reports left • ${balances.paidBestieChatsLeft} paid Bestie Chats left` : 'Checking your credit balance…'}
               </div>
             </aside>
 

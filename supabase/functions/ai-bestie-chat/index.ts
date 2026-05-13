@@ -1,5 +1,5 @@
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts';
-import { consumeCredit, createAdminClient, getAuthenticatedUser } from '../_shared/usage.ts';
+import { consumeCredit, createAdminClient, getAuthenticatedUser, getCreditBalance, logBlockedCredit } from '../_shared/usage.ts';
 
 function safeBestieReply(message: string, context: Record<string, any>) {
   const personName = context?.personName || 'them';
@@ -23,7 +23,7 @@ async function openAiBestieReply(message: string, context: Record<string, any>, 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: Deno.env.get('OPENAI_BESTIE_MODEL') || 'gpt-4o-mini',
+      model: Deno.env.get('OPENAI_BESTIE_MODEL') || 'gpt-5-nano',
       messages: [
         { role: 'system', content: system },
         {
@@ -59,32 +59,64 @@ Deno.serve(async (req: Request) => {
     if (!chainId || !userMessage) return jsonResponse({ error: 'Please ask a relationship question.' }, 400);
 
     const admin = createAdminClient();
-    const credit = await consumeCredit(admin, user.id, 'bestie_message');
-    if (!credit.allowed) {
-      return jsonResponse({ error: 'No Bestie messages available. Please upgrade or check your plan.' }, 402);
+    const availableMessages = await getCreditBalance(admin, user.id, 'bestie_message');
+    if (availableMessages <= 0) {
+      await logBlockedCredit(admin, user.id, 'bestie_message');
+      return jsonResponse({
+        code: 'OUT_OF_CREDITS',
+        creditType: 'bestie_message',
+        error: 'You’re out of Bestie Chats. Top up to keep asking your Bestie for guidance.',
+      }, 402);
     }
 
-    await admin.from('bestie_messages').insert({
+    const text = await openAiBestieReply(userMessage, analysisChainContext || {}, body).catch(() => null)
+      || safeBestieReply(userMessage, analysisChainContext || {});
+
+    const { data: userMessageRecord, error: userMessageError } = await admin.from('bestie_messages').insert({
       user_id: user.id,
       chain_id: chainId,
       role: 'user',
       content: userMessage,
       metadata: { source: 'bestie_chat' },
-    });
+    }).select('*').single();
+    if (userMessageError) throw userMessageError;
 
-    const text = await openAiBestieReply(userMessage, analysisChainContext || {}, body).catch(() => null)
-      || safeBestieReply(userMessage, analysisChainContext || {});
-    const { data: assistantMessage } = await admin
+    const { data: assistantMessage, error: assistantMessageError } = await admin
       .from('bestie_messages')
       .insert({
         user_id: user.id,
         chain_id: chainId,
         role: 'assistant',
         content: text,
-        metadata: { remainingCredits: credit.remaining },
+        metadata: { source: 'bestie_chat' },
       })
       .select('*')
       .single();
+    if (assistantMessageError) throw assistantMessageError;
+
+    let credit;
+    try {
+      credit = await consumeCredit(admin, user.id, 'bestie_message');
+    } catch (creditError) {
+      if (userMessageRecord?.id) await admin.from('bestie_messages').delete().eq('id', userMessageRecord.id);
+      if (assistantMessage?.id) await admin.from('bestie_messages').delete().eq('id', assistantMessage.id);
+      throw creditError;
+    }
+    if (!credit.allowed) {
+      if (userMessageRecord?.id) await admin.from('bestie_messages').delete().eq('id', userMessageRecord.id);
+      if (assistantMessage?.id) await admin.from('bestie_messages').delete().eq('id', assistantMessage.id);
+      return jsonResponse({
+        code: 'OUT_OF_CREDITS',
+        creditType: 'bestie_message',
+        error: 'You’re out of Bestie Chats. Top up to keep asking your Bestie for guidance.',
+      }, 402);
+    }
+
+    if (assistantMessage?.id) {
+      await admin.from('bestie_messages').update({
+        metadata: { source: 'bestie_chat', remainingCredits: credit.remaining },
+      }).eq('id', assistantMessage.id);
+    }
 
     await admin.from('ai_usage_logs').insert({
       user_id: user.id,

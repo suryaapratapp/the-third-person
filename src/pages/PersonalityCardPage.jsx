@@ -1,13 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 import { generateSampleAnalysis } from '../lib/relationshipAnalysisEngine.js';
-import { exportElementAsImage, shareElementAsImage } from '../lib/exportElementAsImage.js';
+import { exportElementAsImage } from '../lib/exportElementAsImage.js';
 import { getReports } from '../lib/reportsStore.js';
 import { getInitials, getUserProfile } from '../lib/profileStore.js';
 import { getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
+import { fetchUsageEntitlements } from '../lib/creditsService.js';
+import { fetchRelationshipReports } from '../lib/supabaseDataService.js';
+import { generatePersonalityCardViaSupabase } from '../lib/backendAiService.js';
+import { generateFreePersonalityCardViaPuter } from '../lib/puterFreeAiService.js';
 
 const themes = {
   'Noir Intelligence': ['#050505', '#c4b5fd', '#ffffff', 'radial'],
@@ -85,6 +89,26 @@ function buildCard(analysis) {
   };
 }
 
+function mergePersonalityAnalysis(base, generated) {
+  if (!generated || typeof generated !== 'object') return base;
+  return {
+    ...base,
+    ...generated,
+    personality: {
+      ...base.personality,
+      ...generated.personality,
+      user: { ...(base.personality?.user || {}), ...(generated.personality?.user || {}) },
+    },
+    personalitySnapshot: { ...(base.personalitySnapshot || {}), ...(generated.personalitySnapshot || {}) },
+    personalityCardViral: { ...(base.personalityCardViral || {}), ...(generated.personalityCardViral || {}) },
+    communicationStyleSignals: {
+      ...(base.communicationStyleSignals || {}),
+      ...(generated.communicationStyleSignals || {}),
+      user: { ...(base.communicationStyleSignals?.user || {}), ...(generated.communicationStyleSignals?.user || {}) },
+    },
+  };
+}
+
 function ValueCard({ label, value, accent }) {
   return (
     <div className="border p-4" style={{ borderColor: `${accent}55`, background: 'rgba(255,255,255,0.025)' }}>
@@ -149,30 +173,70 @@ export default function PersonalityCardPage() {
   const [themeName, setThemeName] = useState('Noir Intelligence');
   const [message, setMessage] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [generatedAnalysis, setGeneratedAnalysis] = useState(null);
   const hasAnalysis = Boolean(flow.analysisResult);
-  const analysis = useMemo(() => flow.analysisResult || generateSampleAnalysis(), [flow.analysisResult]);
+  const baseAnalysis = useMemo(() => flow.analysisResult || generateSampleAnalysis(), [flow.analysisResult]);
+  const analysis = useMemo(() => mergePersonalityAnalysis(baseAnalysis, generatedAnalysis), [baseAnalysis, generatedAnalysis]);
   const profile = useMemo(() => getUserProfile(), []);
   const userZodiac = getZodiacSign(profile.dateOfBirth);
   const lifeStoryData = useMemo(() => buildLifeStoryData(getReports(), analysis), [analysis]);
   const card = buildCard(analysis);
   const [bg, accent, text, pattern] = themes[themeName];
-  const summary = `${card.title} (${card.type})\n${card.core}\n\n${card.oneLiner}\n\n${[...card.recognition, ...card.creativeReads, ...card.sections].map(([label, value]) => `${label}: ${value || 'Available after analysis.'}`).join('\n')}`;
 
-  function copySummary() {
-    navigator.clipboard?.writeText(summary);
-    setMessage('Personality summary copied.');
-  }
-
-  async function shareCard() {
-    try {
-      const date = new Date().toISOString().slice(0, 10);
-      const theme = themeName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const result = await shareElementAsImage('personality-card-export', 'ThirdPerson AI Personality Card', summary, `thirdperson-personality-card-${theme}-${date}.png`);
-      setMessage(result === 'shared' ? 'Personality card shared.' : 'Sharing is not available here, so the summary was copied.');
-    } catch {
-      setMessage('Sharing is not available here, so the summary was copied.');
+  useEffect(() => {
+    let mounted = true;
+    async function generateCard() {
+      const reports = await fetchRelationshipReports();
+      if (!mounted || !reports.length) return;
+      const entitlements = await fetchUsageEntitlements();
+      const runtimeContext = {
+        userStatus: entitlements.hasPaidPack ? 'paid' : 'free',
+        paidCredits: {
+          relationshipReportsLeft: entitlements.paidRelationshipReportsLeft,
+          bestieChatsLeft: entitlements.paidBestieChatsLeft,
+        },
+        freeAnalysesUsed: entitlements.freeAnalysesUsed,
+        freeAnalysesRemaining: entitlements.freeAnalysesRemaining,
+        detectedLanguageStyle: reports.some((report) => /hai|nahi|kyu|haan|yaar|mat|kar/i.test(JSON.stringify(report.preparedConversation?.topWords || []))) ? 'Hinglish / Indian English' : 'English or mixed',
+        relationshipTypes: [...new Set(reports.map((report) => report.relationshipType).filter(Boolean))],
+        currentAnalysisChainContext: reports.slice(0, 5).map((report) => ({
+          personName: report.personName,
+          relationshipType: report.relationshipType,
+          mainDynamic: report.mainDynamic,
+          emotionalTrend: report.emotionalTrend,
+          compatibilityScore: report.compatibilityScore,
+        })),
+      };
+      setMessage('Refreshing your Personality Card...');
+      let result = null;
+      if (entitlements.hasPaidPack) {
+        const response = await generatePersonalityCardViaSupabase({
+          reports,
+          userProfile: profile,
+          currentCard: card,
+          runtimeContext,
+        }).catch(() => null);
+        result = response?.personality || null;
+      } else if (entitlements.freeAnalysesUsed > 0 && entitlements.freeAnalysesUsed <= 2) {
+        result = await generateFreePersonalityCardViaPuter({
+          reports,
+          userProfile: profile,
+          currentCard: card,
+        }).catch(() => null);
+      }
+      if (!mounted) return;
+      if (result) {
+        setGeneratedAnalysis(result);
+        setMessage('Personality Card updated.');
+      } else {
+        setMessage('');
+      }
     }
-  }
+    generateCard();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   async function exportImage() {
     try {
@@ -188,6 +252,16 @@ export default function PersonalityCardPage() {
     }
   }
 
+  function DownloadIcon() {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M12 3v12" strokeLinecap="round" />
+        <path d="m7 10 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 20h14" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <ParticleBackground className="opacity-45" />
@@ -197,11 +271,22 @@ export default function PersonalityCardPage() {
             <p className="tech-label text-smoke">Personality Card</p>
             <h1 className="serif-title mt-4 text-5xl leading-none sm:text-7xl">Your relationship communication signature.</h1>
           </div>
-          {!hasAnalysis && (
-            <button onClick={() => navigate('/analysis/new')} className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
-              Run your first analysis
+          <div className="flex items-center gap-3">
+            {!hasAnalysis && (
+              <button onClick={() => navigate('/analysis/new')} className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
+                Run your first analysis
+              </button>
+            )}
+            <button
+              onClick={exportImage}
+              disabled={isExporting}
+              aria-label="Download Personality Card"
+              title="Download Personality Card"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-purple-200/30 bg-purple-300/12 text-bone shadow-[0_0_35px_rgba(168,85,247,0.18)] transition hover:border-pink-200/60 hover:bg-pink-300/14 disabled:opacity-50"
+            >
+              <DownloadIcon />
             </button>
-          )}
+          </div>
         </div>
 
         <div className="mb-6 flex flex-wrap gap-3">
@@ -216,7 +301,7 @@ export default function PersonalityCardPage() {
           ))}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div>
           <article id="personality-card-export" data-export-bg={bg} className="relative overflow-hidden p-7 sm:p-10" style={{ background: bg, color: text, border: `1px solid ${accent}` }}>
             <div className={`absolute inset-0 opacity-20 ${pattern === 'dots' ? 'dot-field' : pattern === 'grid' ? 'grid-bg' : ''}`} />
             <div className="relative">
@@ -314,19 +399,12 @@ export default function PersonalityCardPage() {
               </div>
             </div>
           </article>
-
-          <aside className="thin-panel h-fit p-5">
-            <p className="tech-label text-smoke">Card actions</p>
-            <div className="mt-5 grid gap-3">
-              <button onClick={exportImage} disabled={isExporting} className="glass-button px-5 py-4 text-left text-bone disabled:opacity-60">{isExporting ? 'Exporting...' : 'Export as Image'}</button>
-              <button onClick={copySummary} className="glass-button px-5 py-4 text-left text-bone">Copy Summary</button>
-              <button onClick={shareCard} className="glass-button px-5 py-4 text-left text-bone">Share Card</button>
-            </div>
-            {message && <p className="mt-5 text-sm leading-7 text-smoke">{message}</p>}
-            <p className="mt-6 text-sm leading-7 text-ash">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-[28px] border border-purple-200/18 bg-white/[0.045] p-5">
+            <p className="max-w-3xl text-sm leading-7 text-ash">
               Personality cards are interpretive and based on the conversation provided. They are designed for reflection, not fixed identity labels.
             </p>
-          </aside>
+            {message && <p className="text-sm leading-7 text-smoke">{message}</p>}
+          </div>
         </div>
       </div>
     </section>

@@ -2,11 +2,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 type CreditType = 'relationship_report' | 'bestie_message';
 
-const defaultLimits: Record<CreditType, number> = {
-  relationship_report: 5,
-  bestie_message: 100,
-};
-
 export function createAdminClient() {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -30,53 +25,43 @@ export async function getAuthenticatedUser(req: Request) {
   return data.user || null;
 }
 
-function weekWindow() {
+function todayKey() {
   const now = new Date();
-  const day = now.getUTCDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diffToMonday));
-  const end = new Date(start);
-  end.setUTCDate(start.getUTCDate() + 6);
-  return {
-    start: start.toISOString().slice(0, 10),
-    end: end.toISOString().slice(0, 10),
-    today: now.toISOString().slice(0, 10),
-  };
+  return now.toISOString().slice(0, 10);
+}
+
+export async function getCreditBalance(admin: ReturnType<typeof createAdminClient>, userId: string, creditType: CreditType) {
+  const { data, error } = await admin
+    .from('analysis_credits')
+    .select('credits_granted, credits_used, source')
+    .eq('user_id', userId)
+    .eq('credit_type', creditType)
+    .neq('source', 'free');
+  if (error) throw error;
+
+  return (data || []).reduce((sum, row) => {
+    return sum + Math.max((row.credits_granted || 0) - (row.credits_used || 0), 0);
+  }, 0);
+}
+
+export async function logBlockedCredit(admin: ReturnType<typeof createAdminClient>, userId: string, creditType: CreditType) {
+  await admin.from('ai_usage_logs').insert({
+    user_id: userId,
+    action: creditType === 'relationship_report' ? 'generate_relationship_report' : 'ai_bestie_chat',
+    status: 'blocked_no_credits',
+    metadata: { creditType },
+  });
 }
 
 export async function consumeCredit(admin: ReturnType<typeof createAdminClient>, userId: string, creditType: CreditType) {
-  const { start, end, today } = weekWindow();
-  const { data: existing } = await admin
-    .from('analysis_credits')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('credit_type', creditType)
-    .lte('period_start', today)
-    .gte('period_end', today)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { data, error } = await admin.rpc('consume_analysis_credit', {
+    p_user_id: userId,
+    p_credit_type: creditType,
+  });
+  if (error) throw error;
 
-  let credit = existing;
-  if (!credit) {
-    const { data, error } = await admin
-      .from('analysis_credits')
-      .insert({
-        user_id: userId,
-        credit_type: creditType,
-        credits_granted: defaultLimits[creditType],
-        credits_used: 0,
-        period_start: start,
-        period_end: end,
-        source: 'free',
-      })
-      .select('*')
-      .single();
-    if (error) throw error;
-    credit = data;
-  }
-
-  if (credit.credits_used >= credit.credits_granted) {
+  const remaining = Number(data);
+  if (!Number.isFinite(remaining) || remaining < 0) {
     await admin.from('ai_usage_logs').insert({
       user_id: userId,
       action: creditType === 'relationship_report' ? 'generate_relationship_report' : 'ai_bestie_chat',
@@ -86,12 +71,7 @@ export async function consumeCredit(admin: ReturnType<typeof createAdminClient>,
     return { allowed: false, remaining: 0 };
   }
 
-  const { error } = await admin
-    .from('analysis_credits')
-    .update({ credits_used: credit.credits_used + 1 })
-    .eq('id', credit.id);
-  if (error) throw error;
-
+  const today = todayKey();
   const { data: daily } = await admin
     .from('daily_message_usage')
     .select('*')
@@ -112,6 +92,6 @@ export async function consumeCredit(admin: ReturnType<typeof createAdminClient>,
 
   return {
     allowed: true,
-    remaining: Math.max(credit.credits_granted - credit.credits_used - 1, 0),
+    remaining,
   };
 }
