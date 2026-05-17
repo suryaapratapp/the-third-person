@@ -1,42 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ParticleBackground from '../components/ParticleBackground.jsx';
-import { fetchCreditBalances } from '../lib/creditsService.js';
+import { claimPayAsYouGoPack, fetchCreditBalances } from '../lib/creditsService.js';
 
-const plans = [
-  {
-    name: 'Clarity Pack',
-    eyebrow: 'Start here',
-    price: 'Launch pricing soon',
-    audience: 'For casual relationship checks and focused clarity moments.',
-    reports: 5,
-    chats: 50,
-    intelligence: 'Pay-As-You-Go Clarity',
-    cta: 'Buy Clarity Pack',
-    accent: 'from-purple-300/22 via-pink-300/10 to-blue-300/12',
-    glow: 'bg-purple-300/20',
-    note: 'Perfect when you want clarity on one connection without committing to anything heavy.',
-    features: ['5 full relationship reads', '50 Bestie follow-up chats', 'Separate credits for reports and chat', 'Top up anytime'],
-  },
-  {
-    name: 'Deep Clarity Pack',
-    eyebrow: 'Best value',
-    price: 'Launch pricing soon',
-    audience: 'For deeper reflection when a connection needs more attention.',
-    reports: 10,
-    chats: 100,
-    intelligence: 'Advanced Relationship Intelligence',
-    cta: 'Buy Deep Clarity Pack',
-    accent: 'from-pink-300/22 via-purple-300/14 to-orange-300/16',
-    glow: 'bg-pink-300/20',
-    note: 'More room to understand patterns, ask “what should I do?”, and revisit the same relationship with context.',
-    features: ['10 full relationship reads', '100 Bestie follow-up chats', 'Better for ongoing situations', 'Top up anytime'],
-  },
-];
+const PRICE_PER_REPORT = 199;
+const CHATS_PER_REPORT = 10;
+const MIN_REPORTS = 1;
+const MAX_REPORTS = 50;
+
+function formatInr(value) {
+  return new Intl.NumberFormat('en-IN').format(value);
+}
+
+function clampReports(value) {
+  const next = Number.parseInt(value, 10);
+  if (!Number.isFinite(next)) return MIN_REPORTS;
+  return Math.min(MAX_REPORTS, Math.max(MIN_REPORTS, next));
+}
 
 export default function PricingPage() {
+  const [reportCount, setReportCount] = useState(1);
   const [message, setMessage] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
   const [balances, setBalances] = useState(null);
   const reason = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('reason') : '';
+  const isLocalTesting = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+  const bestieChats = reportCount * CHATS_PER_REPORT;
+  const totalPrice = reportCount * PRICE_PER_REPORT;
+  const testPackId = useMemo(() => {
+    if (reportCount === 5) return 'clarity_pack';
+    if (reportCount === 10) return 'deep_clarity_pack';
+    return '';
+  }, [reportCount]);
 
   useEffect(() => {
     let mounted = true;
@@ -50,8 +45,32 @@ export default function PricingPage() {
 
   const reportBalance = balances?.paidRelationshipReportsLeft ?? '—';
   const bestieBalance = balances?.paidBestieChatsLeft ?? '—';
-  const bestieLow = typeof bestieBalance === 'number' && bestieBalance <= 5;
-  const reportLow = typeof reportBalance === 'number' && reportBalance <= 1;
+
+  function updateReports(value) {
+    setReportCount(clampReports(value));
+  }
+
+  function handleCheckout() {
+    setMessage('');
+    setModalOpen(true);
+  }
+
+  async function activateLocalTestCredits() {
+    if (!testPackId) {
+      setMessage('Local test activation is available for 5 or 10 reports because those test credit amounts already exist.');
+      return;
+    }
+    setMessage('Adding test credits...');
+    try {
+      await claimPayAsYouGoPack(testPackId);
+      const nextBalances = await fetchCreditBalances();
+      setBalances(nextBalances);
+      setModalOpen(false);
+      setMessage(`Test credits added. You now have ${nextBalances.paidRelationshipReportsLeft} Relationship Reports left and ${nextBalances.paidBestieChatsLeft} Bestie Chats left.`);
+    } catch (error) {
+      setMessage(error.message || 'We could not add test credits right now.');
+    }
+  }
 
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
@@ -63,15 +82,16 @@ export default function PricingPage() {
             <p className="mt-3 text-sm leading-7 text-smoke">Top up to unlock more Bestie Chats, more Relationship Reports, and deeper relationship intelligence.</p>
           </div>
         )}
+
         <div className="corner-frame accent-panel overflow-hidden p-6 text-center sm:p-12">
           <div className="pointer-events-none absolute left-1/2 top-10 h-64 w-64 -translate-x-1/2 rounded-full bg-purple-300/10 blur-3xl" />
           <p className="tech-label text-purple-200">Pricing</p>
-          <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Choose your Pay-As-You-Go clarity pack</h1>
+          <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Build your clarity pack</h1>
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-8 text-smoke">
-            Buy credits when you need them. Relationship Reports and Bestie Chats are tracked separately, and you can top up another pack anytime.
+            Choose the number of Relationship Reports you need. Every report adds 10 Bestie Chats, so your follow-up guidance grows with your analysis balance.
           </p>
           <div className="mx-auto mt-7 flex max-w-3xl flex-wrap justify-center gap-3">
-            {['No recurring commitment', 'Reports and chats tracked separately', 'Old reports stay free to open'].map((item) => (
+            {['Pay only for what you need', 'Top up anytime', 'Old reports stay free to open'].map((item) => (
               <span key={item} className="rounded-full border border-white/12 bg-white/[0.045] px-4 py-2 font-mono text-[0.68rem] uppercase tracking-[0.12em] text-smoke">
                 {item}
               </span>
@@ -82,93 +102,187 @@ export default function PricingPage() {
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="relative overflow-hidden rounded-[30px] border border-purple-200/20 bg-gradient-to-br from-purple-300/[0.12] via-white/[0.045] to-blue-300/[0.05] p-5 shadow-[0_18px_80px_rgba(168,85,247,0.08)]">
             <div className="absolute -right-10 -top-14 h-36 w-36 rounded-full bg-purple-300/20 blur-3xl" />
-            <div className="relative flex items-end justify-between gap-4">
-              <div>
-                <p className="tech-label text-purple-100">Report balance</p>
-                <p className="mt-3 text-sm leading-6 text-smoke">For new Relationship Intelligence Summaries</p>
-              </div>
-              <div className="text-right">
-                <p className="serif-title text-6xl leading-none text-bone">{reportBalance}</p>
-                <p className="mt-2 font-mono text-[0.68rem] uppercase tracking-[0.12em] text-smoke">Reports left</p>
-              </div>
-            </div>
-            <p className={`relative mt-5 rounded-2xl border px-4 py-3 text-xs leading-6 ${reportLow ? 'border-orange-200/30 bg-orange-300/[0.08] text-orange-100' : 'border-white/10 bg-black/20 text-ash'}`}>
-              {reportLow ? 'You are close to needing a top-up for new reports.' : 'Opening your old reports does not use credits.'}
-            </p>
+            <p className="tech-label text-purple-100">Relationship Reports left</p>
+            <p className="relative mt-4 serif-title text-6xl leading-none text-bone">{reportBalance}</p>
           </div>
           <div className="relative overflow-hidden rounded-[30px] border border-pink-200/20 bg-gradient-to-br from-pink-300/[0.10] via-white/[0.045] to-orange-300/[0.055] p-5 shadow-[0_18px_80px_rgba(236,72,153,0.08)]">
             <div className="absolute -right-10 -top-14 h-36 w-36 rounded-full bg-pink-300/20 blur-3xl" />
-            <div className="relative flex items-end justify-between gap-4">
+            <p className="tech-label text-pink-100">Bestie Chats left</p>
+            <p className="relative mt-4 serif-title text-6xl leading-none text-bone">{bestieBalance}</p>
+          </div>
+        </div>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
+          <article className="relative overflow-hidden rounded-[38px] border border-purple-200/24 bg-gradient-to-br from-white/[0.07] via-purple-300/[0.08] to-pink-300/[0.045] p-6 shadow-[0_28px_120px_rgba(168,85,247,0.12)] sm:p-8">
+            <div className="absolute -left-20 top-10 h-56 w-56 rounded-full bg-purple-300/15 blur-3xl" />
+            <div className="absolute -right-24 -top-20 h-64 w-64 rounded-full bg-pink-300/15 blur-3xl" />
+            <div className="relative flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="tech-label text-pink-100">Bestie balance</p>
-                <p className="mt-3 text-sm leading-6 text-smoke">For successful Bestie replies and guidance</p>
+                <p className="tech-label text-purple-100">Smart credit builder</p>
+                <h2 className="serif-title mt-4 text-5xl leading-tight">Shape your top-up.</h2>
+                <p className="mt-3 max-w-xl text-sm leading-7 text-smoke">
+                  1 Relationship Report includes 10 Bestie Chats. Pick the amount that matches how much clarity you want right now.
+                </p>
               </div>
-              <div className="text-right">
-                <p className="serif-title text-6xl leading-none text-bone">{bestieBalance}</p>
-                <p className="mt-2 font-mono text-[0.68rem] uppercase tracking-[0.12em] text-smoke">Chats left</p>
+              <div className="rounded-full border border-orange-200/25 bg-orange-300/[0.08] px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-orange-100">
+                ₹199 each
               </div>
             </div>
-            <p className={`relative mt-5 rounded-2xl border px-4 py-3 text-xs leading-6 ${bestieLow ? 'border-orange-200/30 bg-orange-300/[0.08] text-orange-100' : 'border-white/10 bg-black/20 text-ash'}`}>
-              {bestieLow ? 'Top up Bestie Chats to keep asking for advice without stopping mid-thought.' : 'Failed replies do not use Bestie Chat credits.'}
-            </p>
-          </div>
-        </div>
 
-        <div className="mt-8 grid gap-5 lg:grid-cols-2">
-          {plans.map((plan, index) => (
-            <article key={plan.name} className={`group relative overflow-hidden rounded-[36px] border ${index === 1 ? 'border-pink-200/35' : 'border-white/14'} bg-gradient-to-br ${plan.accent} p-6 shadow-[0_0_80px_rgba(168,85,247,0.10)] transition duration-300 hover:-translate-y-1 hover:border-purple-100/45 hover:shadow-[0_28px_110px_rgba(236,72,153,0.12)]`}>
-              <div className={`absolute -right-20 -top-24 h-64 w-64 rounded-full ${plan.glow} blur-3xl transition group-hover:scale-110`} />
-              <div className="relative flex items-center justify-between gap-4">
-                <p className="tech-label text-pink-100">{plan.eyebrow}</p>
-                {index === 1 && <span className="rounded-full border border-orange-200/30 bg-orange-300/[0.10] px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.12em] text-orange-100">More room</span>}
-              </div>
-              <p className="relative mt-4 tech-label text-blue-100">{plan.intelligence}</p>
-              <h2 className="relative mt-4 serif-title text-5xl leading-tight">{plan.name}</h2>
-              <p className="mt-3 text-sm leading-7 text-smoke">{plan.audience}</p>
-              <div className="relative mt-6 grid grid-cols-2 gap-3">
-                <div className="rounded-[26px] border border-purple-200/18 bg-black/24 p-4">
-                  <p className="serif-title text-5xl leading-none text-bone">{plan.reports}</p>
-                  <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Relationship Reports</p>
+            <div className="relative mt-8 rounded-[30px] border border-white/12 bg-black/25 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <p className="tech-label text-smoke">Number of reports</p>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => updateReports(reportCount - 1)}
+                    className="grid h-11 w-11 place-items-center rounded-full border border-white/12 bg-white/[0.045] text-2xl text-bone transition hover:border-purple-200/50"
+                    aria-label="Decrease reports"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min={MIN_REPORTS}
+                    max={MAX_REPORTS}
+                    value={reportCount}
+                    onChange={(event) => updateReports(event.target.value)}
+                    className="h-12 w-24 rounded-full border border-purple-200/25 bg-black/40 text-center text-lg text-bone outline-none focus:border-purple-100/70"
+                    aria-label="Relationship report count"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateReports(reportCount + 1)}
+                    className="grid h-11 w-11 place-items-center rounded-full border border-white/12 bg-white/[0.045] text-2xl text-bone transition hover:border-purple-200/50"
+                    aria-label="Increase reports"
+                  >
+                    +
+                  </button>
                 </div>
-                <div className="rounded-[26px] border border-pink-200/18 bg-black/24 p-4">
-                  <p className="serif-title text-5xl leading-none text-bone">{plan.chats}</p>
-                  <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Bestie Chats</p>
-                </div>
               </div>
-              <p className="relative mt-5 rounded-2xl border border-white/10 bg-white/[0.045] p-4 text-sm leading-7 text-smoke">{plan.note}</p>
-              <div className="relative mt-5 space-y-2">
-                {plan.features.map((feature) => (
-                  <div key={feature} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-smoke">
-                    <span className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-200 via-pink-200 to-orange-200" />
-                    <span>{feature}</span>
-                  </div>
+              <input
+                type="range"
+                min={MIN_REPORTS}
+                max={MAX_REPORTS}
+                value={reportCount}
+                onChange={(event) => updateReports(event.target.value)}
+                className="mt-7 w-full accent-purple-300"
+                aria-label="Relationship report slider"
+              />
+              <div className="mt-4 flex justify-between font-mono text-[0.65rem] uppercase tracking-[0.12em] text-ash">
+                <span>1 report</span>
+                <span>50 reports</span>
+              </div>
+              <div className="mt-5 grid gap-2 sm:grid-cols-4">
+                {[
+                  [1, 'Quick read'],
+                  [3, 'Compare patterns'],
+                  [5, 'Ongoing situation'],
+                  [10, 'Deep archive'],
+                ].map(([count, label]) => (
+                  <button
+                    key={count}
+                    type="button"
+                    onClick={() => updateReports(count)}
+                    className={`rounded-2xl border px-3 py-3 text-left transition ${reportCount === count ? 'border-purple-200/55 bg-purple-300/12 text-bone' : 'border-white/10 bg-white/[0.035] text-smoke hover:border-purple-200/35 hover:text-bone'}`}
+                  >
+                    <span className="block font-mono text-[0.62rem] uppercase tracking-[0.12em]">{label}</span>
+                    <span className="mt-1 block text-xs text-ash">{count} report{count > 1 ? 's' : ''}</span>
+                  </button>
                 ))}
               </div>
-              <p className="relative mt-6 text-2xl text-bone">{plan.price}</p>
-              <button onClick={() => setMessage(`${plan.name} selected. Secure checkout is coming soon, and top-up selection is saved for this session.`)} className="glass-button mt-7 w-full rounded-full px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
-                {plan.cta}
-              </button>
-            </article>
-          ))}
+            </div>
+
+            <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-[26px] border border-purple-200/18 bg-black/24 p-5">
+                <p className="serif-title text-5xl leading-none text-bone">{reportCount}</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Relationship Reports</p>
+              </div>
+              <div className="rounded-[26px] border border-pink-200/18 bg-black/24 p-5">
+                <p className="serif-title text-5xl leading-none text-bone">{bestieChats}</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Bestie Chats</p>
+              </div>
+              <div className="rounded-[26px] border border-orange-200/20 bg-orange-300/[0.055] p-5">
+                <p className="serif-title text-5xl leading-none text-bone">₹{formatInr(totalPrice)}</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Total</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCheckout}
+              className="glass-button relative mt-8 w-full rounded-full px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone"
+            >
+              Continue with ₹{formatInr(totalPrice)}
+            </button>
+            <p className="relative mt-4 text-center text-sm leading-7 text-smoke">
+              Pay only for what you need. Top up anytime when your reports or Bestie Chats run out.
+            </p>
+          </article>
+
+          <aside className="thin-panel rounded-[34px] p-6 sm:p-8">
+            <p className="tech-label text-blue-200">How it works</p>
+            <div className="mt-6 space-y-4">
+              {[
+                ['1', 'Choose the number of reports you want.'],
+                ['2', 'Bestie Chats are added automatically in multiples of 10.'],
+                ['3', 'Use reports to analyse conversations.'],
+                ['4', 'Use Bestie Chats to ask follow-up questions about your relationship.'],
+              ].map(([step, copy]) => (
+                <div key={step} className="flex gap-4 rounded-[24px] border border-white/10 bg-white/[0.035] p-4">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-purple-200/25 bg-purple-300/10 font-mono text-xs text-bone">{step}</span>
+                  <p className="text-sm leading-7 text-smoke">{copy}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 rounded-[26px] border border-orange-200/18 bg-orange-300/[0.055] p-5">
+              <p className="tech-label text-orange-100">Live summary</p>
+              <p className="mt-4 text-sm leading-7 text-smoke">
+                {reportCount} Relationship Reports + {bestieChats} Bestie Chats for ₹{formatInr(totalPrice)}.
+              </p>
+            </div>
+            <div className="mt-5 grid gap-3">
+              {[
+                ['What you get', 'Fresh relationship reports for new conversations, plus Bestie follow-ups to unpack the confusing parts.'],
+                ['Smart usage', 'Opening old reports does not use credits. Duplicate cached reports do not use credits.'],
+                ['Credit safety', 'Failed report generation or failed Bestie replies do not reduce your balance.'],
+              ].map(([label, copy]) => (
+                <div key={label} className="rounded-[24px] border border-white/10 bg-black/18 p-4">
+                  <p className="tech-label text-ash">{label}</p>
+                  <p className="mt-3 text-sm leading-7 text-smoke">{copy}</p>
+                </div>
+              ))}
+            </div>
+          </aside>
         </div>
 
-        <div className="mt-8 thin-panel overflow-hidden rounded-[28px] p-5">
-          <p className="tech-label text-blue-200">Pack comparison</p>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            {[
-              ['Relationship Reports', 'Use these when you want a fresh full read of a conversation. Cached or old reports do not use credits.'],
-              ['Bestie Chats', 'Use these when you want advice, reply help, or a calmer read on what is happening.'],
-              ['ThirdPerson POV depth', 'Pick the deeper pack when the relationship is ongoing and you know you will want follow-up guidance.'],
-            ].map(([label, copy]) => (
-              <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <p className="tech-label text-ash">{label}</p>
-                <p className="mt-3 text-sm leading-7 text-smoke">{copy}</p>
-              </div>
-            ))}
-          </div>
-        </div>
         {message && <p className="mt-5 rounded-2xl border border-purple-200/20 bg-purple-300/[0.06] p-4 text-sm text-smoke">{message}</p>}
       </div>
+
+      {modalOpen && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 px-4 backdrop-blur">
+          <div className="accent-panel max-w-lg rounded-[34px] p-7 text-center">
+            <p className="tech-label text-purple-100">Top up selected</p>
+            <h3 className="serif-title mt-4 text-4xl leading-tight">Checkout connection is being prepared.</h3>
+            <p className="mt-5 text-sm leading-7 text-smoke">
+              Your selected clarity pack is ready: {reportCount} Relationship Reports and {bestieChats} Bestie Chats for ₹{formatInr(totalPrice)}.
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {isLocalTesting && testPackId && (
+                <button type="button" onClick={activateLocalTestCredits} className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
+                  Activate test credits
+                </button>
+              )}
+              <button type="button" onClick={() => setModalOpen(false)} className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-smoke">
+                Close
+              </button>
+            </div>
+            {isLocalTesting && !testPackId && (
+              <p className="mt-4 text-xs leading-6 text-ash">Local test activation currently supports 5 or 10 reports.</p>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -1,21 +1,54 @@
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts';
+import { buildBestiePrompt, messagesForChatCompletions } from '../_shared/promptBuilder.ts';
 import { consumeCredit, createAdminClient, getAuthenticatedUser, getCreditBalance, logBlockedCredit } from '../_shared/usage.ts';
 
-function safeBestieReply(message: string, context: Record<string, any>) {
-  const personName = context?.personName || 'them';
-  return [
-    `Bestie, based on the reports for ${personName}, I would read this gently and not as proof.`,
-    `What stands out is: ${context?.latestSummary || 'the relationship seems to have mixed clarity and emotional signals.'}`,
-    `If you reply, keep it calm and direct. Ask for clarity without chasing, blaming, or trying to control the outcome.`,
-    `A good next step could be: “I want to understand where we stand, because mixed signals are making this harder for me.”`,
-  ].join('\n\n');
+function supportsCustomTemperature(model: string) {
+  return !model.startsWith('gpt-5');
+}
+
+function parseBestieText(text: string) {
+  try {
+    const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
+    const parsed = JSON.parse(cleaned);
+    return [
+      parsed.quickTake && `Quick take: ${parsed.quickTake}`,
+      parsed.answer,
+      parsed.whatThisMayMean && `What this may mean: ${parsed.whatThisMayMean}`,
+      parsed.whatToDoNext && `What to do next: ${parsed.whatToDoNext}`,
+      parsed.whatNotToIgnore && `Do not ignore: ${parsed.whatNotToIgnore}`,
+      parsed.gentleRealityCheck && `Gentle reality check: ${parsed.gentleRealityCheck}`,
+    ].filter(Boolean).join('\n\n') || text;
+  } catch {
+    return text;
+  }
 }
 
 async function openAiBestieReply(message: string, context: Record<string, any>, body: Record<string, any>) {
   const apiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!apiKey) return null;
+  if (!apiKey) throw new Error('OPENAI_API_KEY_MISSING');
+  const model = Deno.env.get('OPENAI_BESTIE_MODEL') || 'gpt-5-nano';
   const system = Deno.env.get('THIRDPERSON_BESTIE_SYSTEM_PROMPT')
-    || 'Reply as a safe, caring relationship clarity companion. Be gentle, concise, and never claim certainty.';
+    || 'Reply as a safe, caring relationship clarity companion. Be gentle, concise, and never claim certainty. Answer concisely unless the user asks for a detailed explanation.';
+  const promptBundle = buildBestiePrompt({
+    basePromptTemplate: system,
+    userQuestion: message,
+    relationshipType: body.relationshipType,
+    otherPersonName: body.otherPersonName,
+    languageProfile: body.languageProfile || {
+      dominantLanguage: body.detectedLanguageStyle,
+      languagesUsed: body.userProfile?.preferredAnalysisLanguages || [],
+      recommendedOutputStyle: body.detectedLanguageStyle,
+    },
+    analysisChainSummary: context?.analysisChainSummary || context?.latestSummary || context?.reportSummaryForFutureUse?.compressedSummary || '',
+    latestReportSummary: {
+      summary: context?.latestSummary || '',
+      bestieContextSummary: context?.bestieContextSummary || {},
+      relevantRedFlags: context?.repeatedRedFlags || [],
+      relevantGreenFlags: context?.repeatedGreenFlags || [],
+      importantMoments: context?.turningPoints || context?.reportSummaryForFutureUse?.importantMoments || [],
+    },
+    personalityCardSummary: context?.personalitySnapshot || context?.mainUserPersonalitySignals || {},
+  });
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -23,27 +56,20 @@ async function openAiBestieReply(message: string, context: Record<string, any>, 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: Deno.env.get('OPENAI_BESTIE_MODEL') || 'gpt-5-nano',
-      messages: [
-        { role: 'system', content: system },
-        {
-          role: 'user',
-          content: JSON.stringify({
-            question: message,
-            relationshipType: body.relationshipType,
-            otherPersonName: body.otherPersonName,
-            detectedLanguageStyle: body.detectedLanguageStyle,
-            userProfile: body.userProfile,
-            analysisChainContext: context,
-          }),
-        },
-      ],
-      temperature: 0.7,
+      model,
+      messages: messagesForChatCompletions(promptBundle),
+      response_format: { type: 'json_object' },
+      ...(supportsCustomTemperature(model) ? { temperature: 0.7 } : {}),
     }),
   });
-  if (!response.ok) return null;
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`OPENAI_BESTIE_HTTP_${response.status}:${detail.slice(0, 160)}`);
+  }
   const data = await response.json();
-  return data.choices?.[0]?.message?.content || null;
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error('OPENAI_BESTIE_EMPTY_RESPONSE');
+  return parseBestieText(text);
 }
 
 Deno.serve(async (req: Request) => {
@@ -69,8 +95,29 @@ Deno.serve(async (req: Request) => {
       }, 402);
     }
 
-    const text = await openAiBestieReply(userMessage, analysisChainContext || {}, body).catch(() => null)
-      || safeBestieReply(userMessage, analysisChainContext || {});
+    let text: string;
+    try {
+      text = await openAiBestieReply(userMessage, analysisChainContext || {}, body);
+    } catch (openAiError) {
+      await admin.from('ai_usage_logs').insert({
+        user_id: user.id,
+        action: 'ai_bestie_chat',
+        provider: 'openai',
+        status: 'error',
+        metadata: {
+          chainId,
+          stage: 'openai_bestie_reply',
+          reason: openAiError instanceof Error ? openAiError.message.slice(0, 220) : 'unknown',
+          promptTemplateVersion: 'bestie_chat_v1',
+          relationshipType: body.relationshipType,
+          detectedLanguageStyle: body.detectedLanguageStyle,
+        },
+      });
+      return jsonResponse({
+        code: 'AI_PROVIDER_UNAVAILABLE',
+        error: 'Bestie could not connect to the AI provider. No Bestie Chat credit was used. Please check server configuration and try again.',
+      }, 503);
+    }
 
     const { data: userMessageRecord, error: userMessageError } = await admin.from('bestie_messages').insert({
       user_id: user.id,
@@ -121,9 +168,16 @@ Deno.serve(async (req: Request) => {
     await admin.from('ai_usage_logs').insert({
       user_id: user.id,
       action: 'ai_bestie_chat',
-      provider: Deno.env.get('OPENAI_API_KEY') ? 'openai' : 'local_fallback',
+      provider: 'openai',
       status: 'success',
-      metadata: { chainId, messageId: assistantMessage?.id, remainingCredits: credit.remaining },
+      metadata: {
+        chainId,
+        messageId: assistantMessage?.id,
+        remainingCredits: credit.remaining,
+        promptTemplateVersion: 'bestie_chat_v1',
+        relationshipType: body.relationshipType,
+        detectedLanguageStyle: body.detectedLanguageStyle,
+      },
     });
 
     return jsonResponse({ text, message: assistantMessage, remainingCredits: credit.remaining });

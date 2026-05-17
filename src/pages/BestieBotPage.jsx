@@ -121,6 +121,7 @@ export default function BestieBotPage({ chainId }) {
       analysisChainContext: context,
       userProfile,
       detectedLanguageStyle: context.languageStyle,
+      languageProfile: context.languageProfile,
       relationshipType: context.relationshipType,
       otherPersonName: context.personName,
     }).catch((error) => {
@@ -191,6 +192,9 @@ export default function BestieBotPage({ chainId }) {
               </div>
               <p className="mt-4 max-w-3xl text-sm leading-7 text-smoke">
                 Bestie is here. Ask me anything about this relationship — what changed, what feels confusing, what to reply, or what you may need to stop ignoring.
+              </p>
+              <p className="mt-3 max-w-3xl rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-xs leading-6 text-ash">
+                Bestie uses your report summaries, personality signals, and important moments for faster replies.
               </p>
             </div>
             <button onClick={() => navigate('/reports')} className="glass-button px-4 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Back to reports</button>

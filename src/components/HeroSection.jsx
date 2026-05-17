@@ -1,11 +1,21 @@
 import ParticleBackground from './ParticleBackground.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
+import { SiImessage, SiInstagram, SiMessenger, SiSnapchat, SiTelegram, SiWhatsapp } from 'react-icons/si';
+
+const messagingApps = [
+  ['WhatsApp', SiWhatsapp, '#25D366'],
+  ['iMessage', SiImessage, '#34C759'],
+  ['Instagram', SiInstagram, '#E4405F'],
+  ['Telegram', SiTelegram, '#26A5E4'],
+  ['Messenger', SiMessenger, '#00B2FF'],
+  ['Snapchat', SiSnapchat, '#FFFC00'],
+];
 
 export default function HeroSection() {
   const { navigate } = useRouter();
   return (
     <section className="relative min-h-[92vh] overflow-hidden border-b border-white/12 px-4 pt-28 sm:px-8">
-      <ParticleBackground />
+      <ParticleBackground showAxis={false} />
       <div className="corner-frame noise relative mx-auto flex min-h-[76vh] max-w-[1540px] flex-col items-center justify-center border border-white/15 px-4 py-20 text-center shadow-glow sm:px-8">
         <div className="absolute left-8 top-24 hidden text-left lg:block">
           <p className="tech-label decorative-label mb-28">▪ Observing conversations</p>
@@ -32,13 +42,21 @@ export default function HeroSection() {
           <span className="font-mono text-xs tracking-wide">Start a conversation analysis</span>
           <span className="ml-5 border-l border-white/15 pl-5 text-2xl">→</span>
         </button>
-        <p className="mt-5 text-sm text-smoke">Works with English, Hindi, and Hinglish conversations.</p>
-        <div className="mt-7 flex flex-wrap justify-center gap-3">
-          {['Private by design', 'Chats treated as sensitive data', 'AI insights, not final judgments', 'Built for reflection'].map((item) => (
-            <span key={item} className="border border-purple-300/15 bg-purple-300/5 px-3 py-2 font-mono text-[0.62rem] uppercase tracking-[0.13em] text-smoke">
-              {item}
-            </span>
-          ))}
+        <div className="mt-5 text-center">
+          <p className="text-sm text-smoke">No credit card · One-click Google signup · Your data stays private</p>
+          <p className="tech-label mt-5 text-purple-100/75">Works with</p>
+          <div className="mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-3">
+            {messagingApps.map(([name, Icon, color]) => (
+              <span
+                key={name}
+                title={name}
+                aria-label={name}
+                className="grid h-12 w-12 place-items-center rounded-full bg-transparent transition hover:-translate-y-1 hover:bg-white/[0.045] sm:h-14 sm:w-14"
+              >
+                <Icon className="text-2xl sm:text-3xl" style={{ color }} aria-hidden="true" />
+              </span>
+            ))}
+          </div>
         </div>
         <div className="absolute bottom-6 left-7 right-7 hidden items-center justify-between text-smoke/70 sm:flex">
           <p className="tech-label decorative-label">● Private by design</p>

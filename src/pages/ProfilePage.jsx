@@ -4,6 +4,7 @@ import { emptyProfile, getInitials, getUserProfile, saveUserProfile } from '../l
 import { fetchRemoteProfile, remoteProfileToLocal, upsertRemoteProfile } from '../lib/supabaseDataService.js';
 import { getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
 import { useAuth } from '../state/AuthContext.jsx';
+import { supportedAnalysisLanguages } from '../lib/languages.js';
 
 const identityOptions = ['Female', 'Male', 'Transgender', 'Non-binary', 'Other', 'Prefer not to say'];
 
@@ -47,6 +48,15 @@ export default function ProfilePage() {
 
   function update(field, value) {
     setProfile((current) => ({ ...current, [field]: value }));
+  }
+
+  function toggleLanguage(language) {
+    setProfile((current) => {
+      const selected = new Set(current.preferredAnalysisLanguages || []);
+      if (selected.has(language)) selected.delete(language);
+      else selected.add(language);
+      return { ...current, preferredAnalysisLanguages: [...selected] };
+    });
   }
 
   async function handleImage(event) {
@@ -97,9 +107,8 @@ export default function ProfilePage() {
               ['Last name', 'lastName', 'text'],
               ['Email', 'email', 'email'],
               ['Date of birth', 'dateOfBirth', 'date'],
-              ['Preferred language/tone', 'preferredLanguageTone', 'text'],
             ].map(([label, field, type]) => (
-              <label key={field} className={field === 'preferredLanguageTone' ? 'sm:col-span-2' : ''}>
+              <label key={field}>
                 <span className="tech-label text-ash">{label}</span>
                 <input
                   type={type}
@@ -116,6 +125,30 @@ export default function ProfilePage() {
                 {identityOptions.map((option) => <option key={option}>{option}</option>)}
               </select>
             </label>
+            <div className="sm:col-span-2 rounded-[28px] border border-white/10 bg-white/[0.035] p-5">
+              <p className="tech-label text-purple-100">Preferred analysis languages</p>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-smoke">
+                Select the languages that commonly appear in your conversations. ThirdPerson AI will try to match the tone and language style in your reports and Bestie replies.
+              </p>
+              <div className="mt-5 flex max-h-72 flex-wrap gap-2 overflow-y-auto pr-1">
+                {supportedAnalysisLanguages.map((language) => {
+                  const active = profile.preferredAnalysisLanguages?.includes(language);
+                  return (
+                    <button
+                      key={language}
+                      type="button"
+                      onClick={() => toggleLanguage(language)}
+                      className={`rounded-full border px-3 py-2 font-mono text-[0.65rem] uppercase tracking-[0.11em] transition ${active ? 'border-purple-200/60 bg-purple-300/15 text-bone' : 'border-white/10 bg-black/25 text-ash hover:border-purple-200/40 hover:text-bone'}`}
+                    >
+                      {language}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-4 text-xs leading-6 text-ash">
+                Selected: {(profile.preferredAnalysisLanguages || []).join(', ') || 'None yet'}
+              </p>
+            </div>
             <label className="sm:col-span-2 flex cursor-pointer flex-col border border-dashed border-white/18 bg-black/35 p-5 transition hover:border-purple-200/50">
               <span className="tech-label text-smoke">Profile image</span>
               <span className="mt-3 text-sm text-ash">Upload JPG, PNG, or WebP under 2MB.</span>

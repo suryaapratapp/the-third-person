@@ -31,6 +31,9 @@ export function buildReportRecord({ analysis, preparedConversation, userId }) {
     summary: analysis?.summary || {},
     analysis_json: analysis || {},
     prepared_conversation: preparedConversation || {},
+    bestie_context_summary: analysis?.bestieContextSummary || {},
+    report_summary_for_future_use: analysis?.reportSummaryForFutureUse || {},
+    main_user_personality_signals: analysis?.mainUserPersonalitySignals || {},
   };
 }
 
@@ -49,6 +52,9 @@ export function rowToReport(row) {
     messageCount: row.message_count || 0,
     analysisJson: row.analysis_json || {},
     preparedConversation: row.prepared_conversation || {},
+    bestieContextSummary: row.bestie_context_summary || row.analysis_json?.bestieContextSummary || {},
+    reportSummaryForFutureUse: row.report_summary_for_future_use || row.analysis_json?.reportSummaryForFutureUse || {},
+    mainUserPersonalitySignals: row.main_user_personality_signals || row.analysis_json?.mainUserPersonalitySignals || {},
     chainId: row.chain_id,
   };
 }
@@ -64,6 +70,20 @@ export async function fetchRelationshipReports() {
     return getReports();
   }
   return (data || []).map(rowToReport);
+}
+
+export async function fetchRelationshipReportById(reportId) {
+  if (!reportId) return null;
+  if (!isSupabaseConfigured || !supabase) {
+    return getReports().find((report) => report.analysisId === reportId) || null;
+  }
+  const { data, error } = await supabase
+    .from('relationship_reports')
+    .select('*')
+    .eq('id', reportId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return rowToReport(data);
 }
 
 export async function saveRelationshipReportToSupabase({ analysis, preparedConversation }) {
@@ -82,6 +102,29 @@ export async function saveRelationshipReportToSupabase({ analysis, preparedConve
     return saveAnalysisReport({ analysis, preparedConversation });
   }
   return rowToReport(data);
+}
+
+export async function upsertPersonalityMemoryFromAnalysis({ analysis, reportId }) {
+  if (!isSupabaseConfigured || !supabase || !analysis) return null;
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
+  if (!userId) return null;
+  const personality = analysis.personalityCardUpdate || analysis.personalitySnapshot || null;
+  if (!personality && !analysis.mainUserPersonalitySignals) return null;
+  const { data, error } = await supabase
+    .from('user_personality')
+    .upsert({
+      user_id: userId,
+      personality_json: personality || {},
+      emotional_life_story: analysis.personalityCardUpdate?.emotionalLifeStory || {},
+      recurring_words: analysis.mainUserPersonalitySignals?.topWords || analysis.personalitySnapshot?.recurringWords || [],
+      generated_from_report_ids: reportId ? [reportId] : [],
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
+    .select('*')
+    .single();
+  if (error) return null;
+  return data;
 }
 
 export async function fetchRemoteProfile() {
@@ -105,6 +148,7 @@ export async function upsertRemoteProfile(profile) {
     date_of_birth: profile.dateOfBirth || null,
     zodiac_sign: profile.zodiacSign || null,
     preferred_language_tone: profile.preferredLanguageTone || null,
+    preferred_analysis_languages: Array.isArray(profile.preferredAnalysisLanguages) ? profile.preferredAnalysisLanguages : [],
     avatar_url: profile.profileImage || null,
   };
   const { data, error } = await supabase.from('profiles').upsert(payload).select('*').single();
@@ -121,6 +165,17 @@ export function remoteProfileToLocal(row) {
     genderIdentity: row.gender_identity || 'Prefer not to say',
     dateOfBirth: row.date_of_birth || '',
     preferredLanguageTone: row.preferred_language_tone || 'Warm Hinglish / English',
+    preferredAnalysisLanguages: row.preferred_analysis_languages || [],
     profileImage: row.avatar_url || '',
   };
+}
+
+export async function fetchRemotePersonality() {
+  if (!isSupabaseConfigured || !supabase) return null;
+  const { data, error } = await supabase
+    .from('user_personality')
+    .select('*')
+    .maybeSingle();
+  if (error) return null;
+  return data;
 }

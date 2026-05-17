@@ -1,3 +1,6 @@
+import { detectConversationLanguageProfile } from './languageDetection.js';
+import { buildAnalysisPipeline, cleanConversationLine, isConversationNoise } from './analysisPipeline.js';
+
 const emotionalKeywords = [
   'love', 'miss', 'sorry', 'hurt', 'angry', 'fine', 'okay', 'alone', 'tired', 'busy',
   'trust', 'breakup', 'fight', 'confused', 'care', 'ignored', 'always', 'never',
@@ -90,6 +93,8 @@ function parseTimestampedLine(line, platform, id) {
     const match = line.match(pattern.regex);
     if (!match) continue;
     const [, date, time, sender, message] = match;
+    const cleanedMessage = cleanConversationLine(message);
+    if (isConversationNoise(cleanedMessage)) return null;
     let timestamp = null;
     if (pattern.iso) timestamp = new Date(`${date}T${time}`);
     else {
@@ -105,7 +110,7 @@ function parseTimestampedLine(line, platform, id) {
       time,
       timestamp: timestamp ? timestamp.toISOString() : null,
       sender: sender.trim(),
-      message: message.trim(),
+      message: cleanedMessage,
       platform,
       dayPeriod: hour === null ? 'Unknown' : classifyPeriod(hour),
       monthKey: formatMonthKey(timestamp, Math.floor(id / 20)),
@@ -125,6 +130,59 @@ function countMatches(messages, words, period) {
       const lower = item.message.toLowerCase();
       return sum + words.reduce((wordSum, word) => wordSum + (lower.includes(word) ? 1 : 0), 0);
     }, 0);
+}
+
+function signalSummary(messages, words, label) {
+  const hits = [];
+  messages.forEach((message) => {
+    const lower = message.message.toLowerCase();
+    const matched = words.filter((word) => lower.includes(word));
+    if (!matched.length) return;
+    hits.push({
+      period: message.monthKey,
+      sender: message.sender,
+      signalType: label,
+      matchedWords: matched.slice(0, 4),
+      quote: message.message.slice(0, 220),
+    });
+  });
+  return {
+    count: hits.length,
+    moments: hits.slice(0, 12),
+  };
+}
+
+function compactMessage(message) {
+  if (!message) return null;
+  return {
+    date: message.date,
+    time: message.time,
+    period: message.monthKey,
+    sender: message.sender,
+    message: message.message,
+    dayPeriod: message.dayPeriod,
+    languageGuess: message.languageGuess,
+    emotionalTags: message.emotionalTags,
+  };
+}
+
+function replyGaps(messages) {
+  const gaps = [];
+  for (let index = 1; index < messages.length; index += 1) {
+    const previous = messages[index - 1];
+    const current = messages[index];
+    if (!previous.timestamp || !current.timestamp || previous.sender === current.sender) continue;
+    const minutes = Math.round((new Date(current.timestamp).getTime() - new Date(previous.timestamp).getTime()) / 60000);
+    if (!Number.isFinite(minutes) || minutes < 30) continue;
+    gaps.push({
+      from: previous.sender,
+      to: current.sender,
+      minutes,
+      period: current.monthKey,
+      replyPreview: current.message.slice(0, 180),
+    });
+  }
+  return gaps.sort((a, b) => b.minutes - a.minutes).slice(0, 10);
 }
 
 function buildDayNightBreakdown(messages) {
@@ -181,7 +239,9 @@ export function parseConversationText(rawText = '', platform = 'Unknown') {
     }
     if (messages.length && !/^\[?\d{1,4}[/-]\d{1,2}[/-]\d{1,4}/.test(line)) {
       const previous = messages[messages.length - 1];
-      previous.message = `${previous.message}\n${line}`.trim();
+      const cleanedLine = cleanConversationLine(line);
+      if (isConversationNoise(cleanedLine)) return;
+      previous.message = `${previous.message}\n${cleanedLine}`.trim();
       previous.rawLine = `${previous.rawLine}\n${rawLine}`;
       previous.languageGuess = languageGuess(previous.message);
       previous.emotionalTags = emotionalTags(previous.message);
@@ -191,7 +251,7 @@ export function parseConversationText(rawText = '', platform = 'Unknown') {
   });
 
   if (!messages.length) {
-    const chunks = String(rawText).split(/[.!?]\s+|\n+/).map((item) => item.trim()).filter(Boolean);
+    const chunks = String(rawText).split(/[.!?]\s+|\n+/).map((item) => cleanConversationLine(item)).filter((item) => item && !isConversationNoise(item));
     chunks.forEach((message, index) => {
       messages.push({
         id: index + 1,
@@ -267,7 +327,13 @@ function compress(messages, importantMoments) {
 }
 
 export function prepareConversationForAnalysis(rawText = '', options = {}) {
-  const cleanRaw = String(rawText).replace(/<\/?UNTRUSTED_CHAT_DATA>/g, '').trim();
+  const cleanRaw = String(rawText)
+    .replace(/<\/?UNTRUSTED_CHAT_DATA>/g, '')
+    .split(/\r?\n/)
+    .map((line) => cleanConversationLine(line))
+    .filter((line) => line && !isConversationNoise(line))
+    .join('\n')
+    .trim();
   const parsedConversation = parseConversationText(cleanRaw, options.platform || 'Unknown platform');
   const messages = parsedConversation.messages;
   const phaseSize = Math.max(1, Math.ceil(messages.length / 6));
@@ -293,8 +359,11 @@ export function prepareConversationForAnalysis(rawText = '', options = {}) {
   if (messages.length < 10) warningFlags.push('Small sample size; insights should be treated as directional.');
   if (parsedConversation.parseConfidence === 'low') warningFlags.push('Conversation structure was estimated from limited formatting.');
   if (parsedConversation.participants.length < 2) warningFlags.push('Participant names were estimated from limited structure.');
+  const languageProfile = detectConversationLanguageProfile(messages);
+  const affectionSignals = signalSummary(messages, warmthSignals, 'affection');
+  const conflictSignals = signalSummary(messages, tensionSignals, 'conflict');
 
-  return {
+  const prepared = {
     metadata: {
       platform: options.platform || 'Unknown platform',
       relationshipType: options.relationshipType || 'Unknown relationship',
@@ -313,9 +382,20 @@ export function prepareConversationForAnalysis(rawText = '', options = {}) {
     warningFlags,
     monthlyBreakdown: parsedConversation.monthlyBreakdown.slice(0, 12),
     dailyNightBreakdown: parsedConversation.dailyNightBreakdown,
+    languageProfile,
+    languageStyle: languageProfile.recommendedOutputStyle,
+    detectedLanguages: languageProfile.languagesUsed,
+    dominantLanguage: languageProfile.dominantLanguage,
+    affectionSignals,
+    conflictSignals,
+    firstMessages: messages.slice(0, 10).map(compactMessage).filter(Boolean),
+    lastMessages: messages.slice(-10).map(compactMessage).filter(Boolean),
+    replyGaps: replyGaps(messages),
     parseConfidence: parsedConversation.parseConfidence,
     importantMoments,
     topWords: topWordsFrom(messages),
     parsedMessages: messages,
   };
+  prepared.analysisPipeline = buildAnalysisPipeline(prepared);
+  return prepared;
 }

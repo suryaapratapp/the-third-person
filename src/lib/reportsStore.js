@@ -39,6 +39,9 @@ export function saveAnalysisReport({ analysis, preparedConversation }) {
     messageCount: preparedConversation?.messageCount || 0,
     analysisJson: analysis,
     preparedConversation,
+    bestieContextSummary: analysis.bestieContextSummary || {},
+    reportSummaryForFutureUse: analysis.reportSummaryForFutureUse || {},
+    mainUserPersonalitySignals: analysis.mainUserPersonalitySignals || {},
     chainId,
   };
   const reports = readReports().filter((item) => item.analysisId !== report.analysisId);
@@ -90,12 +93,18 @@ export function buildAnalysisChainContext(chain) {
     turningPoints,
     dayNightDynamics: latest.analysisJson?.dayNightDynamics,
     personalitySnapshot: latest.analysisJson?.personalitySnapshot,
+    bestieContextSummary: latest.bestieContextSummary || latest.analysisJson?.bestieContextSummary,
+    reportSummaryForFutureUse: latest.reportSummaryForFutureUse || latest.analysisJson?.reportSummaryForFutureUse,
+    mainUserPersonalitySignals: latest.mainUserPersonalitySignals || latest.analysisJson?.mainUserPersonalitySignals,
     energyMatch: latest.analysisJson?.energyMatchScore,
     mixedSignals: latest.analysisJson?.mixedSignalsMap,
     zodiacCompatibility: latest.analysisJson?.zodiacCompatibility || latest.preparedConversation?.metadata?.zodiacCompatibility,
     participants: latest.participants,
     messageCount: sorted.reduce((sum, report) => sum + (report.messageCount || 0), 0),
-    languageStyle: latest.preparedConversation?.topWords?.some((item) => /hai|nahi|kyu|haan|yaar|mat|kar/i.test(item.word)) ? 'Hinglish / Indian English' : 'English',
+    languageProfile: latest.preparedConversation?.languageProfile || latest.analysisJson?.detectedLanguageStyle || null,
+    languageStyle: latest.preparedConversation?.languageProfile?.recommendedOutputStyle
+      || latest.analysisJson?.detectedLanguageStyle?.recommendedOutputStyle
+      || (latest.preparedConversation?.topWords?.some((item) => /hai|nahi|kyu|haan|yaar|mat|kar/i.test(item.word)) ? 'Hinglish / Indian English' : 'English'),
     compressedReports: sorted.map((report) => ({
       dateAnalysed: report.dateAnalysed,
       dateRange: report.dateRange,
@@ -105,6 +114,8 @@ export function buildAnalysisChainContext(chain) {
       summary: report.analysisJson?.summary,
       advice: report.analysisJson?.advice,
       bestieBreakdown: report.analysisJson?.bestieBreakdown,
+      bestieContextSummary: report.bestieContextSummary || report.analysisJson?.bestieContextSummary,
+      reportSummaryForFutureUse: report.reportSummaryForFutureUse || report.analysisJson?.reportSummaryForFutureUse,
       redFlags: (report.analysisJson?.improvedRedFlags || report.analysisJson?.redFlags || []).slice(0, 4),
       greenFlags: (report.analysisJson?.improvedGreenFlags || report.analysisJson?.greenFlags || []).slice(0, 4),
     })),

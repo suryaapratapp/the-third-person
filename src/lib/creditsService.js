@@ -63,3 +63,16 @@ export async function fetchUsageEntitlements() {
     freeAnalysesRemaining: Math.max(2 - freeAnalysesUsed, 0),
   };
 }
+
+export async function claimPayAsYouGoPack(packId) {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error('Please configure Supabase before adding credits.');
+  }
+  const { data, error } = await supabase.rpc('claim_test_credit_pack', {
+    p_pack_id: packId,
+  });
+  if (error) {
+    throw new Error(error.message || 'We could not add this pack right now.');
+  }
+  return data;
+}

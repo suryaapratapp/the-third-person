@@ -24,8 +24,7 @@ export async function generateRelationshipReportViaSupabase(payload) {
   });
   if (error) {
     const normalized = await normalizeFunctionError(error, 'Relationship intelligence could not be generated.');
-    if (normalized.code === 'OUT_OF_CREDITS') throw normalized;
-    return null;
+    throw normalized;
   }
   return data || null;
 }
@@ -37,8 +36,7 @@ export async function askBestieViaSupabase(payload) {
   });
   if (error) {
     const normalized = await normalizeFunctionError(error, 'Bestie could not reply right now.');
-    if (normalized.code === 'OUT_OF_CREDITS') throw normalized;
-    return null;
+    throw normalized;
   }
   return data || null;
 }
@@ -50,8 +48,7 @@ export async function generatePersonalityCardViaSupabase(payload) {
   });
   if (error) {
     const normalized = await normalizeFunctionError(error, 'Personality Card could not be generated.');
-    if (normalized.code === 'OUT_OF_CREDITS') throw normalized;
-    return null;
+    throw normalized;
   }
   return data || null;
 }

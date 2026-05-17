@@ -1,3 +1,5 @@
+import { defaultAnalysisLanguages } from './languages.js';
+
 const PROFILE_KEY = 'thirdperson_user_profile_v1';
 
 export const emptyProfile = {
@@ -7,6 +9,7 @@ export const emptyProfile = {
   genderIdentity: 'Prefer not to say',
   dateOfBirth: '',
   preferredLanguageTone: 'Warm Hinglish / English',
+  preferredAnalysisLanguages: defaultAnalysisLanguages,
   profileImage: '',
 };
 

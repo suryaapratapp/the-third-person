@@ -73,7 +73,8 @@ const CACHE_KEY = 'thirdperson_analysis_cache_v1';
 
 export function getAnalysisCache() {
   try {
-    return JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
+    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
+    return Array.isArray(cache) ? cache.filter((item) => item?.reportId) : [];
   } catch {
     return [];
   }
@@ -93,8 +94,15 @@ export function findCachedAnalysis(fingerprintData) {
   ));
 }
 
-export function saveCachedAnalysis(fingerprintData, payload) {
+export function saveCachedAnalysis(fingerprintData, { reportId } = {}) {
+  if (!reportId) return;
   const cache = getAnalysisCache().filter((item) => item.fingerprint !== fingerprintData.fingerprint);
-  cache.unshift({ ...fingerprintData, ...payload, savedAt: new Date().toISOString() });
+  cache.unshift({ ...fingerprintData, reportId, savedAt: new Date().toISOString() });
   localStorage.setItem(CACHE_KEY, JSON.stringify(cache.slice(0, 50)));
+}
+
+export function removeCachedAnalysis(fingerprint) {
+  if (!fingerprint) return;
+  const cache = getAnalysisCache().filter((item) => item.fingerprint !== fingerprint);
+  localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
 }

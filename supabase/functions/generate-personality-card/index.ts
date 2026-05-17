@@ -1,9 +1,14 @@
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts';
+import { buildPersonalityCardPrompt, messagesForChatCompletions } from '../_shared/promptBuilder.ts';
 import { createAdminClient, getAuthenticatedUser } from '../_shared/usage.ts';
 
 function parseJsonText(text: string) {
   const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
   return JSON.parse(cleaned);
+}
+
+function supportsCustomTemperature(model: string) {
+  return !model.startsWith('gpt-5');
 }
 
 async function hasPaidPack(admin: ReturnType<typeof createAdminClient>, userId: string) {
@@ -21,8 +26,46 @@ async function hasPaidPack(admin: ReturnType<typeof createAdminClient>, userId: 
 async function openAiPersonality(body: Record<string, any>) {
   const apiKey = Deno.env.get('OPENAI_API_KEY');
   if (!apiKey) return null;
+  const model = Deno.env.get('OPENAI_PERSONALITY_MODEL') || 'gpt-5-nano';
   const system = Deno.env.get('THIRDPERSON_PERSONALITY_SYSTEM_PROMPT')
     || 'Return a safe, reflective ThirdPerson AI personality card as valid JSON. Do not diagnose. Use careful, emotionally intelligent wording.';
+  const latestReport = Array.isArray(body.reports) ? body.reports[0] || {} : {};
+  const promptBundle = buildPersonalityCardPrompt({
+    basePromptTemplate: system,
+    previousPersonalityCard: body.currentCard || body.previousPersonalityCard || null,
+    newPersonalitySignals: {
+      reports: (body.reports || []).slice(0, 8).map((report: Record<string, any>) => ({
+        personName: report.personName,
+        relationshipType: report.relationshipType,
+        platform: report.platform,
+        summary: report.analysisJson?.summary || report.reportSummaryForFutureUse,
+        mainUserPersonalitySignals: report.mainUserPersonalitySignals || report.analysisJson?.mainUserPersonalitySignals,
+        personalityCardUpdate: report.analysisJson?.personalityCardUpdate,
+        topWords: report.preparedConversation?.topWords,
+        languageProfile: report.preparedConversation?.languageProfile || report.analysisJson?.detectedLanguageStyle,
+      })),
+    },
+    relationshipType: body.relationshipType || latestReport.relationshipType,
+    languageProfile: body.languageProfile || body.runtimeContext?.languageProfile || latestReport.preparedConversation?.languageProfile || {},
+    outputSchema: {
+      headline: '',
+      personalityTypeSignal: '',
+      coreTraits: [],
+      greenFlags: [],
+      redFlags: [],
+      emotionalSignature: '',
+      conversationMagnet: '',
+      growthAreas: [],
+      confidenceNotes: [],
+      needsMoreChatsFor: [],
+      detectedLanguageStyle: {
+        dominantLanguage: '',
+        languagesUsed: [],
+        recommendedOutputStyle: '',
+        toneNotes: '',
+      },
+    },
+  });
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -30,22 +73,10 @@ async function openAiPersonality(body: Record<string, any>) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: Deno.env.get('OPENAI_PERSONALITY_MODEL') || 'gpt-5-nano',
-      messages: [
-        { role: 'system', content: system },
-        {
-          role: 'user',
-          content: JSON.stringify({
-            runtimeContext: body.runtimeContext,
-            userProfile: body.userProfile,
-            reports: body.reports,
-            currentCard: body.currentCard,
-            instruction: 'Use zodiac only as a light reflection layer. Prioritise real conversation patterns. Support English, Hindi, Hinglish, and Indian-style mixed language naturally.',
-          }),
-        },
-      ],
+      model,
+      messages: messagesForChatCompletions(promptBundle),
       response_format: { type: 'json_object' },
-      temperature: 0.65,
+      ...(supportsCustomTemperature(model) ? { temperature: 0.65 } : {}),
     }),
   });
   if (!response.ok) return null;
@@ -92,7 +123,12 @@ Deno.serve(async (req: Request) => {
       action: 'generate_personality',
       provider: 'openai',
       status: 'success',
-      metadata: { reportCount: reportIds.length },
+      metadata: {
+        reportCount: reportIds.length,
+        promptTemplateVersion: 'personality_card_update_v1',
+        relationshipType: body.relationshipType || body.reports?.[0]?.relationshipType,
+        detectedLanguages: body.languageProfile?.languagesUsed || body.runtimeContext?.languageProfile?.languagesUsed || [],
+      },
     });
 
     return jsonResponse({ personality });

@@ -8,10 +8,7 @@ import { exportElementAsImage } from '../lib/exportElementAsImage.js';
 import { getReports } from '../lib/reportsStore.js';
 import { getInitials, getUserProfile } from '../lib/profileStore.js';
 import { getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
-import { fetchUsageEntitlements } from '../lib/creditsService.js';
-import { fetchRelationshipReports } from '../lib/supabaseDataService.js';
-import { generatePersonalityCardViaSupabase } from '../lib/backendAiService.js';
-import { generateFreePersonalityCardViaPuter } from '../lib/puterFreeAiService.js';
+import { fetchRelationshipReports, fetchRemotePersonality } from '../lib/supabaseDataService.js';
 
 const themes = {
   'Noir Intelligence': ['#050505', '#c4b5fd', '#ffffff', 'radial'],
@@ -27,16 +24,18 @@ function buildCard(analysis) {
   const user = analysis.personality?.user || {};
   const viral = analysis.personalityCardViral || {};
   const styleSignals = analysis.communicationStyleSignals?.user || {};
+  const update = analysis.personalityCardUpdate || {};
+  const signals = analysis.mainUserPersonalitySignals || {};
   const strengths = snapshot.strengths || user.strengths || [];
   const growthAreas = snapshot.growthAreas || user.weaknesses || [];
   const greenFlags = viral.greenFlags || [];
   const redFlags = viral.redFlags || [];
 
   return {
-    title: user.name || 'The Reflective Communicator',
-    type: user.type || 'INFJ-like',
-    core: user.profile || 'Your communication appears reflective, meaning-seeking, and emotionally attentive.',
-    oneLiner: viral.viralOneLiner || 'You notice the shift before anyone admits the mood changed.',
+    title: update.headline || user.name || 'The Reflective Communicator',
+    type: update.personalityTypeSignal || user.type || 'INFJ-like',
+    core: update.emotionalSignature || user.profile || signals.communicationStyle || 'Your communication appears reflective, meaning-seeking, and emotionally attentive.',
+    oneLiner: viral.viralOneLiner || update.headline || 'You notice the shift before anyone admits the mood changed.',
     radar: [
       ['Emotional Radar', 'High', 'You may pick up tiny tone changes quickly.'],
       ['Clarity Craving', 'Strong', 'Unclear replies can make your mind search for the real meaning.'],
@@ -45,7 +44,7 @@ function buildCard(analysis) {
     ],
     recognition: [
       ['Texting aura', viral.socialEnergy || 'Emotionally aware, observant, and quietly intense.'],
-      ['What people remember', viral.conversationMagnet || snapshot.whatHooksPeople],
+      ['What people remember', update.conversationMagnet || viral.conversationMagnet || snapshot.whatHooksPeople],
       ['Your soft flex', strengths[0] ? `You bring ${strengths[0].toLowerCase()} into emotionally messy moments.` : 'You make confusing feelings easier to name.'],
       ['Your hidden tell', redFlags[0] || 'When something feels off, your questions may become more meaning-focused.'],
       ['Your care language', 'You appear to show care by noticing patterns, checking emotional consistency, and trying to repair what feels unresolved.'],
@@ -54,13 +53,15 @@ function buildCard(analysis) {
     creativeReads: [
       ['Main character edit', viral.mainCharacterPattern || 'You love deeply, but you notice every shift in energy.'],
       ['Plot twist pattern', 'You may look calm outside while your mind is quietly connecting every small detail.'],
-      ['Green flag glow', greenFlags.join(', ') || 'You care about repair, honesty, and emotional effort.'],
-      ['Growth quest', growthAreas.join(', ') || 'Ask directly before turning uncertainty into a full story.'],
+      ['Green flag glow', (update.greenFlags || greenFlags).join(', ') || 'You care about repair, honesty, and emotional effort.'],
+      ['Growth quest', (update.growthAreas || growthAreas).join(', ') || 'Ask directly before turning uncertainty into a full story.'],
       ['Attention style', (styleSignals.attentionStyleSignals || []).join(', ') || 'Detail-aware and tone-sensitive.'],
       ['What helps you feel safe', 'Clear words, steady effort, honest repair, and actions that match the emotional promise.'],
     ],
     sections: [
       ['Core personality summary', user.profile],
+      ['Confidence notes', update.confidenceNotes?.join(', ')],
+      ['Needs more chats for', update.needsMoreChatsFor?.join(', ') || signals.notEnoughEvidence?.join(', ')],
       ['Your Social Energy', viral.socialEnergy],
       ['Your Emotional Signature', viral.emotionalSignature],
       ['Your Conversation Magnet', viral.conversationMagnet],
@@ -72,7 +73,12 @@ function buildCard(analysis) {
       ['Your Main Character Pattern', viral.mainCharacterPattern],
       ['Your Relationship Pattern', viral.relationshipPattern],
       ['Communication style', snapshot.communicationStyle],
+      ['Current communication signal', signals.communicationStyle],
       ['Emotional pattern', snapshot.emotionalPattern],
+      ['Reaction style', signals.reactionStyle],
+      ['Humour style', signals.humourStyle],
+      ['Likes visible', signals.likesVisible?.join(', ')],
+      ['Hobbies visible', signals.hobbiesVisible?.join(', ')],
       ['What hooks people', snapshot.whatHooksPeople],
       ['What makes you share', 'You may share more when a conversation feels emotionally safe, meaningful, and specific.'],
       ['What creates emotional reactions', snapshot.emotionalTriggers],
@@ -101,6 +107,8 @@ function mergePersonalityAnalysis(base, generated) {
     },
     personalitySnapshot: { ...(base.personalitySnapshot || {}), ...(generated.personalitySnapshot || {}) },
     personalityCardViral: { ...(base.personalityCardViral || {}), ...(generated.personalityCardViral || {}) },
+    personalityCardUpdate: { ...(base.personalityCardUpdate || {}), ...(generated.personalityCardUpdate || {}) },
+    mainUserPersonalitySignals: { ...(base.mainUserPersonalitySignals || {}), ...(generated.mainUserPersonalitySignals || {}) },
     communicationStyleSignals: {
       ...(base.communicationStyleSignals || {}),
       ...(generated.communicationStyleSignals || {}),
@@ -185,54 +193,25 @@ export default function PersonalityCardPage() {
 
   useEffect(() => {
     let mounted = true;
-    async function generateCard() {
+    async function loadStoredCard() {
       const reports = await fetchRelationshipReports();
-      if (!mounted || !reports.length) return;
-      const entitlements = await fetchUsageEntitlements();
-      const runtimeContext = {
-        userStatus: entitlements.hasPaidPack ? 'paid' : 'free',
-        paidCredits: {
-          relationshipReportsLeft: entitlements.paidRelationshipReportsLeft,
-          bestieChatsLeft: entitlements.paidBestieChatsLeft,
-        },
-        freeAnalysesUsed: entitlements.freeAnalysesUsed,
-        freeAnalysesRemaining: entitlements.freeAnalysesRemaining,
-        detectedLanguageStyle: reports.some((report) => /hai|nahi|kyu|haan|yaar|mat|kar/i.test(JSON.stringify(report.preparedConversation?.topWords || []))) ? 'Hinglish / Indian English' : 'English or mixed',
-        relationshipTypes: [...new Set(reports.map((report) => report.relationshipType).filter(Boolean))],
-        currentAnalysisChainContext: reports.slice(0, 5).map((report) => ({
-          personName: report.personName,
-          relationshipType: report.relationshipType,
-          mainDynamic: report.mainDynamic,
-          emotionalTrend: report.emotionalTrend,
-          compatibilityScore: report.compatibilityScore,
-        })),
-      };
-      setMessage('Refreshing your Personality Card...');
-      let result = null;
-      if (entitlements.hasPaidPack) {
-        const response = await generatePersonalityCardViaSupabase({
-          reports,
-          userProfile: profile,
-          currentCard: card,
-          runtimeContext,
-        }).catch(() => null);
-        result = response?.personality || null;
-      } else if (entitlements.freeAnalysesUsed > 0 && entitlements.freeAnalysesUsed <= 2) {
-        result = await generateFreePersonalityCardViaPuter({
-          reports,
-          userProfile: profile,
-          currentCard: card,
-        }).catch(() => null);
-      }
+      const remotePersonality = await fetchRemotePersonality();
       if (!mounted) return;
+      const latestReport = reports[0]?.analysisJson || null;
+      const result = remotePersonality?.personality_json
+        ? {
+          personalityCardUpdate: remotePersonality.personality_json,
+          mainUserPersonalitySignals: reports[0]?.mainUserPersonalitySignals || latestReport?.mainUserPersonalitySignals,
+        }
+        : latestReport;
       if (result) {
         setGeneratedAnalysis(result);
-        setMessage('Personality Card updated.');
+        setMessage('Personality Card loaded from your latest analysis.');
       } else {
         setMessage('');
       }
     }
-    generateCard();
+    loadStoredCard();
     return () => {
       mounted = false;
     };
