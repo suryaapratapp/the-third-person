@@ -22,7 +22,14 @@ const starters = [
 
 function userProfileWithZodiac() {
   const profile = getUserProfile();
-  return { ...profile, zodiacSign: getZodiacSign(profile.dateOfBirth) };
+  return {
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    genderIdentity: profile.genderIdentity,
+    preferredLanguageTone: profile.preferredLanguageTone,
+    preferredAnalysisLanguages: profile.preferredAnalysisLanguages || [],
+    zodiacSign: getZodiacSign(profile.dateOfBirth),
+  };
 }
 
 export default function BestieBotPage({ chainId }) {
@@ -41,8 +48,8 @@ export default function BestieBotPage({ chainId }) {
     {
       role: 'bot',
       text: context
-        ? `Hi bestie. I’ve got the full chain for ${context.personName}. Ask me what you need clarity on, and I’ll keep it honest, kind, and grounded.`
-        : 'Run an analysis first so your Bestie Bot can understand the relationship properly.',
+        ? `I have the full relationship chain for ${context.personName}. Ask what you need clarity on, and I’ll keep the guidance honest, kind, and grounded.`
+        : 'Run an analysis first so the Relationship Guide can understand the relationship properly.',
     },
   ]);
 
@@ -63,7 +70,7 @@ export default function BestieBotPage({ chainId }) {
       if (current.length > 1) return current;
       return [{
         role: 'bot',
-        text: `Hi bestie. I’ve got the full chain for ${context.personName}. Ask me what you need clarity on, and I’ll keep it honest, kind, and grounded.`,
+        text: `I have the full relationship chain for ${context.personName}. Ask what you need clarity on, and I’ll keep the guidance honest, kind, and grounded.`,
       }];
     });
   }, [context]);
@@ -86,25 +93,25 @@ export default function BestieBotPage({ chainId }) {
     const key = 'thirdperson_saved_bestie_insights_v1';
     const saved = JSON.parse(window.localStorage.getItem(key) || '[]');
     window.localStorage.setItem(key, JSON.stringify([{ chainId, text, savedAt: new Date().toISOString() }, ...saved].slice(0, 60)));
-    setToast('Bestie insight saved.');
+    setToast('Guide insight saved.');
   }
 
   async function shareReply(text) {
     try {
-      if (navigator.share) await navigator.share({ title: 'ThirdPerson Bestie', text });
+      if (navigator.share) await navigator.share({ title: 'ThirdPerson Relationship Guide', text });
       else {
         await navigator.clipboard?.writeText(text);
-        setToast('Bestie reply copied.');
+        setToast('Guide reply copied.');
       }
     } catch {
       await navigator.clipboard?.writeText(text);
-      setToast('Bestie reply copied.');
+      setToast('Guide reply copied.');
     }
   }
 
   async function copyReply(text) {
     await navigator.clipboard?.writeText(text);
-    setToast('Bestie reply copied.');
+    setToast('Guide reply copied.');
   }
 
   async function send(text = input) {
@@ -113,8 +120,8 @@ export default function BestieBotPage({ chainId }) {
     setInput('');
     setMessages((current) => [...current, { role: 'user', text: trimmed }]);
     setIsThinking(true);
-    setStatusText('Checking Bestie Chat balance…');
-    setStatusText('Preparing Bestie reply…');
+    setStatusText('Checking Guide Chat balance…');
+    setStatusText('Preparing guide reply…');
     const backendResponse = await askBestieViaSupabase({
       chainId,
       userMessage: trimmed,
@@ -136,7 +143,7 @@ export default function BestieBotPage({ chainId }) {
     }
     if (!backendResponse?.text) {
       setStatusText('');
-      setMessages((current) => [...current, { role: 'bot', text: 'Bestie is temporarily unavailable. Please try again in a moment.' }]);
+      setMessages((current) => [...current, { role: 'bot', text: 'The Relationship Guide is temporarily unavailable. Please try again in a moment.' }]);
       setIsThinking(false);
       return;
     }
@@ -157,10 +164,10 @@ export default function BestieBotPage({ chainId }) {
         <ParticleBackground className="opacity-45" />
         <div className="relative mx-auto max-w-4xl text-center">
           <div className="accent-panel p-8 sm:p-12">
-            <p className="tech-label text-smoke">ThirdPerson Bestie</p>
+            <p className="tech-label text-smoke">ThirdPerson Relationship Guide</p>
             <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Run an analysis first.</h1>
             <p className="mx-auto mt-5 max-w-2xl text-sm leading-8 text-smoke">
-              Run an analysis first so your Bestie Bot can understand the relationship properly.
+              Run an analysis first so the Relationship Guide can understand the relationship properly.
             </p>
             <button onClick={() => navigate('/analysis/new')} className="glass-button mt-8 px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">Start an analysis</button>
           </div>
@@ -187,14 +194,14 @@ export default function BestieBotPage({ chainId }) {
             <div className="flex items-start gap-4">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-pink-200/30 bg-gradient-to-br from-pink-300/20 via-purple-300/16 to-orange-300/14 text-2xl shadow-glow">✨</div>
               <div>
-                <p className="tech-label text-pink-200">ThirdPerson Bestie</p>
+                <p className="tech-label text-pink-200">ThirdPerson Relationship Guide</p>
                 <h1 className="serif-title mt-3 text-5xl leading-none sm:text-7xl">Talk through {context.personName}.</h1>
               </div>
               <p className="mt-4 max-w-3xl text-sm leading-7 text-smoke">
-                Bestie is here. Ask me anything about this relationship — what changed, what feels confusing, what to reply, or what you may need to stop ignoring.
+                Ask anything about this relationship: what changed, what feels unclear, what to reply, or what may need more attention.
               </p>
               <p className="mt-3 max-w-3xl rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-xs leading-6 text-ash">
-                Bestie uses your report summaries, personality signals, and important moments for faster replies.
+                The Relationship Guide uses your report summaries, personality signals, and important moments for faster replies.
               </p>
             </div>
             <button onClick={() => navigate('/reports')} className="glass-button px-4 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Back to reports</button>
@@ -229,7 +236,7 @@ export default function BestieBotPage({ chainId }) {
                 Zodiac, if available, is treated as a fun reflection layer. The real chat patterns matter more.
               </div>
               <div className="mt-3 rounded-3xl border border-purple-300/15 bg-purple-300/[0.05] p-4 text-sm leading-7 text-smoke">
-                {balances ? `${balances.paidRelationshipReportsLeft} paid Relationship Reports left • ${balances.paidBestieChatsLeft} paid Bestie Chats left` : 'Checking your credit balance…'}
+                {balances ? `${balances.paidRelationshipReportsLeft} paid Relationship Reports left • ${balances.paidBestieChatsLeft} paid Guide Chats left` : 'Checking your credit balance…'}
               </div>
             </aside>
 
@@ -238,7 +245,7 @@ export default function BestieBotPage({ chainId }) {
                 {messages.map((message, index) => (
                   <div key={`${message.role}-${index}`} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[82%] rounded-[26px] px-5 py-4 text-sm leading-7 shadow-[0_14px_40px_rgba(0,0,0,0.16)] ${message.role === 'user' ? 'bg-purple-300/18 text-bone' : 'border border-pink-200/10 bg-white/[0.07] text-smoke'}`}>
-                      {message.role === 'bot' && <p className="mb-2 font-mono text-[0.62rem] uppercase tracking-[0.13em] text-pink-200">Bestie</p>}
+                      {message.role === 'bot' && <p className="mb-2 font-mono text-[0.62rem] uppercase tracking-[0.13em] text-pink-200">Relationship Guide</p>}
                       <p>{message.text}</p>
                       {message.role === 'bot' && index > 0 && (
                         <div className="mt-4 flex flex-wrap gap-2" data-export-ignore>
@@ -252,7 +259,7 @@ export default function BestieBotPage({ chainId }) {
                 ))}
                 {isThinking && (
                   <div className="max-w-[82%] rounded-[24px] border border-pink-200/10 bg-white/[0.06] px-5 py-4 text-sm text-smoke">
-                    {statusText || 'Bestie is reading the relationship chain…'}
+                    {statusText || 'The Relationship Guide is reading the relationship chain…'}
                   </div>
                 )}
                 <div ref={bottomRef} />
@@ -268,7 +275,7 @@ export default function BestieBotPage({ chainId }) {
                       send();
                     }
                   }}
-                  placeholder="Ask your Bestie what you need to understand..."
+                  placeholder="Ask what you need to understand..."
                   className="min-h-14 flex-1 resize-none rounded-3xl border border-white/12 bg-black/50 px-5 py-4 text-sm text-bone outline-none placeholder:text-ash focus:border-purple-200/60"
                 />
                 <button onClick={() => send()} disabled={!input.trim() || isThinking} className="rounded-3xl border border-purple-200/30 bg-gradient-to-r from-purple-300/20 via-pink-300/16 to-orange-300/14 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone disabled:opacity-40">

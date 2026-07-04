@@ -6,6 +6,7 @@ export const emptyProfile = {
   firstName: '',
   lastName: '',
   email: '',
+  phoneNumber: '',
   genderIdentity: 'Prefer not to say',
   dateOfBirth: '',
   preferredLanguageTone: 'Warm Hinglish / English',

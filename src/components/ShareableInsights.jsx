@@ -19,8 +19,8 @@ export default function ShareableInsights({ analysis, personName = 'Their' }) {
   return (
     <div className="grid gap-5">
       <section id="card-bestie-breakdown" className="accent-panel relative p-5">
-        <CardActions targetId="card-bestie-breakdown" name="bestie-breakdown" summary={b.whatItLooksLike} />
-        <p className="tech-label text-pink-200">Bestie Breakdown 💗</p>
+        <CardActions targetId="card-bestie-breakdown" name="relationship-breakdown" summary={b.whatItLooksLike} />
+        <p className="tech-label text-pink-200">Relationship Breakdown</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <InfoCard title="What it looks like">{b.whatItLooksLike}</InfoCard>
           <InfoCard title="What it may mean">{b.whatItMayMean}</InfoCard>
@@ -61,10 +61,10 @@ export default function ShareableInsights({ analysis, personName = 'Their' }) {
 
       <section id="card-attachment-vibe" className="thin-panel relative p-5">
         <CardActions targetId="card-attachment-vibe" name="attachment-vibe" summary={a.dynamicCreated} />
-        <p className="tech-label text-purple-200">Attachment Vibe, Not a Label</p>
+        <p className="tech-label text-purple-200">Communication Pattern, Not a Label</p>
         <div className="mt-5 grid gap-4 md:grid-cols-4">
-          <InfoCard title="Your vibe">{a.userCommunicationVibe}</InfoCard>
-          <InfoCard title={`${personName}’s vibe`}>{a.otherCommunicationVibe}</InfoCard>
+          <InfoCard title="Your pattern">{a.userCommunicationVibe}</InfoCard>
+          <InfoCard title={`${personName}’s pattern`}>{a.otherCommunicationVibe}</InfoCard>
           <InfoCard title="Dynamic created">{a.dynamicCreated}</InfoCard>
           <InfoCard title="Communicate better">{a.howToCommunicateBetter}</InfoCard>
         </div>

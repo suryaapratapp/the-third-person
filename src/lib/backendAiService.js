@@ -35,7 +35,7 @@ export async function askBestieViaSupabase(payload) {
     body: payload,
   });
   if (error) {
-    const normalized = await normalizeFunctionError(error, 'Bestie could not reply right now.');
+    const normalized = await normalizeFunctionError(error, 'The Relationship Guide could not reply right now.');
     throw normalized;
   }
   return data || null;

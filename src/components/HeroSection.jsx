@@ -58,11 +58,6 @@ export default function HeroSection() {
             ))}
           </div>
         </div>
-        <div className="absolute bottom-6 left-7 right-7 hidden items-center justify-between text-smoke/70 sm:flex">
-          <p className="tech-label decorative-label">● Private by design</p>
-          <p className="tech-label decorative-label">Private relationship intelligence</p>
-          <p className="tech-label decorative-label">Human judgment matters</p>
-        </div>
       </div>
     </section>
   );

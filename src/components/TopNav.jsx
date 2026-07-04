@@ -54,7 +54,7 @@ export default function TopNav() {
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 px-3 py-3 sm:px-6">
-      <div className="mx-auto flex max-w-[1540px] items-center justify-between border border-purple-200/18 bg-gradient-to-r from-[#20172d]/86 via-[#171523]/82 to-[#221322]/86 px-4 py-3 shadow-[0_18px_70px_rgba(168,85,247,0.12)] backdrop-blur-xl sm:px-7">
+      <div className="mx-auto flex max-w-[1540px] items-center justify-between rounded-[28px] border border-purple-200/15 bg-[#171523]/82 px-4 py-3 shadow-[0_18px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:px-7">
         <button
           onClick={() => navigate('/')}
           className="font-mono text-[0.72rem] uppercase tracking-[0.28em] text-bone sm:text-sm"
@@ -70,7 +70,7 @@ export default function TopNav() {
               Product
             </button>
             {productOpen && (
-              <div className="absolute left-0 top-8 w-64 border border-purple-300/24 bg-[#17111f]/95 p-2 shadow-glow backdrop-blur-xl">
+              <div className="absolute left-0 top-8 w-64 rounded-3xl border border-purple-300/18 bg-[#171523]/95 p-2 shadow-glow backdrop-blur-xl">
                 {[
                   ['Start Analysis', '/analysis/new'],
                   ['Relationship Reports', '/reports'],
@@ -97,10 +97,10 @@ export default function TopNav() {
           <button
             type="button"
             onClick={() => setTwinFlameOpen(true)}
-            className="relative rounded-full border border-pink-200/30 bg-gradient-to-r from-pink-300/12 via-purple-300/12 to-orange-300/10 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.16em] text-pink-100 shadow-[0_0_28px_rgba(244,114,182,0.14)] transition hover:-translate-y-0.5 hover:border-pink-100/60 hover:text-bone"
+            className="relative rounded-full border border-pink-200/25 bg-gradient-to-r from-pink-300/12 via-purple-300/14 to-orange-300/10 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.16em] text-pink-100 shadow-[0_16px_42px_rgba(0,0,0,0.20)] transition hover:-translate-y-0.5 hover:border-pink-300/50 hover:text-bone"
           >
             <span className="mr-2 text-pink-100">♥</span>
-            Find Your Twin Flame
+            Compatibility Match
           </button>
           <button
             onClick={() => menuNavigate('/privacy')}
@@ -116,7 +116,7 @@ export default function TopNav() {
               Company
             </button>
             {companyOpen && (
-              <div className="absolute right-0 top-8 w-56 border border-purple-300/24 bg-[#17111f]/95 p-2 shadow-glow backdrop-blur-xl">
+              <div className="absolute right-0 top-8 w-56 rounded-3xl border border-purple-300/18 bg-[#171523]/95 p-2 shadow-glow backdrop-blur-xl">
                 {[
                   ['About Company', '/company'],
                   ['Vision', '/vision'],
@@ -152,7 +152,7 @@ export default function TopNav() {
             ))}
           </button>
           {open && (
-            <div className="absolute right-0 top-12 w-64 border border-purple-300/24 bg-[#17111f]/95 p-2 shadow-glow backdrop-blur-xl">
+            <div className="absolute right-0 top-12 w-64 rounded-3xl border border-purple-300/18 bg-[#171523]/95 p-2 shadow-glow backdrop-blur-xl">
               {[
                 ['Profile', '/profile'],
                 ['Understand Yourself', '/personality-card'],
@@ -160,7 +160,7 @@ export default function TopNav() {
                 ['Vision', '/vision'],
                 ['FAQs', '/faqs'],
                 ['Pricing', '/pricing'],
-                ['Find Your Twin Flame', 'coming-soon'],
+                ['Compatibility Match', 'coming-soon'],
                 ['Privacy', '/privacy'],
                 ['Contact', '/company#contact'],
               ].map(([label, href]) => (
@@ -186,20 +186,20 @@ export default function TopNav() {
       </div>
       {twinFlameOpen && (
         <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 px-4 backdrop-blur">
-          <div className="relative max-w-lg overflow-hidden rounded-[34px] border border-pink-200/25 bg-gradient-to-br from-[#241321]/95 via-[#171321]/95 to-[#24170f]/95 p-7 text-center shadow-[0_28px_120px_rgba(244,114,182,0.18)]">
+          <div className="relative max-w-lg overflow-hidden rounded-[34px] border border-pink-200/20 bg-[#171523]/95 p-7 text-center shadow-[0_28px_120px_rgba(0,0,0,0.30)]">
             <div className="pointer-events-none absolute -left-16 -top-16 h-44 w-44 rounded-full bg-pink-300/20 blur-3xl" />
             <div className="pointer-events-none absolute -right-16 -bottom-16 h-44 w-44 rounded-full bg-orange-300/16 blur-3xl" />
             <p className="tech-label relative text-pink-100">Coming soon</p>
-            <h3 className="serif-title relative mt-4 text-5xl leading-tight text-bone">Find Your Twin Flame</h3>
+            <h3 className="serif-title relative mt-4 text-5xl leading-tight text-bone">Compatibility Match</h3>
             <p className="relative mt-5 text-sm leading-7 text-smoke">
-              A softer, more magical compatibility experience is being prepared, built around emotional rhythm, communication style, and the kind of connection that feels rare.
+              A refined compatibility experience is being prepared around emotional rhythm, communication style, and relationship fit.
             </p>
             <button
               type="button"
               onClick={() => setTwinFlameOpen(false)}
               className="glass-button relative mt-7 rounded-full px-6 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone"
             >
-              Keep me curious
+              Close
             </button>
           </div>
         </div>

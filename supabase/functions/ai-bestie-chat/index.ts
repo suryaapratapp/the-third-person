@@ -23,12 +23,23 @@ function parseBestieText(text: string) {
   }
 }
 
+const CODEBASE_BROSKI_SYSTEM_PROMPT = [
+  'You are ThirdPerson Broski, a private relationship clarity companion inside ThirdPerson AI.',
+  'Answer using only the provided report summaries, analysis chain context, personality signals, red and green flags, and important moments.',
+  'Do not ask for or analyse full raw chats.',
+  'Be warm, honest, protective, concise, emotionally intelligent, and practical.',
+  'Match the user language style, including natural Hinglish where appropriate.',
+  'Do not encourage obsession, stalking, manipulation, revenge, or emotional control.',
+  'Do not diagnose or claim certainty about anyone feelings or intentions.',
+  'Use careful wording like may suggest and based on the chats.',
+  'Return valid JSON only.',
+].join('\n');
+
 async function openAiBestieReply(message: string, context: Record<string, any>, body: Record<string, any>) {
   const apiKey = Deno.env.get('OPENAI_API_KEY');
   if (!apiKey) throw new Error('OPENAI_API_KEY_MISSING');
   const model = Deno.env.get('OPENAI_BESTIE_MODEL') || 'gpt-5-nano';
-  const system = Deno.env.get('THIRDPERSON_BESTIE_SYSTEM_PROMPT')
-    || 'Reply as a safe, caring relationship clarity companion. Be gentle, concise, and never claim certainty. Answer concisely unless the user asks for a detailed explanation.';
+  const system = CODEBASE_BROSKI_SYSTEM_PROMPT;
   const promptBundle = buildBestiePrompt({
     basePromptTemplate: system,
     userQuestion: message,
@@ -91,7 +102,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({
         code: 'OUT_OF_CREDITS',
         creditType: 'bestie_message',
-        error: 'You’re out of Bestie Chats. Top up to keep asking your Bestie for guidance.',
+        error: 'You’re out of Broski Chats. Top up to keep asking Broski for guidance.',
       }, 402);
     }
 
@@ -115,7 +126,7 @@ Deno.serve(async (req: Request) => {
       });
       return jsonResponse({
         code: 'AI_PROVIDER_UNAVAILABLE',
-        error: 'Bestie could not connect to the AI provider. No Bestie Chat credit was used. Please check server configuration and try again.',
+        error: 'Broski could not connect to the AI provider. No Broski Chat credit was used. Please check server configuration and try again.',
       }, 503);
     }
 
@@ -155,7 +166,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({
         code: 'OUT_OF_CREDITS',
         creditType: 'bestie_message',
-        error: 'You’re out of Bestie Chats. Top up to keep asking your Bestie for guidance.',
+        error: 'You’re out of Broski Chats. Top up to keep asking Broski for guidance.',
       }, 402);
     }
 
@@ -182,6 +193,6 @@ Deno.serve(async (req: Request) => {
 
     return jsonResponse({ text, message: assistantMessage, remainingCredits: credit.remaining });
   } catch (_error) {
-    return jsonResponse({ error: 'Bestie could not reply right now. Please try again.' }, 500);
+    return jsonResponse({ error: 'Broski could not reply right now. Please try again.' }, 500);
   }
 });

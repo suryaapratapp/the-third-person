@@ -118,10 +118,10 @@ export default function ReportsPage() {
                   </button>
                   <div className="mt-5 flex flex-wrap gap-3">
                     <button
-                      onClick={() => navigate(`/reports/${encodeURIComponent(chain.chainId)}/bestie`)}
-                      className="rounded-full border border-pink-200/30 bg-pink-300/10 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-pink-50 transition hover:border-pink-100/70"
+                      onClick={() => navigate(`/reports/${encodeURIComponent(chain.chainId)}/broski`)}
+                      className="rounded-full border border-pink-200/30 bg-pink-300/10 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-pink-100 transition hover:border-pink-300/70"
                     >
-                      Talk to Bestie
+                      Open Relationship Guide
                     </button>
                     <button
                       onClick={() => setOpenChain(open ? '' : chain.chainId)}

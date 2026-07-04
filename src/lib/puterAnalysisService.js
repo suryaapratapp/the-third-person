@@ -96,13 +96,27 @@ function relationshipGuidance(relationshipType = '') {
   return 'Focus on emotional clarity, effort balance, communication style, trust, repair, and boundaries.';
 }
 
+function safeUserProfile(profile = {}) {
+  return {
+    firstName: profile.firstName || '',
+    lastName: profile.lastName || '',
+    genderIdentity: profile.genderIdentity || '',
+    preferredLanguageTone: profile.preferredLanguageTone || '',
+    preferredAnalysisLanguages: profile.preferredAnalysisLanguages || [],
+    zodiacSign: profile.zodiacSign || '',
+    zodiacElement: profile.zodiacElement || '',
+  };
+}
+
 function buildSystemPrompt() {
   return [
     'You are ThirdPerson AI, a private relationship conversation analysis assistant.',
     'Analyse the actual conversation provided. Do not return generic relationship advice.',
     'Use the selected relationship context, messaging platform, participants, timestamps, message patterns, important moments, and conversation evidence.',
+    'The same response must create the relationship report and a relationship-specific personality card for the main user.',
+    'The relationship-specific personality card should describe how the main user appears in this selected relationship type only.',
     'Support English, Hindi, Hinglish, and Indian-style mixed Hindi-English conversations.',
-    'Use simple, emotionally intelligent, bestie-style language. Be warm, honest, careful, and practical.',
+    'Use simple, emotionally intelligent language. Be warm, honest, careful, and practical.',
     'Never diagnose anyone. Never claim certainty about feelings, intent, loyalty, personality, or future behaviour.',
     'Never encourage manipulation, stalking, revenge, harassment, emotional control, coercion, or repeated unwanted contact.',
     'Use careful wording such as may suggest, could indicate, appears to, and based on the conversation.',
@@ -127,7 +141,7 @@ function buildRelationshipUserPrompt(payload) {
   const shouldSendProtectedText = !pipeline.route || pipeline.route === 'single_compressed';
 
   return JSON.stringify({
-    task: 'Generate one combined ThirdPerson AI JSON response from the actual conversation evidence. This single response must contain the Relationship Report, main-user personality signals, Personality Card update, Bestie context summary, and future-use report summary.',
+    task: 'Generate one combined ThirdPerson AI JSON response from the actual conversation evidence. This single response must contain the Relationship Report, the relationship-specific main-user Personality Card, main-user personality signals, guide context summary, and future-use report summary.',
     importantInstruction: 'Do not give generic relationship advice. You must base every section on the provided parsed conversation, participants, timestamps, message patterns, selected relationship type, and important moments. If evidence is weak, say that evidence is limited or not enough evidence yet.',
     selectedRelationshipType: relationshipType,
     relationshipSpecificFocus: relationshipGuidance(relationshipType),
@@ -160,7 +174,7 @@ function buildRelationshipUserPrompt(payload) {
       })),
     },
     sensitiveDataFilteringSummary: payload.sensitiveData?.protectionSummary,
-    mainUserProfileDetails: payload.userProfile,
+    mainUserProfileDetails: safeUserProfile(payload.userProfile),
     selectedProfileLanguages: payload.userProfile?.preferredAnalysisLanguages || [],
     previousPersonalityCardSummary: payload.previousPersonalityMemory?.personality_json || payload.runtimeContext?.previousPersonalityCardSummary,
     previousPersonalityMemory: payload.previousPersonalityMemory || payload.runtimeContext?.previousPersonalityMemory,
@@ -177,13 +191,21 @@ function buildRelationshipUserPrompt(payload) {
     requiredJsonSchema: payload.analysisDraft || {},
     combinedOutputSchema: {
       relationshipReport: {
-        summary: '',
+        summaryParagraph: '',
         overallDynamic: '',
+        vibeLabel: '',
         emotionalTone: '',
         effortBalance: '',
         communicationPattern: '',
         redFlags: [],
         greenFlags: [],
+        mixedSignals: [],
+        energyBalance: '',
+        dayNightDynamics: {},
+        wordCloud: [],
+        stickyNotes: [],
+        nextBestMove: '',
+        dashboardCards: [],
         timeline: [],
         scores: {},
         advice: {},
@@ -204,14 +226,48 @@ function buildRelationshipUserPrompt(payload) {
         weakSignals: [],
         notEnoughEvidence: [],
       },
+      relationshipPersonalityCard: {
+        relationshipType: '',
+        title: '',
+        summaryParagraph: '',
+        personalityLabel: '',
+        personalityTypeSignal: '',
+        emotionalSignature: '',
+        communicationStyle: '',
+        greenFlags: [],
+        redFlags: [],
+        attractionEnergy: '',
+        whyPeopleStay: '',
+        whyPeopleMisreadYou: '',
+        growthAreas: [],
+        keywords: [],
+        viralOneLiner: '',
+        confidenceLevel: 'Early Signal | Repeated Pattern | Strong Pattern | Not Enough Evidence',
+        conciseSummaryForDatabase: '',
+      },
       personalityCardUpdate: {
         headline: '',
         personalityTypeSignal: '',
+        shareableLabel: '',
         coreTraits: [],
         greenFlags: [],
         redFlags: [],
         emotionalSignature: '',
         conversationMagnet: '',
+        attractionEnergy: '',
+        magneticEnergy: '',
+        whyPeopleStay: '',
+        whyPeopleMisreadYou: '',
+        communicationStyle: '',
+        loveFriendshipStyle: '',
+        humourStyle: '',
+        howYouFight: '',
+        textingAura: '',
+        toxicTraitUseful: '',
+        matureSide: '',
+        emotionalIntelligence: '',
+        coolFactor: '',
+        viralOneLiner: '',
         growthAreas: [],
         confidenceNotes: [],
         needsMoreChatsFor: [],
@@ -238,7 +294,7 @@ function buildPersonalityUserPrompt({ reports = [], userProfile = {}, currentCar
   return JSON.stringify({
     task: 'Create a richer ThirdPerson AI Personality Card from the user’s first free Relationship Analyses.',
     instruction: 'Base the card on the reports and conversation patterns. Do not diagnose. Be creative, premium, warm, shareable, and careful.',
-    userProfile,
+    userProfile: safeUserProfile(userProfile),
     reports: reports.slice(0, 2).map((report) => ({
       personName: report.personName,
       relationshipType: report.relationshipType,
@@ -263,9 +319,26 @@ function validateRelationshipAnalysis(candidate) {
   if (!candidate || typeof candidate !== 'object') throw new Error('The analysis response was not usable.');
   if (candidate.relationshipReport && !candidate.summary) {
     const report = candidate.relationshipReport || {};
+    const relationshipCard = candidate.relationshipPersonalityCard || {};
+    candidate.personalityCardUpdate = candidate.personalityCardUpdate || {
+      headline: relationshipCard.title,
+      personalityTypeSignal: relationshipCard.personalityTypeSignal,
+      shareableLabel: relationshipCard.personalityLabel,
+      greenFlags: relationshipCard.greenFlags || [],
+      redFlags: relationshipCard.redFlags || [],
+      emotionalSignature: relationshipCard.emotionalSignature,
+      communicationStyle: relationshipCard.communicationStyle,
+      attractionEnergy: relationshipCard.attractionEnergy,
+      whyPeopleStay: relationshipCard.whyPeopleStay,
+      whyPeopleMisreadYou: relationshipCard.whyPeopleMisreadYou,
+      growthAreas: relationshipCard.growthAreas || [],
+      confidenceNotes: relationshipCard.confidenceLevel ? [relationshipCard.confidenceLevel] : [],
+      needsMoreChatsFor: candidate.mainUserPersonalitySignals?.notEnoughEvidence || [],
+      viralOneLiner: relationshipCard.viralOneLiner,
+    };
     candidate.summary = {
-      relationshipOverview: report.summary,
-      currentDynamic: report.overallDynamic || report.bestieBreakdown || report.summary,
+      relationshipOverview: report.summaryParagraph || report.summary,
+      currentDynamic: report.overallDynamic || report.vibeLabel || report.bestieBreakdown || report.summaryParagraph || report.summary,
       mainEmotionalPattern: report.emotionalTone,
       importantCaveat: 'This is reflective insight based on the provided conversation, not proof or final judgment.',
     };
@@ -284,7 +357,15 @@ function validateRelationshipAnalysis(candidate) {
       clarity: 55,
     };
     candidate.advice = report.advice || candidate.advice || {};
-    candidate.screenshotWorthySummary = report.screenshotWorthySummary || candidate.screenshotWorthySummary;
+    candidate.screenshotWorthySummary = report.screenshotWorthySummary || report.vibeLabel || candidate.screenshotWorthySummary;
+    candidate.dayNightDynamics = report.dayNightDynamics || candidate.dayNightDynamics || {};
+    candidate.wordCloud = report.wordCloud || candidate.wordCloud || {};
+    candidate.aiStickyNotes = report.stickyNotes || candidate.aiStickyNotes || [];
+    candidate.dashboardCards = report.dashboardCards || candidate.dashboardCards || [];
+    candidate.mixedSignalsMap = candidate.mixedSignalsMap || {
+      confusingSignals: report.mixedSignals || [],
+      bestieNote: report.vibeLabel || '',
+    };
     candidate.communicationPatterns = {
       ...(candidate.communicationPatterns || {}),
       relationshipPattern: report.communicationPattern || candidate.communicationPatterns?.relationshipPattern,
@@ -357,7 +438,7 @@ export async function generateFreePersonalityCardViaPuter(payload) {
 export async function testPuterAnalysisConnection() {
   const result = await chatJsonWithMessages([
     { role: 'system', content: 'Return valid JSON only.' },
-    { role: 'user', content: 'Reply with JSON only: {"status":"ok","message":"Puter analysis working"}' },
+    { role: 'user', content: 'Reply with JSON only: {"status":"ok","message":"Secure analysis connection is working"}' },
   ], { maxTokens: 80, temperature: 0 });
   if (result?.status !== 'ok') throw new Error('Secure analysis test returned an unexpected response.');
   return result;

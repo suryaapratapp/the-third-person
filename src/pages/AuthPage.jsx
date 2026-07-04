@@ -145,10 +145,10 @@ export default function AuthPage() {
           <p className="tech-label text-purple-200">Private access</p>
           <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Welcome to ThirdPerson AI.</h1>
           <p className="mt-6 max-w-2xl text-sm leading-8 text-smoke">
-            Sign in to keep your reports, relationship chains, Bestie chats, and personality insights connected to you.
+            Sign in to keep your reports, relationship chains, guide chats, and personality insights connected to you.
           </p>
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            {['Private reports', 'Bestie chat', 'Personality card'].map((item) => (
+            {['Private reports', 'Guide chat', 'Personality card'].map((item) => (
               <div key={item} className="rounded-3xl border border-white/10 bg-white/[0.045] p-4 font-mono text-xs uppercase tracking-[0.13em] text-smoke">
                 {item}
               </div>
@@ -266,8 +266,8 @@ export default function AuthPage() {
                 </div>
               ) : (
                 <div className="mt-5 rounded-3xl border border-white/10 bg-white/[0.035] p-4">
-                  <p className="tech-label text-ash">Local testing mode</p>
-                  <p className="mt-2 text-sm leading-6 text-smoke">Security check is disabled on localhost so you can test faster.</p>
+                  <p className="tech-label text-ash">Security check</p>
+                  <p className="mt-2 text-sm leading-6 text-smoke">Security verification is available in the production environment.</p>
                 </div>
               )}
               <button disabled={busy} className="glass-button mt-6 w-full px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone disabled:opacity-50">

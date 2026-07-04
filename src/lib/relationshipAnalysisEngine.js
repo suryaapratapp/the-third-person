@@ -222,7 +222,7 @@ export function generateRelationshipAnalysis(input = {}) {
     ],
     simpleSummaryForYoungAudience: `The main vibe appears to be ${pattern}. There are signs worth reflecting on, but nothing here should be treated as final proof.`,
     bestieBreakdown: {
-      whatItLooksLike: `Bestie, this looks like ${pattern}. There is care in the chat, but clarity seems to come and go.`,
+      whatItLooksLike: `This looks like ${pattern}. There is care in the chat, but clarity seems to come and go.`,
       whatItMayMean: 'It may mean both people feel something, but the way it is expressed is not always consistent or easy to trust.',
       whatNotToIgnore: tensionCount > positiveCount ? 'Do not ignore repeated distance, unclear answers, or moments where one person carries most of the emotional work.' : 'Do not ignore the good signs, but still notice where clarity is missing.',
       whatToDoNext: `Ask ${personName} one calm question about what they actually want and what they can show through actions.`,

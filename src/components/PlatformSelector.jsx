@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { FaFacebookMessenger, FaInstagram, FaSnapchatGhost, FaTelegramPlane, FaWhatsapp } from 'react-icons/fa';
-import { BsChatDotsFill, BsThreeDots } from 'react-icons/bs';
+import { BsThreeDots } from 'react-icons/bs';
+import { SiImessage, SiInstagram, SiMessenger, SiSnapchat, SiTelegram, SiWhatsapp } from 'react-icons/si';
 
 const platformData = {
   WhatsApp: {
     initials: 'WA',
-    Icon: FaWhatsapp,
-    brandClass: 'text-emerald-300',
+    Icon: SiWhatsapp,
+    color: '#25D366',
     accent: 'from-emerald-300/20 to-purple-300/10',
     steps: [
       'Open the chat you want to analyse.',
@@ -19,8 +19,8 @@ const platformData = {
   },
   iMessage: {
     initials: 'IM',
-    Icon: BsChatDotsFill,
-    brandClass: 'text-blue-300',
+    Icon: SiImessage,
+    color: '#34C759',
     accent: 'from-blue-300/20 to-purple-300/10',
     steps: [
       'iMessage does not provide the same simple full chat export flow on all devices.',
@@ -31,8 +31,8 @@ const platformData = {
   },
   Telegram: {
     initials: 'TG',
-    Icon: FaTelegramPlane,
-    brandClass: 'text-sky-300',
+    Icon: SiTelegram,
+    color: '#26A5E4',
     accent: 'from-sky-300/20 to-purple-300/10',
     steps: [
       'Use Telegram Desktop for best export support.',
@@ -46,8 +46,8 @@ const platformData = {
   },
   Instagram: {
     initials: 'IG',
-    Icon: FaInstagram,
-    brandClass: 'text-pink-300',
+    Icon: SiInstagram,
+    color: '#E4405F',
     accent: 'from-pink-300/20 to-purple-300/10',
     steps: [
       'Open Instagram or Accounts Center.',
@@ -60,8 +60,8 @@ const platformData = {
   },
   Messenger: {
     initials: 'MS',
-    Icon: FaFacebookMessenger,
-    brandClass: 'text-blue-300',
+    Icon: SiMessenger,
+    color: '#00B2FF',
     accent: 'from-blue-300/20 to-pink-300/10',
     steps: [
       'Go to Facebook/Messenger information export settings.',
@@ -74,8 +74,8 @@ const platformData = {
   },
   Snapchat: {
     initials: 'SC',
-    Icon: FaSnapchatGhost,
-    brandClass: 'text-yellow-200',
+    Icon: SiSnapchat,
+    color: '#FFFC00',
     accent: 'from-yellow-200/15 to-pink-300/10',
     steps: [
       'Go to Snapchat account data or My Data.',
@@ -89,7 +89,7 @@ const platformData = {
   Other: {
     initials: 'OT',
     Icon: BsThreeDots,
-    brandClass: 'text-purple-200',
+    color: '#C4B5FD',
     accent: 'from-purple-300/20 to-blue-300/10',
     steps: [
       'Export your conversation as .txt, .json, or .csv if your messaging app supports it.',
@@ -104,6 +104,7 @@ const platforms = Object.keys(platformData);
 function ExportHelpDialog({ platform, onClose }) {
   if (!platform) return null;
   const data = platformData[platform];
+  const Icon = data.Icon;
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 px-4 py-8 backdrop-blur">
       <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto border border-purple-300/25 bg-black p-5 shadow-glow sm:p-7">
@@ -128,14 +129,19 @@ function ExportHelpDialog({ platform, onClose }) {
           </ol>
           <div className="space-y-3">
             {[1, 2].map((item) => (
-              <div key={item} className={`h-44 border border-purple-300/20 bg-gradient-to-br ${data.accent} p-4`}>
-                <div className="h-5 w-20 bg-white/12" />
-                <div className="mt-5 space-y-2">
-                  <div className="h-3 w-full bg-white/10" />
-                  <div className="h-3 w-3/4 bg-white/10" />
-                  <div className="h-3 w-5/6 bg-white/10" />
+              <div key={item} className={`h-44 rounded-[26px] border border-purple-300/20 bg-gradient-to-br ${data.accent} p-4 shadow-[0_18px_50px_rgba(112,104,199,0.10)]`}>
+                <div className="flex items-center gap-2">
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-white/70 text-lg">
+                    <Icon style={{ color: data.color }} aria-hidden="true" />
+                  </span>
+                  <div className="h-3 w-24 rounded-full bg-white/50" />
                 </div>
-                <p className="mt-8 text-xs leading-5 text-smoke">Screenshot guide placeholder — replace with real app screenshots when available.</p>
+                <div className="mt-6 space-y-3">
+                  <div className="h-3 w-full rounded-full bg-white/45" />
+                  <div className="h-3 w-3/4 rounded-full bg-white/45" />
+                  <div className="h-3 w-5/6 rounded-full bg-white/45" />
+                </div>
+                <p className="mt-7 text-xs leading-5 text-smoke">Follow the steps in your messaging app, then upload the readable export here.</p>
               </div>
             ))}
           </div>
@@ -174,8 +180,8 @@ export default function PlatformSelector({ value, onChange }) {
                 className="h-full w-full bg-black/80 p-5 text-left"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <span className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-2xl ${data.brandClass}`}>
-                    <Icon />
+                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.055] text-3xl transition group-hover:-translate-y-0.5 group-hover:bg-white/[0.08] sm:h-16 sm:w-16 sm:text-4xl">
+                    <Icon style={{ color: data.color }} aria-hidden="true" />
                   </span>
                   <span className={`h-2 w-2 rounded-full ${selected ? 'bg-purple-200' : 'bg-white/20'}`} />
                 </div>

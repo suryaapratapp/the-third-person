@@ -1,390 +1,465 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import CardActions from '../components/CardActions.jsx';
 import ParticleBackground from '../components/ParticleBackground.jsx';
-import { useAnalysis } from '../state/AnalysisContext.jsx';
-import { useRouter } from '../state/RouterContext.jsx';
-import { generateSampleAnalysis } from '../lib/relationshipAnalysisEngine.js';
+import { generatePersonalityCardViaSupabase } from '../lib/backendAiService.js';
+import { fetchCreditBalances } from '../lib/creditsService.js';
 import { exportElementAsImage } from '../lib/exportElementAsImage.js';
-import { getReports } from '../lib/reportsStore.js';
 import { getInitials, getUserProfile } from '../lib/profileStore.js';
+import {
+  fetchRelationshipPersonalityCards,
+  fetchUnderstandYourselfProfile,
+  saveLocalUnderstandYourselfProfile,
+} from '../lib/supabaseDataService.js';
 import { getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
-import { fetchRelationshipReports, fetchRemotePersonality } from '../lib/supabaseDataService.js';
+import { useRouter } from '../state/RouterContext.jsx';
 
-const themes = {
-  'Noir Intelligence': ['#050505', '#c4b5fd', '#ffffff', 'radial'],
-  'Purple Aura': ['#13091f', '#a78bfa', '#f5f3ff', 'dots'],
-  'Soft Pink Signal': ['#1b0a14', '#f0abfc', '#fff1f7', 'wave'],
-  'Blue Memory': ['#07111f', '#60a5fa', '#eff6ff', 'grid'],
-  'Minimal White': ['#f7f4ef', '#7c3aed', '#161616', 'clean'],
-  'Orange Pulse': ['#130b07', '#fb923c', '#fff7ed', 'dots'],
-};
+const emptyText = 'Not enough evidence yet.';
 
-function buildCard(analysis) {
-  const snapshot = analysis.personalitySnapshot || {};
-  const user = analysis.personality?.user || {};
-  const viral = analysis.personalityCardViral || {};
-  const styleSignals = analysis.communicationStyleSignals?.user || {};
-  const update = analysis.personalityCardUpdate || {};
-  const signals = analysis.mainUserPersonalitySignals || {};
-  const strengths = snapshot.strengths || user.strengths || [];
-  const growthAreas = snapshot.growthAreas || user.weaknesses || [];
-  const greenFlags = viral.greenFlags || [];
-  const redFlags = viral.redFlags || [];
+const worldSlots = [
+  {
+    key: 'friends',
+    label: 'With Friends',
+    match: /friend/i,
+    icon: '♊',
+    number: '01',
+    accentClass: 'from-yellow-300/22 via-orange-300/12 to-purple-300/10',
+    iconClass: 'text-yellow-100 bg-yellow-300/12 border-yellow-200/22',
+    fallback: 'Upload a friends chat to see how you show up in your social world.',
+    keywords: ['Supportive', 'Funny', 'Real'],
+  },
+  {
+    key: 'family',
+    label: 'With Family',
+    match: /family|mom|dad|brother|sister|cousin/i,
+    icon: '⌂',
+    number: '02',
+    accentClass: 'from-cyan-300/22 via-blue-300/12 to-purple-300/10',
+    iconClass: 'text-cyan-100 bg-cyan-300/12 border-cyan-200/22',
+    fallback: 'Upload a family chat to understand your care, boundaries, and emotional role.',
+    keywords: ['Caring', 'Responsible', 'Warm'],
+  },
+  {
+    key: 'partner',
+    label: 'With Partner',
+    match: /partner|dating|crush|love|boyfriend|girlfriend|wife|husband|spouse/i,
+    icon: '♡',
+    number: '03',
+    accentClass: 'from-pink-300/24 via-rose-300/12 to-purple-300/10',
+    iconClass: 'text-pink-100 bg-pink-300/12 border-pink-200/22',
+    fallback: 'Upload a love or partner chat to reveal your romantic communication pattern.',
+    keywords: ['Romantic', 'Loyal', 'Intense'],
+  },
+  {
+    key: 'ex',
+    label: 'With Ex',
+    match: /ex/i,
+    icon: '↺',
+    number: '04',
+    accentClass: 'from-fuchsia-300/22 via-pink-300/12 to-blue-300/10',
+    iconClass: 'text-fuchsia-100 bg-fuchsia-300/12 border-fuchsia-200/22',
+    fallback: 'Upload an ex chat to understand old patterns, closure, and emotional residue.',
+    keywords: ['Reflective', 'Careful', 'Healing'],
+  },
+  {
+    key: 'colleagues',
+    label: 'With Colleagues',
+    match: /colleague|coworker|work/i,
+    icon: '▣',
+    number: '05',
+    accentClass: 'from-purple-300/22 via-blue-300/12 to-cyan-300/10',
+    iconClass: 'text-purple-100 bg-purple-300/12 border-purple-200/22',
+    fallback: 'Upload a colleague chat to see your work tone, clarity, and boundaries.',
+    keywords: ['Professional', 'Focused', 'Reliable'],
+  },
+  {
+    key: 'clients',
+    label: 'With Clients',
+    match: /client/i,
+    icon: '◇',
+    number: '06',
+    accentClass: 'from-orange-300/22 via-amber-300/12 to-pink-300/10',
+    iconClass: 'text-orange-100 bg-orange-300/12 border-orange-200/22',
+    fallback: 'Upload a client chat to map trust, pressure, and communication polish.',
+    keywords: ['Clear', 'Composed', 'Useful'],
+  },
+  {
+    key: 'manager',
+    label: 'With Manager',
+    match: /manager|boss/i,
+    icon: '☉',
+    number: '07',
+    accentClass: 'from-blue-300/22 via-indigo-300/12 to-purple-300/10',
+    iconClass: 'text-blue-100 bg-blue-300/12 border-blue-200/22',
+    fallback: 'Upload a manager chat to understand respect, pressure, and assertiveness.',
+    keywords: ['Measured', 'Respectful', 'Aware'],
+  },
+];
 
-  return {
-    title: update.headline || user.name || 'The Reflective Communicator',
-    type: update.personalityTypeSignal || user.type || 'INFJ-like',
-    core: update.emotionalSignature || user.profile || signals.communicationStyle || 'Your communication appears reflective, meaning-seeking, and emotionally attentive.',
-    oneLiner: viral.viralOneLiner || update.headline || 'You notice the shift before anyone admits the mood changed.',
-    radar: [
-      ['Emotional Radar', 'High', 'You may pick up tiny tone changes quickly.'],
-      ['Clarity Craving', 'Strong', 'Unclear replies can make your mind search for the real meaning.'],
-      ['Soft Power', 'Noticeable', 'You can make people open up by making hard feelings feel safer to name.'],
-      ['Reply Energy', 'Warm', 'Your best messages may feel personal, specific, and hard to ignore.'],
-    ],
-    recognition: [
-      ['Texting aura', viral.socialEnergy || 'Emotionally aware, observant, and quietly intense.'],
-      ['What people remember', update.conversationMagnet || viral.conversationMagnet || snapshot.whatHooksPeople],
-      ['Your soft flex', strengths[0] ? `You bring ${strengths[0].toLowerCase()} into emotionally messy moments.` : 'You make confusing feelings easier to name.'],
-      ['Your hidden tell', redFlags[0] || 'When something feels off, your questions may become more meaning-focused.'],
-      ['Your care language', 'You appear to show care by noticing patterns, checking emotional consistency, and trying to repair what feels unresolved.'],
-      ['Your conversation superpower', snapshot.engagementPsychology || 'You keep conversations alive by searching for what sits beneath the surface.'],
-    ],
-    creativeReads: [
-      ['Main character edit', viral.mainCharacterPattern || 'You love deeply, but you notice every shift in energy.'],
-      ['Plot twist pattern', 'You may look calm outside while your mind is quietly connecting every small detail.'],
-      ['Green flag glow', (update.greenFlags || greenFlags).join(', ') || 'You care about repair, honesty, and emotional effort.'],
-      ['Growth quest', (update.growthAreas || growthAreas).join(', ') || 'Ask directly before turning uncertainty into a full story.'],
-      ['Attention style', (styleSignals.attentionStyleSignals || []).join(', ') || 'Detail-aware and tone-sensitive.'],
-      ['What helps you feel safe', 'Clear words, steady effort, honest repair, and actions that match the emotional promise.'],
-    ],
-    sections: [
-      ['Core personality summary', user.profile],
-      ['Confidence notes', update.confidenceNotes?.join(', ')],
-      ['Needs more chats for', update.needsMoreChatsFor?.join(', ') || signals.notEnoughEvidence?.join(', ')],
-      ['Your Social Energy', viral.socialEnergy],
-      ['Your Emotional Signature', viral.emotionalSignature],
-      ['Your Conversation Magnet', viral.conversationMagnet],
-      ['Your Share Trigger', viral.shareTrigger],
-      ['Your Reaction Style', viral.reactionStyle],
-      ['Your Humour Style', viral.humourStyle],
-      ['Your Green Flags', greenFlags.join(', ')],
-      ['Your Red Flags', redFlags.join(', ')],
-      ['Your Main Character Pattern', viral.mainCharacterPattern],
-      ['Your Relationship Pattern', viral.relationshipPattern],
-      ['Communication style', snapshot.communicationStyle],
-      ['Current communication signal', signals.communicationStyle],
-      ['Emotional pattern', snapshot.emotionalPattern],
-      ['Reaction style', signals.reactionStyle],
-      ['Humour style', signals.humourStyle],
-      ['Likes visible', signals.likesVisible?.join(', ')],
-      ['Hobbies visible', signals.hobbiesVisible?.join(', ')],
-      ['What hooks people', snapshot.whatHooksPeople],
-      ['What makes you share', 'You may share more when a conversation feels emotionally safe, meaningful, and specific.'],
-      ['What creates emotional reactions', snapshot.emotionalTriggers],
-      ['User habits', 'You may revisit unresolved moments, look for patterns, and try to make sense of changes in tone.'],
-      ['Emotional triggers', snapshot.emotionalTriggers],
-      ['Curiosity loops', snapshot.curiosityLoops],
-      ['Progress systems', 'You appear to feel progress when the conversation moves from ambiguity to a clear next step.'],
-      ['Engagement psychology', snapshot.engagementPsychology],
-      ['Strengths', strengths.join(', ')],
-      ['Growth areas', growthAreas.join(', ')],
-      ['Recurring words or phrases', snapshot.recurringWords?.join(', ')],
-      ['Relationship communication pattern', analysis.summary?.mainEmotionalPattern],
-    ],
-  };
+function asList(value) {
+  if (!value) return [];
+  return Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean);
 }
 
-function mergePersonalityAnalysis(base, generated) {
-  if (!generated || typeof generated !== 'object') return base;
-  return {
-    ...base,
-    ...generated,
-    personality: {
-      ...base.personality,
-      ...generated.personality,
-      user: { ...(base.personality?.user || {}), ...(generated.personality?.user || {}) },
-    },
-    personalitySnapshot: { ...(base.personalitySnapshot || {}), ...(generated.personalitySnapshot || {}) },
-    personalityCardViral: { ...(base.personalityCardViral || {}), ...(generated.personalityCardViral || {}) },
-    personalityCardUpdate: { ...(base.personalityCardUpdate || {}), ...(generated.personalityCardUpdate || {}) },
-    mainUserPersonalitySignals: { ...(base.mainUserPersonalitySignals || {}), ...(generated.mainUserPersonalitySignals || {}) },
-    communicationStyleSignals: {
-      ...(base.communicationStyleSignals || {}),
-      ...(generated.communicationStyleSignals || {}),
-      user: { ...(base.communicationStyleSignals?.user || {}), ...(generated.communicationStyleSignals?.user || {}) },
-    },
-  };
+function safe(value, fallback = emptyText) {
+  if (Array.isArray(value)) return value.length ? value.join(' • ') : fallback;
+  const text = String(value || '').trim();
+  return text || fallback;
 }
 
-function ValueCard({ label, value, accent }) {
-  return (
-    <div className="border p-4" style={{ borderColor: `${accent}55`, background: 'rgba(255,255,255,0.025)' }}>
-      <p className="font-mono text-[0.64rem] uppercase tracking-[0.14em]" style={{ color: accent }}>{label}</p>
-      <p className="mt-3 text-sm leading-7 opacity-85">{value || 'Available after analysis.'}</p>
-    </div>
-  );
+function compact(value, fallback = emptyText, limit = 190) {
+  const text = safe(value, fallback);
+  return text.length > limit ? `${text.slice(0, limit - 3).trim()}...` : text;
 }
 
-function RadarBar({ label, signal, note, accent }) {
-  const widths = { Light: '34%', Medium: '56%', Noticeable: '68%', High: '82%', Strong: '88%', Warm: '74%' };
-  return (
-    <div className="border p-4" style={{ borderColor: `${accent}44`, background: 'rgba(255,255,255,0.02)' }}>
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-mono text-[0.64rem] uppercase tracking-[0.14em]">{label}</p>
-        <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em]" style={{ color: accent }}>{signal}</span>
-      </div>
-      <div className="mt-4 h-1.5 bg-white/10">
-        <div className="h-1.5" style={{ width: widths[signal] || '60%', background: `linear-gradient(90deg, ${accent}, rgba(255,255,255,0.75))` }} />
-      </div>
-      <p className="mt-3 text-xs leading-6 opacity-75">{note}</p>
-    </div>
-  );
+function keywordsFrom(card) {
+  return asList(card?.keywords).slice(0, 5);
 }
 
-function buildLifeStoryData(reports, currentAnalysis) {
-  const source = reports.length ? [...reports].reverse() : [{ analysisJson: currentAnalysis, dateAnalysed: new Date().toISOString(), emotionalTrend: currentAnalysis.conversationRecap?.emotionalTrend }];
-  return source.slice(-8).map((report, index) => {
-    const scores = report.analysisJson?.scores || currentAnalysis.scores || {};
-    const energy = report.analysisJson?.energyMatchScore?.score || scores.effortBalance || 55;
-    const conflict = scores.conflictIntensity || 35;
+function cardMatchesSlot(card, slot) {
+  return slot.match.test(card.relationshipType || '') || slot.match.test(card.title || '');
+}
+
+function buildPeopleMap(cards) {
+  return worldSlots.map((slot) => {
+    const card = cards.find((item) => cardMatchesSlot(item, slot));
     return {
-      period: report.dateAnalysed?.slice(0, 7) || `Phase ${index + 1}`,
-      emotionalIntensity: Math.min(96, Math.max(18, 42 + conflict * 0.35 + index * 3)),
-      confidence: Math.min(96, Math.max(18, (scores.emotionalSafety || 55) + index * 2)),
-      clarity: Math.min(96, Math.max(18, scores.clarity || 52)),
-      connectionEnergy: Math.min(96, Math.max(18, energy)),
-      overthinking: Math.min(96, Math.max(18, 72 - (scores.clarity || 45) * 0.45 + conflict * 0.22)),
-      growth: Math.min(96, Math.max(18, 38 + index * 8 + (scores.communicationHealth || 55) * 0.22)),
+      ...slot,
+      card,
+      summary: card?.shortSummary || slot.fallback,
+      confidence: card?.confidenceLevel || 'Not Enough Evidence',
+      keywords: keywordsFrom(card).length ? keywordsFrom(card) : slot.keywords,
+      title: card?.title || slot.label,
+      personalityLabel: card?.personalityLabel || 'Waiting for evidence',
     };
   });
 }
 
-function ProfileBadge({ profile, zodiac, accent, text }) {
+function listText(value, fallback = emptyText) {
+  const items = asList(value).map((item) => (typeof item === 'string' ? item : item.label || item.title || item.text)).filter(Boolean);
+  return items.length ? items : [fallback];
+}
+
+function ProfileAvatar({ profile }) {
   return (
-    <div className="flex flex-col items-end gap-3">
-      <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border text-2xl" style={{ borderColor: `${accent}88`, background: `${accent}18`, color: text }}>
-        {profile.profileImage ? <img src={profile.profileImage} alt="Profile" className="h-full w-full object-cover" /> : getInitials(profile)}
-      </div>
-      {zodiac && (
-        <div className="rounded-full border px-3 py-1 font-mono text-[0.65rem] uppercase tracking-[0.13em]" style={{ borderColor: `${accent}66`, color: accent }}>
-          {getZodiacGlyph(zodiac)} {zodiac}
+    <div className="relative h-28 w-28 overflow-hidden rounded-full border border-white/20 bg-white/[0.06] shadow-[0_0_60px_rgba(216,180,254,0.22)]">
+      {profile.profileImage ? (
+        <img src={profile.profileImage} alt="Profile" className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-300/30 via-pink-300/20 to-blue-300/20 font-mono text-3xl text-bone">
+          {getInitials(profile)}
         </div>
       )}
     </div>
   );
 }
 
+function PeopleMapCard({ item }) {
+  return (
+    <article className="glass-card glow-border group relative min-h-[248px] overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5">
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accentClass} opacity-95 transition duration-300 group-hover:opacity-100`} />
+      <div className="relative flex items-start justify-between">
+        <span className={`flex h-11 w-11 items-center justify-center rounded-2xl border px-2 py-2 text-2xl leading-none ${item.iconClass}`}>{item.icon}</span>
+        <span className="rounded-full border border-white/12 bg-white/[0.06] px-2.5 py-1 font-mono text-[0.65rem] font-semibold tracking-[0.12em] text-smoke">{item.number}</span>
+      </div>
+      <h3 className="relative mt-6 text-2xl font-semibold tracking-tight text-bone">{item.label}</h3>
+      <div className="relative mt-3 h-px w-16 bg-gradient-to-r from-white/70 to-white/0" />
+      <p className="relative mt-4 max-w-[17rem] font-mono text-xs leading-5 text-smoke">{compact(item.summary, item.fallback, 155)}</p>
+      <div className="relative mt-5 border-t border-white/12 pt-3">
+        <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-bone">Keywords</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {item.keywords.slice(0, 4).map((keyword) => (
+            <span key={keyword} className="rounded-full border border-white/12 bg-white/[0.06] px-2.5 py-1 font-mono text-[0.63rem] uppercase tracking-[0.09em] text-smoke">
+              {keyword}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="absolute right-5 top-24 rounded-full border border-white/12 bg-white/[0.07] px-4 py-3 text-xl text-bone">•••</div>
+      <span className="absolute bottom-4 right-5 rounded-full border border-white/12 bg-black/20 px-2.5 py-1 font-mono text-[0.58rem] uppercase tracking-[0.10em] text-smoke">{item.confidence}</span>
+    </article>
+  );
+}
+
+function SectionCard({ id, title, value, accent = 'purple' }) {
+  const accentClass = {
+    purple: 'from-purple-300/16 to-blue-300/8',
+    pink: 'from-pink-300/16 to-purple-300/8',
+    orange: 'from-orange-300/14 to-pink-300/8',
+    blue: 'from-blue-300/16 to-cyan-300/8',
+    green: 'from-emerald-300/12 to-blue-300/8',
+  }[accent];
+  return (
+    <section id={id} data-export-bg="#0b1020" className="glass-card relative overflow-hidden p-5">
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${accentClass}`} />
+      <div className="relative flex items-start justify-between gap-4">
+        <div>
+          <p className="tech-label text-smoke">{title}</p>
+          <p className="mt-4 text-sm leading-7 text-bone">{safe(value)}</p>
+        </div>
+        <CardActions targetId={id} name={title} summary={safe(value)} />
+      </div>
+    </section>
+  );
+}
+
+function OverallReport({ profile, overall }) {
+  const name = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'You';
+  const zodiac = getZodiacSign(profile.dateOfBirth);
+  const greenFlags = listText(overall.strongestGreenFlags || overall.greenFlags).slice(0, 5);
+  const redFlags = listText(overall.lovingRedFlags || overall.redFlags).slice(0, 5);
+  const bestMatches = listText(overall.bestMatches).slice(0, 3);
+  const keywords = listText(overall.keywords, 'More chats needed').slice(0, 10);
+
+  return (
+    <article id="understand-yourself-export" data-export-bg="#05050a" className="relative overflow-hidden rounded-[36px] border border-white/18 bg-[#05050a] p-6 shadow-[0_36px_120px_rgba(0,0,0,0.42)] sm:p-8">
+      <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-purple-300/18 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-12 left-1/2 h-60 w-60 rounded-full bg-pink-300/12 blur-3xl" />
+      <div className="relative grid gap-8 xl:grid-cols-[1.25fr_.75fr]">
+        <div className="grid gap-8 lg:grid-cols-[1fr_220px]">
+          <div>
+            <p className="tech-label text-purple-100">Understand Yourself</p>
+            <h2 className="serif-title mt-6 text-6xl leading-none text-bone sm:text-8xl">{name}</h2>
+            <p className="mt-2 font-serif text-3xl italic text-pink-100">{overall.overallPersonalityLabel || overall.shareableLabel || 'Your personality map is forming'}</p>
+            <p className="mt-5 max-w-3xl text-base leading-8 text-smoke">{safe(overall.summaryParagraph, 'Generate Understand Yourself after a few relationship personality cards to see a deeper profile.')}</p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <span className="rounded-full border border-white/15 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-bone">{overall.personalityTypeSignal || 'Personality signal forming'}</span>
+              {zodiac && <span className="rounded-full border border-pink-200/20 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-pink-100">{getZodiacGlyph(zodiac)} {zodiac}</span>}
+            </div>
+          </div>
+          <div className="flex items-start justify-center lg:justify-end">
+            <ProfileAvatar profile={profile} />
+          </div>
+
+          <div className="border-t border-white/12 pt-6 lg:col-span-2">
+            <p className="tech-label text-smoke">Core personality</p>
+            <p className="mt-4 max-w-4xl text-lg leading-8 text-bone">{safe(overall.emotionalSignature || overall.communicationStyle)}</p>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2 lg:col-span-2">
+            <div className="rounded-[26px] border border-emerald-200/18 bg-emerald-300/[0.045] p-5">
+              <p className="tech-label text-emerald-100">Green flags</p>
+              <ul className="mt-4 space-y-2 text-sm leading-7 text-smoke">
+                {greenFlags.map((item) => <li key={item}>• {item}</li>)}
+              </ul>
+            </div>
+            <div className="rounded-[26px] border border-pink-200/18 bg-pink-300/[0.045] p-5">
+              <p className="tech-label text-pink-100">Red flags, lovingly</p>
+              <ul className="mt-4 space-y-2 text-sm leading-7 text-smoke">
+                {redFlags.map((item) => <li key={item}>• {item}</li>)}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <aside className="grid gap-5">
+          <div className="rounded-[30px] border border-white/16 bg-white/[0.045] p-6">
+            <p className="tech-label text-orange-100">Best matches</p>
+            <div className="mt-5 space-y-4">
+              {bestMatches.map((match, index) => (
+                <div key={`${match}-${index}`} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <p className="font-mono text-xs uppercase tracking-[0.14em] text-bone">{match}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-[30px] border border-white/16 bg-white/[0.045] p-6">
+            <p className="tech-label text-blue-100">You are...</p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {keywords.map((keyword) => (
+                <span key={keyword} className="rounded-full border border-white/15 px-3 py-2 text-sm text-bone">{keyword}</span>
+              ))}
+            </div>
+            <blockquote className="mt-7 border-t border-white/10 pt-6 font-serif text-2xl italic leading-9 text-pink-100">
+              “{overall.viralOneLiner || 'You are still becoming easier to understand, one conversation at a time.'}”
+            </blockquote>
+          </div>
+        </aside>
+      </div>
+    </article>
+  );
+}
+
 export default function PersonalityCardPage() {
-  const { flow } = useAnalysis();
   const { navigate } = useRouter();
-  const [themeName, setThemeName] = useState('Noir Intelligence');
-  const [message, setMessage] = useState('');
-  const [isExporting, setIsExporting] = useState(false);
-  const [generatedAnalysis, setGeneratedAnalysis] = useState(null);
-  const hasAnalysis = Boolean(flow.analysisResult);
-  const baseAnalysis = useMemo(() => flow.analysisResult || generateSampleAnalysis(), [flow.analysisResult]);
-  const analysis = useMemo(() => mergePersonalityAnalysis(baseAnalysis, generatedAnalysis), [baseAnalysis, generatedAnalysis]);
   const profile = useMemo(() => getUserProfile(), []);
-  const userZodiac = getZodiacSign(profile.dateOfBirth);
-  const lifeStoryData = useMemo(() => buildLifeStoryData(getReports(), analysis), [analysis]);
-  const card = buildCard(analysis);
-  const [bg, accent, text, pattern] = themes[themeName];
+  const [relationshipCards, setRelationshipCards] = useState([]);
+  const [understandYourself, setUnderstandYourself] = useState(null);
+  const [credits, setCredits] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const peopleMap = useMemo(() => buildPeopleMap(relationshipCards), [relationshipCards]);
+  const hasPaidAccess = Boolean(credits?.hasPaidPack);
+  const canGenerate = relationshipCards.length > 0 && hasPaidAccess;
 
   useEffect(() => {
     let mounted = true;
-    async function loadStoredCard() {
-      const reports = await fetchRelationshipReports();
-      const remotePersonality = await fetchRemotePersonality();
+    async function load() {
+      const [cards, profileRow, balance] = await Promise.all([
+        fetchRelationshipPersonalityCards(),
+        fetchUnderstandYourselfProfile(),
+        fetchCreditBalances(),
+      ]);
       if (!mounted) return;
-      const latestReport = reports[0]?.analysisJson || null;
-      const result = remotePersonality?.personality_json
-        ? {
-          personalityCardUpdate: remotePersonality.personality_json,
-          mainUserPersonalitySignals: reports[0]?.mainUserPersonalitySignals || latestReport?.mainUserPersonalitySignals,
-        }
-        : latestReport;
-      if (result) {
-        setGeneratedAnalysis(result);
-        setMessage('Personality Card loaded from your latest analysis.');
-      } else {
-        setMessage('');
-      }
+      setRelationshipCards(cards || []);
+      setUnderstandYourself(profileRow?.overallProfileJson || null);
+      setCredits(balance);
+      setLoading(false);
     }
-    loadStoredCard();
+    load();
     return () => {
       mounted = false;
     };
   }, []);
 
-  async function exportImage() {
+  async function exportWholeProfile() {
     try {
-      setIsExporting(true);
-      const date = new Date().toISOString().slice(0, 10);
-      const theme = themeName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      await exportElementAsImage('personality-card-export', `thirdperson-personality-card-${theme}-${date}.png`);
-      setMessage('Personality card image exported.');
+      await exportElementAsImage('personality-page-export', `thirdperson-understand-yourself-${new Date().toISOString().slice(0, 10)}.png`);
+      setMessage('Understand Yourself card downloaded.');
     } catch {
-      setMessage('We could not export the card on this device. Please try again or use a desktop browser.');
-    } finally {
-      setIsExporting(false);
+      setMessage('We could not export this card on this device. Please try again on desktop.');
     }
   }
 
-  function DownloadIcon() {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M12 3v12" strokeLinecap="round" />
-        <path d="m7 10 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5 20h14" strokeLinecap="round" />
-      </svg>
-    );
+  async function generateUnderstandYourself() {
+    if (!relationshipCards.length) {
+      setMessage('Run a relationship analysis first so ThirdPerson AI can build your relationship personality map.');
+      return;
+    }
+    if (!hasPaidAccess) {
+      navigate('/pricing?reason=understand-yourself');
+      return;
+    }
+    setGenerating(true);
+    setMessage('Combining your relationship personality summaries...');
+    try {
+      const payloadCards = relationshipCards.map((card) => ({
+        id: card.id,
+        relationshipType: card.relationshipType,
+        otherPersonName: card.otherPersonName,
+        title: card.title,
+        shortSummary: card.shortSummary,
+        personalityLabel: card.personalityLabel,
+        personalityTypeSignal: card.personalityTypeSignal,
+        greenFlagsSummary: card.greenFlagsSummary,
+        redFlagsSummary: card.redFlagsSummary,
+        communicationStyleSummary: card.communicationStyleSummary,
+        emotionalSignatureSummary: card.emotionalSignatureSummary,
+        attractionEnergySummary: card.attractionEnergySummary,
+        growthAreasSummary: card.growthAreasSummary,
+        keywords: card.keywords,
+        confidenceLevel: card.confidenceLevel,
+      }));
+      const result = await generatePersonalityCardViaSupabase({
+        relationshipPersonalityCards: payloadCards,
+        userProfile: profile,
+        languageProfile: {
+          languagesUsed: profile.preferredAnalysisLanguages || [],
+          recommendedOutputStyle: profile.preferredLanguageTone || '',
+        },
+        currentUnderstandYourself: understandYourself,
+      });
+      const nextProfile = result?.understandYourself || result?.personality;
+      if (!nextProfile) throw new Error('Understand Yourself could not be generated right now.');
+      setUnderstandYourself(nextProfile);
+      saveLocalUnderstandYourselfProfile({
+        sourcePersonalityCardIds: payloadCards.map((card) => card.id),
+        overallProfileJson: nextProfile,
+      });
+      setMessage('Understand Yourself is ready.');
+    } catch (error) {
+      if (error.code === 'OUT_OF_CREDITS' || error.status === 402) {
+        navigate('/pricing?reason=understand-yourself');
+        return;
+      }
+      setMessage(error.message || 'Understand Yourself could not be generated right now.');
+    } finally {
+      setGenerating(false);
+    }
   }
+
+  const profileName = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Your';
+  const fallbackOverall = understandYourself || {
+    summaryParagraph: relationshipCards.length
+      ? 'Your deeper personality profile is ready to be generated from your saved relationship personality cards. It will combine concise summaries only, not old raw chats.'
+      : 'Run your first relationship analysis to start building your people personality map.',
+    overallPersonalityLabel: relationshipCards.length ? 'Deeper profile locked' : 'Personality map waiting',
+    personalityTypeSignal: 'Understand Yourself Signal',
+    strongestGreenFlags: relationshipCards.flatMap((card) => card.greenFlagsSummary?.split(' • ') || []).slice(0, 5),
+    lovingRedFlags: relationshipCards.flatMap((card) => card.redFlagsSummary?.split(' • ') || []).slice(0, 5),
+    bestMatches: ['People who communicate clearly', 'People who respect emotional pace', 'People who show consistent effort'],
+    keywords: [...new Set(relationshipCards.flatMap((card) => card.keywords || []))].slice(0, 8),
+    viralOneLiner: 'Different people, different sides. All authentic, all you.',
+  };
 
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
-      <ParticleBackground className="opacity-45" />
-      <div className="relative mx-auto max-w-[1320px]">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
-          <div>
-            <p className="tech-label text-smoke">Personality Card</p>
-            <h1 className="serif-title mt-4 text-5xl leading-none sm:text-7xl">Your relationship communication signature.</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            {!hasAnalysis && (
-              <button onClick={() => navigate('/analysis/new')} className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
-                Run your first analysis
-              </button>
-            )}
-            <button
-              onClick={exportImage}
-              disabled={isExporting}
-              aria-label="Download Personality Card"
-              title="Download Personality Card"
-              className="flex h-12 w-12 items-center justify-center rounded-full border border-purple-200/30 bg-purple-300/12 text-bone shadow-[0_0_35px_rgba(168,85,247,0.18)] transition hover:border-pink-200/60 hover:bg-pink-300/14 disabled:opacity-50"
-            >
-              <DownloadIcon />
-            </button>
-          </div>
-        </div>
-
-        <div className="mb-6 flex flex-wrap gap-3">
-          {Object.keys(themes).map((name) => (
-            <button
-              key={name}
-              onClick={() => setThemeName(name)}
-              className={`border px-3 py-2 font-mono text-xs uppercase tracking-[0.12em] ${themeName === name ? 'border-purple-200 bg-purple-300/10 text-bone' : 'border-white/12 text-ash'}`}
-            >
-              {name}
-            </button>
-          ))}
-        </div>
-
-        <div>
-          <article id="personality-card-export" data-export-bg={bg} className="relative overflow-hidden p-7 sm:p-10" style={{ background: bg, color: text, border: `1px solid ${accent}` }}>
-            <div className={`absolute inset-0 opacity-20 ${pattern === 'dots' ? 'dot-field' : pattern === 'grid' ? 'grid-bg' : ''}`} />
-            <div className="relative">
-              <div className="flex items-start justify-between gap-5">
-                <div>
-                  <p className="tech-label" style={{ color: accent }}>ThirdPerson AI</p>
-                  <h2 className="serif-title mt-5 text-5xl sm:text-7xl">{card.title}</h2>
-                </div>
-                <ProfileBadge profile={profile} zodiac={userZodiac} accent={accent} text={text} />
-              </div>
-              <p className="mt-5 inline-flex border px-4 py-3 font-mono text-base uppercase tracking-[0.14em] sm:text-lg" style={{ borderColor: `${accent}66`, color: accent }}>
-                {card.type} Personality Signal
+      <ParticleBackground className="opacity-52" />
+      <div id="personality-page-export" data-export-bg="#090817" className="relative mx-auto max-w-[1440px]">
+        <header className="accent-panel relative mb-7 overflow-hidden p-6 sm:p-9">
+          <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-pink-300/12 blur-3xl" />
+          <div className="relative flex flex-wrap items-start justify-between gap-6">
+            <div className="max-w-4xl">
+              <p className="tech-label text-pink-100">Understand Yourself</p>
+              <h1 className="serif-title mt-4 text-5xl leading-tight text-bone sm:text-7xl">{profileName} People Personality Map</h1>
+              <p className="mt-5 max-w-3xl text-base leading-8 text-smoke">
+                Understand Yourself combines how you show up with friends, family, love, exes, colleagues, and more — creating a deeper personality map from your relationship patterns.
               </p>
-              <p className="mt-7 max-w-3xl text-sm leading-8 opacity-85">{card.core}</p>
-
-              <div className="mt-7 border p-5 text-center" style={{ borderColor: `${accent}66`, background: `linear-gradient(135deg, ${accent}16, rgba(255,255,255,0.025))` }}>
-                <p className="font-mono text-[0.64rem] uppercase tracking-[0.14em]" style={{ color: accent }}>Viral one-liner</p>
-                <p className="serif-title mt-3 text-4xl">“{card.oneLiner}”</p>
-              </div>
-
-              <div className="mt-8 grid gap-4 md:grid-cols-4">
-                {card.radar.map(([label, signal, note]) => (
-                  <RadarBar key={label} label={label} signal={signal} note={note} accent={accent} />
-                ))}
-              </div>
-
-              <div className="mt-8 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-                <div className="border p-5" style={{ borderColor: `${accent}55`, background: `radial-gradient(circle at 0% 0%, ${accent}18, transparent 16rem)` }}>
-                  <p className="font-mono text-[0.64rem] uppercase tracking-[0.14em]" style={{ color: accent }}>Recognition Engine</p>
-                  <h3 className="serif-title mt-3 text-4xl">How people may read your energy</h3>
-                  <div className="mt-5 grid gap-3 md:grid-cols-2">
-                    {card.recognition.map(([label, value]) => (
-                      <ValueCard key={label} label={label} value={value} accent={accent} />
-                    ))}
-                  </div>
-                </div>
-                <div className="border p-5" style={{ borderColor: `${accent}55`, background: 'rgba(255,255,255,0.025)' }}>
-                  <p className="font-mono text-[0.64rem] uppercase tracking-[0.14em]" style={{ color: accent }}>Tiny Truths</p>
-                  <div className="mt-5 space-y-4 text-sm leading-7 opacity-85">
-                    <p>You may be the kind of person who needs the emotional math to make sense before your heart can relax.</p>
-                    <p>You may not need constant attention, but you likely notice when effort suddenly changes.</p>
-                    <p>Your best conversations appear to happen when honesty, humour, and emotional safety meet in the same place.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8 border p-5" style={{ borderColor: `${accent}55`, background: `linear-gradient(135deg, ${accent}12, rgba(255,255,255,0.018))` }}>
-                <p className="font-mono text-[0.64rem] uppercase tracking-[0.14em]" style={{ color: accent }}>Your Emotional Life Story</p>
-                <h3 className="serif-title mt-3 text-4xl">How your emotional energy appears to evolve</h3>
-                <p className="mt-3 max-w-3xl text-sm leading-7 opacity-80">
-                  A timeline of how your emotional energy, communication style, confidence, curiosity, attachment, and clarity appear to evolve across analysed conversations.
-                </p>
-                <div className="mt-6 h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={lifeStoryData} margin={{ left: -25, right: 10, top: 10, bottom: 0 }}>
-                      <XAxis dataKey="period" stroke="rgba(255,255,255,0.45)" tick={{ fontSize: 11 }} />
-                      <YAxis stroke="rgba(255,255,255,0.28)" tick={{ fontSize: 11 }} />
-                      <Tooltip contentStyle={{ background: bg, border: `1px solid ${accent}`, color: text }} />
-                      <Line type="monotone" dataKey="emotionalIntensity" stroke="#f472b6" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="confidence" stroke="#a78bfa" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="clarity" stroke="#60a5fa" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="connectionEnergy" stroke="#fb923c" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="overthinking" stroke="#facc15" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="growth" stroke="#34d399" strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-5 grid gap-3 md:grid-cols-5">
-                  {[
-                    'When you started noticing patterns',
-                    'When your emotional energy peaked',
-                    'When clarity improved',
-                    'When you pulled back',
-                    'When you became more self-aware',
-                  ].map((moment) => (
-                    <div key={moment} className="border p-3 text-xs leading-6 opacity-80" style={{ borderColor: `${accent}33` }}>{moment}</div>
-                  ))}
-                </div>
-                <p className="mt-4 text-xs leading-6 opacity-60">Based on analysed conversations. This is a reflective graph, not a final judgment.</p>
-              </div>
-
-              <div className="mt-8">
-                <p className="font-mono text-[0.64rem] uppercase tracking-[0.14em]" style={{ color: accent }}>Creative Reads</p>
-                <div className="mt-4 grid gap-4 md:grid-cols-3">
-                  {card.creativeReads.map(([label, value]) => (
-                    <ValueCard key={label} label={label} value={value} accent={accent} />
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-8 grid gap-4 md:grid-cols-2">
-                {card.sections.map(([label, value]) => (
-                  <ValueCard key={label} label={label} value={value} accent={accent} />
-                ))}
+              <div className="mt-6 flex flex-wrap gap-2">
+                <span className="rounded-full border border-purple-200/20 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-purple-100">{relationshipCards.length} relationship cards saved</span>
+                <span className="rounded-full border border-orange-200/20 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-orange-100">{hasPaidAccess ? 'Paid access active' : 'Paid profile locked'}</span>
               </div>
             </div>
-          </article>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-[28px] border border-purple-200/18 bg-white/[0.045] p-5">
-            <p className="max-w-3xl text-sm leading-7 text-ash">
-              Personality cards are interpretive and based on the conversation provided. They are designed for reflection, not fixed identity labels.
-            </p>
-            {message && <p className="text-sm leading-7 text-smoke">{message}</p>}
+            <div data-export-ignore className="grid gap-3 sm:min-w-[260px]">
+              <button
+                onClick={generateUnderstandYourself}
+                disabled={loading || generating || (!relationshipCards.length)}
+                className="glass-button rounded-full px-6 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {hasPaidAccess ? (generating ? 'Generating...' : 'Generate Understand Yourself') : 'Unlock Understand Yourself'}
+              </button>
+              <button onClick={exportWholeProfile} className="glass-button rounded-full px-6 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
+                Download Full Card
+              </button>
+              {message && <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs leading-6 text-smoke">{message}</p>}
+            </div>
           </div>
+        </header>
+
+        <section className="accent-panel glow-border relative mb-7 overflow-hidden p-5 sm:p-8">
+          <div className="pointer-events-none absolute -left-16 top-24 h-52 w-52 rounded-full bg-purple-300/12 blur-3xl" />
+          <div className="pointer-events-none absolute -right-20 bottom-10 h-52 w-52 rounded-full bg-pink-300/10 blur-3xl" />
+          <div className="relative flex flex-wrap items-start justify-between gap-6">
+            <div>
+              <p className="tech-label text-purple-100">Relationship Worlds</p>
+              <h2 className="serif-title mt-4 max-w-3xl text-5xl leading-tight text-bone sm:text-7xl">Your People Personality Map</h2>
+              <p className="mt-4 max-w-2xl text-base leading-8 text-smoke">Different people, different sides. This is how you show up in their world.</p>
+            </div>
+            <p className="mt-5 rounded-full border border-white/12 bg-white/[0.05] px-5 py-3 font-mono text-xs uppercase tracking-[0.16em] text-pink-100 backdrop-blur">You, in relationships ✧</p>
+          </div>
+          <div className="relative mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {peopleMap.map((item) => <PeopleMapCard key={item.key} item={item} />)}
+          </div>
+          <div className="relative mt-8 flex flex-wrap items-center justify-between gap-4 font-mono text-sm text-smoke">
+            <p>✧ One person, many personalities. All authentic, all you.</p>
+            <p className="rounded-full border border-white/12 bg-white/[0.04] px-5 py-3 text-bone">Keep growing, keep glowing</p>
+          </div>
+        </section>
+
+        <OverallReport profile={profile} overall={fallbackOverall} />
+
+        <div className="mt-7 grid gap-5 lg:grid-cols-3">
+          <SectionCard id="how-you-show-up" title="How you show up" value={fallbackOverall.socialEnergy || fallbackOverall.summaryParagraph} accent="purple" />
+          <SectionCard id="communication-style" title="Communication style" value={fallbackOverall.communicationStyle || fallbackOverall.howYouAreWithLove || fallbackOverall.howYouAreAtWork} accent="blue" />
+          <SectionCard id="growth-areas" title="Growth areas" value={fallbackOverall.growthAreas || fallbackOverall.lovingRedFlags} accent="orange" />
         </div>
+
+        <section className="glass-card mt-7 p-5">
+          <p className="text-sm leading-7 text-smoke">
+            Relationship-specific cards are generated from each analysis. Understand Yourself uses those concise summaries only, which keeps the deeper profile faster, cheaper, and more private than re-reading old raw chats.
+          </p>
+        </section>
       </div>
     </section>
   );

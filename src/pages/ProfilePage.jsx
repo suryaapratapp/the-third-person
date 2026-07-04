@@ -90,7 +90,7 @@ export default function ProfilePage() {
               <p className="tech-label text-smoke">Profile</p>
               <h1 className="serif-title mt-4 text-5xl leading-none sm:text-7xl">Your ThirdPerson profile.</h1>
               <p className="mt-6 max-w-2xl text-sm leading-8 text-smoke">
-                Your profile helps ThirdPerson AI personalise your relationship insights, Bestie tone, zodiac reflection, and shareable cards.
+                Your profile helps ThirdPerson AI personalise your relationship insights, guidance tone, zodiac reflection, and shareable cards.
               </p>
             </div>
             <div className="flex flex-col items-center gap-3">
@@ -106,6 +106,7 @@ export default function ProfilePage() {
               ['First name', 'firstName', 'text'],
               ['Last name', 'lastName', 'text'],
               ['Email', 'email', 'email'],
+              ['Phone number (optional)', 'phoneNumber', 'tel'],
               ['Date of birth', 'dateOfBirth', 'date'],
             ].map(([label, field, type]) => (
               <label key={field}>
@@ -128,7 +129,7 @@ export default function ProfilePage() {
             <div className="sm:col-span-2 rounded-[28px] border border-white/10 bg-white/[0.035] p-5">
               <p className="tech-label text-purple-100">Preferred analysis languages</p>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-smoke">
-                Select the languages that commonly appear in your conversations. ThirdPerson AI will try to match the tone and language style in your reports and Bestie replies.
+                Select the languages that commonly appear in your conversations. ThirdPerson AI will try to match the tone and language style in your reports and guide replies.
               </p>
               <div className="mt-5 flex max-h-72 flex-wrap gap-2 overflow-y-auto pr-1">
                 {supportedAnalysisLanguages.map((language) => {

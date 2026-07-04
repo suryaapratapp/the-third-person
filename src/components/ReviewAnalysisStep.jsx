@@ -10,8 +10,15 @@ import { generateRelationshipReportViaSupabase } from '../lib/backendAiService.j
 import { fetchUsageEntitlements } from '../lib/creditsService.js';
 import UsageWarningModal from './UsageWarningModal.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
-import { generateFreeRelationshipAnalysisViaPuter, testPuterAnalysisConnection } from '../lib/puterFreeAiService.js';
-import { fetchRelationshipReportById, fetchRemotePersonality, rowToReport, saveRelationshipReportToSupabase, upsertPersonalityMemoryFromAnalysis } from '../lib/supabaseDataService.js';
+import { generateFreeRelationshipAnalysisViaPuter } from '../lib/puterFreeAiService.js';
+import {
+  fetchRelationshipReportById,
+  fetchRemotePersonality,
+  rowToReport,
+  saveRelationshipPersonalityCardToSupabase,
+  saveRelationshipReportToSupabase,
+  upsertPersonalityMemoryFromAnalysis,
+} from '../lib/supabaseDataService.js';
 import { ensurePuterReady, ensurePuterSignedInFromUserGesture } from '../lib/puterAuthService.js';
 
 function mergeAnalysisFallback(fallback, candidate) {
@@ -68,7 +75,6 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
   const [entitlements, setEntitlements] = useState(null);
   const [pendingFreeAnalysis, setPendingFreeAnalysis] = useState(null);
   const [secureSignInMessage, setSecureSignInMessage] = useState('');
-  const [devTestMessage, setDevTestMessage] = useState('');
   const reviewPrep = useMemo(() => {
     if (!flow.chatText.trim()) return null;
     const sensitive = filterSensitiveData(flow.chatText);
@@ -78,6 +84,15 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
   const userProfile = useMemo(() => getUserProfile(), []);
   const userZodiac = getZodiacSign(userProfile.dateOfBirth);
   const otherZodiac = getZodiacSign(flow.otherPersonDateOfBirth);
+  const aiUserProfile = useMemo(() => ({
+    firstName: userProfile.firstName,
+    lastName: userProfile.lastName,
+    genderIdentity: userProfile.genderIdentity,
+    preferredLanguageTone: userProfile.preferredLanguageTone,
+    preferredAnalysisLanguages: userProfile.preferredAnalysisLanguages || [],
+    zodiacSign: userZodiac,
+    zodiacElement: getZodiacElement(userZodiac),
+  }), [userProfile, userZodiac]);
   const estimatedSize = flow.chatText ? `${flow.chatText.length.toLocaleString()} characters` : 'No conversation text detected';
   const rows = [
     ['Platform', flow.platform || 'Not selected'],
@@ -155,7 +170,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         preparedConversation: pendingFreeAnalysis.preparedConversation,
         promptScan: pendingFreeAnalysis.scan,
         sensitiveData: pendingFreeAnalysis.sensitiveData,
-        userProfile,
+        userProfile: aiUserProfile,
         analysisDraft: pendingFreeAnalysis.fallbackAnalysis,
         runtimeContext: pendingFreeAnalysis.runtimeContext,
       });
@@ -186,16 +201,6 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
     }
   }
 
-  async function runDevConnectionTest() {
-    setDevTestMessage('Testing secure analysis connection…');
-    try {
-      const result = await testPuterAnalysisConnection();
-      setDevTestMessage(result.message || 'Secure analysis connection is working.');
-    } catch (error) {
-      setDevTestMessage(error.message || 'Secure analysis connection failed.');
-    }
-  }
-
   async function startAnalysis({ skipUsageCheck = false } = {}) {
     setIsGenerating(true);
     setAnalysisError('');
@@ -217,14 +222,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       ...preparedConversationBase,
       metadata: {
         ...preparedConversationBase.metadata,
-        userProfile: {
-          firstName: userProfile.firstName,
-          lastName: userProfile.lastName,
-          genderIdentity: userProfile.genderIdentity,
-          preferredLanguageTone: userProfile.preferredLanguageTone,
-          zodiacSign: userZodiac,
-          zodiacElement: getZodiacElement(userZodiac),
-        },
+        userProfile: aiUserProfile,
         otherPersonZodiac: {
           sign: otherZodiac,
           element: getZodiacElement(otherZodiac),
@@ -279,8 +277,8 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       selectedRelationshipType: flow.relationshipType,
       selectedMessagingApp: flow.platform,
       selectedPersonName: flow.personName,
-      mainUserProfileDetails: userProfile,
-      selectedProfileLanguages: userProfile.preferredAnalysisLanguages || [],
+      mainUserProfileDetails: aiUserProfile,
+      selectedProfileLanguages: aiUserProfile.preferredAnalysisLanguages || [],
       userStatus: latestEntitlements.hasPaidPack ? 'paid' : 'free',
       paidCredits: {
         relationshipReportsLeft: latestEntitlements.paidRelationshipReportsLeft,
@@ -317,7 +315,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         preparedConversation,
         promptScan: scan,
         sensitiveData,
-        userProfile,
+        userProfile: aiUserProfile,
         previousPersonalityMemory,
         analysisDraft: fallbackAnalysis,
         runtimeContext,
@@ -344,6 +342,11 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         reportRecord: rowToReport(backendResult.report),
         error: '',
       };
+      await saveRelationshipPersonalityCardToSupabase({
+        analysis: aiResult.analysis,
+        report: aiResult.reportRecord,
+        preparedConversation,
+      });
     } else if (!latestEntitlements.hasPaidPack && latestEntitlements.freeAnalysesRemaining > 0) {
       setPendingFreeAnalysis({
         preparedConversation,
@@ -458,7 +461,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
           Preparing secure analysis
         </p>
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-xs leading-6 text-smoke">
-          {entitlements ? `${entitlements.paidRelationshipReportsLeft} paid Relationship Reports left • ${entitlements.paidBestieChatsLeft} paid Bestie Chats left • ${entitlements.freeAnalysesRemaining} free analyses left` : 'Checking your credit balance…'}
+          {entitlements ? `${entitlements.paidRelationshipReportsLeft} paid Relationship Reports left • ${entitlements.paidBestieChatsLeft} paid Guide Chats left • ${entitlements.freeAnalysesRemaining} free analyses left` : 'Checking your credit balance…'}
         </div>
         <button
           disabled={!canStart || isGenerating}
@@ -467,16 +470,6 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         >
           {isGenerating ? 'Preparing Analysis' : 'Start Analysis'}
         </button>
-        {import.meta.env.DEV && (
-          <button
-            type="button"
-            onClick={runDevConnectionTest}
-            className="glass-button mt-3 w-full px-5 py-3 font-mono text-[0.68rem] uppercase tracking-[0.14em] text-smoke"
-          >
-            Test secure analysis connection
-          </button>
-        )}
-        {devTestMessage && <p className="mt-3 text-xs leading-6 text-ash">{devTestMessage}</p>}
         {analysisError && <p className="mt-4 text-xs leading-6 text-smoke">{analysisError}</p>}
         {!canStart && <p className="mt-4 text-xs leading-6 text-ash">Complete every step and add at least a short conversation sample.</p>}
       </div>

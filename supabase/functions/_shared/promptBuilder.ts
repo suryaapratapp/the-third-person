@@ -74,8 +74,8 @@ function buildLanguageToneInstructions(languageProfile: Record<string, any> = {}
       userSelectedPreferredAnalysisLanguages: selectedLanguages,
     }),
     'Output language instruction: Reply in the same language style as the uploaded chat where natural. If the chat is Hindi and English mix, use natural Indian-style Hindi English language. If the chat is mixed language, keep the output mixed but easy to understand. Do not force awkward translation.',
-    'Tone: Speak like a sweet, cool, emotionally intelligent bestie who genuinely wants to help. Be caring, honest, smart, and clear. Use simple words. Be warm but not childish. Be direct when needed, but never harsh. If the conversation language is Hindi, or mixed Indian English, naturally include that style in the output.',
-    'Light phrases are allowed where suitable: bestie, honestly, thoda, scene, vibe, mixed signals, overthink mat karo, yeh pattern lag raha hai, thoda careful rehna, clarity zaroori hai.',
+    'Tone: Speak like a sweet, cool, emotionally intelligent broski who genuinely wants to help. Be caring, honest, smart, and clear. Use simple words. Be warm but not childish. Be direct when needed, but never harsh. If the conversation language is Hindi, or mixed Indian English, naturally include that style in the output.',
+    'Light phrases are allowed where suitable: broski, honestly, thoda, scene, vibe, mixed signals, overthink mat karo, yeh pattern lag raha hai, thoda careful rehna, clarity zaroori hai.',
     'Do not overuse slang. Do not make it cringe. Do not sound robotic. Do not make absolute claims.',
     'Use careful wording: may suggest, could mean, appears to, based on this conversation, this is not proof but it is worth noticing.',
   ].join('\n');
@@ -155,14 +155,17 @@ export function buildRelationshipAnalysisPrompt({
     buildLanguageToneInstructions(languageProfile, profileLanguages),
     safetyInstructions(),
     'Do not infer basic structure from raw text when parser metadata is provided. Use parser metadata as the source of truth for participants, counts, dates, language style, and timing patterns.',
-    'Make exactly one combined generation from this uploaded conversation. The same JSON response must power both the Relationship Report and the main-user Personality Card update.',
+    'Make exactly one combined generation from this uploaded conversation. The same JSON response must power both the Relationship Report and the relationship-specific main-user Personality Card.',
+    'relationshipReport must contain one strong summaryParagraph, then short dashboard-safe labels/cards. Keep cards compact and visual.',
+    'relationshipPersonalityCard must describe only how the main user appears inside this selected relationship type. It must include conciseSummaryForDatabase so future Understand Yourself generation can use summaries without raw chats.',
+    'The Personality Card copy should be compact: one strong paragraph, then short chips/phrases. Do not write long blocks inside card fields.',
     'For long chats, use the provided chronological chunk summaries for final synthesis. Do not ask for or rely on full raw chat text during final synthesis.',
-    'Bestie context must be a concise memory summary that can answer future questions without sending the full raw chat again.',
+    'Broski context must be a concise memory summary that can answer future questions without sending the full raw chat again.',
     'For personality signals, use Not enough evidence yet when traits are not clearly visible.',
   ].join('\n\n');
 
   const userContent = JSON.stringify({
-    task: 'Generate one combined ThirdPerson AI response containing the Relationship Report, main-user Personality Signals, Personality Card update, Bestie context summary, and future-use report summary',
+    task: 'Generate one combined ThirdPerson AI response containing the Relationship Report, relationship-specific main-user Personality Card, main-user Personality Signals, Broski context summary, and future-use report summary',
     relationshipContext: {
       relationshipType: resolvedRelationship,
       otherPersonName: otherPersonName || parsedConversation.metadata?.personName,
@@ -202,8 +205,13 @@ export function buildPersonalityCardPrompt({
     `Relationship context for latest signals: ${relationshipType || 'Mixed relationships'}`,
     buildLanguageToneInstructions(languageProfile, []),
     safetyInstructions(),
-    'Update the Personality Card from concise personality signals only. Do not ask for raw chats.',
+    'Generate or update the paid Understand Yourself profile from concise relationship-specific personality summaries only. Do not ask for raw chats.',
+    'The output should combine how the user appears across relationship worlds such as friends, family, love, exes, colleagues, clients, and managers when those summaries are available.',
     'Preserve stable traits, strengthen repeated traits, soften weak traits, and add new traits only when evidence is enough.',
+    'Make the Personality Card emotional, aesthetic, mature, GenZ-friendly, and shareable. It should feel like a deep self-understanding report, not only an MBTI card.',
+    'Include sections for emotional signature, green flags, loving red flags, attraction energy, magnetic energy, why people stay, why people misread the user, communication style, love/friendship style, humour style, how they fight, texting aura, useful toxic trait, growth era, mature side, emotional intelligence, cool factor, and a viral one-liner.',
+    'Keep attraction/magnetic sections classy and personality-based. Do not make sexual claims.',
+    'Do not shame the user. Red flags should be gentle, self-reflective, and useful.',
     'Use confidence labels: Early Signal, Repeated Pattern, Strong Pattern, Not Enough Evidence.',
   ].join('\n\n');
 
@@ -211,7 +219,7 @@ export function buildPersonalityCardPrompt({
     systemPrompt: basePromptTemplate,
     developerInstructions,
     userContent: JSON.stringify({
-      task: 'Update ThirdPerson AI Personality Card',
+      task: 'Generate ThirdPerson AI Understand Yourself profile',
       previousPersonalityCard,
       newPersonalitySignals,
       languageProfile,
@@ -236,7 +244,7 @@ export function buildBestiePrompt({
   languageProfile = {},
 }: PromptBuildInput): PromptBundle {
   const developerInstructions = [
-    'You are ThirdPerson Bestie, a relationship clarity companion inside ThirdPerson AI.',
+    'You are ThirdPerson Broski, a relationship clarity companion inside ThirdPerson AI.',
     `Relationship type: ${relationshipType || 'Relationship'}`,
     `Other person: ${otherPersonName || 'This person'}`,
     `Relationship-specific focus: ${relationshipFocus(relationshipType || '').join(', ')}`,

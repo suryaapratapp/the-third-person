@@ -1,4 +1,5 @@
 const REPORTS_KEY = 'thirdperson_relationship_reports';
+const RELATIONSHIP_PERSONALITY_CARDS_KEY = 'thirdperson_relationship_personality_cards_v1';
 
 function readReports() {
   try {
@@ -10,6 +11,108 @@ function readReports() {
 
 function writeReports(reports) {
   window.localStorage.setItem(REPORTS_KEY, JSON.stringify(reports));
+}
+
+function readRelationshipPersonalityCards() {
+  try {
+    return JSON.parse(window.localStorage.getItem(RELATIONSHIP_PERSONALITY_CARDS_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function writeRelationshipPersonalityCards(cards) {
+  window.localStorage.setItem(RELATIONSHIP_PERSONALITY_CARDS_KEY, JSON.stringify(cards));
+}
+
+function asList(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return [value].filter(Boolean);
+}
+
+function shortText(value, fallback = 'Not enough evidence yet.') {
+  if (Array.isArray(value)) return value.filter(Boolean).slice(0, 4).join(' • ') || fallback;
+  const text = String(value || '').trim();
+  if (!text) return fallback;
+  return text.length > 420 ? `${text.slice(0, 417).trim()}...` : text;
+}
+
+function relationshipWorldLabel(relationshipType = 'Relationship') {
+  const value = String(relationshipType || '').toLowerCase();
+  if (/friend/.test(value)) return 'Friends';
+  if (/family|mom|dad|brother|sister|cousin/.test(value)) return 'Family';
+  if (/ex/.test(value)) return 'Ex';
+  if (/partner|dating|crush|love|boyfriend|girlfriend|spouse|wife|husband/.test(value)) return 'Partner';
+  if (/colleague|coworker/.test(value)) return 'Colleagues';
+  if (/client/.test(value)) return 'Clients';
+  if (/manager|boss/.test(value)) return 'Manager';
+  return relationshipType || 'Relationship';
+}
+
+export function buildRelationshipPersonalityCard({ analysis = {}, report = {}, preparedConversation = {} }) {
+  const meta = preparedConversation?.metadata || {};
+  const relationshipType = report.relationshipType || meta.relationshipType || analysis.relationshipPersonalityCard?.relationshipType || 'Relationship';
+  const otherPersonName = report.personName || meta.personName || analysis.conversationRecap?.personName || '';
+  const world = relationshipWorldLabel(relationshipType);
+  const rawCard = analysis.relationshipPersonalityCard || analysis.personalityCardUpdate || {};
+  const signals = analysis.mainUserPersonalitySignals || {};
+  const title = rawCard.title || `Your Personality With ${world}`;
+  const greenFlags = asList(rawCard.greenFlags || rawCard.coreTraits || signals.strongSignals);
+  const redFlags = asList(rawCard.redFlags || rawCard.growthAreas || signals.weakSignals);
+  const growthAreas = asList(rawCard.growthAreas || signals.notEnoughEvidence);
+  const topWords = asList(rawCard.keywords || signals.topWords)
+    .map((item) => (typeof item === 'string' ? item : item?.word || item?.label))
+    .filter(Boolean)
+    .slice(0, 12);
+  const summary = rawCard.summaryParagraph
+    || rawCard.conciseSummaryForDatabase
+    || rawCard.emotionalSignature
+    || rawCard.headline
+    || signals.emotionalPattern
+    || signals.communicationStyle
+    || 'Not enough evidence yet. Upload more chats in this relationship world to make this clearer.';
+
+  return {
+    id: rawCard.id || `rpc-${report.analysisId || Date.now()}`,
+    userId: rawCard.userId || '',
+    relationshipType,
+    otherPersonName,
+    reportId: report.analysisId || rawCard.reportId || null,
+    title,
+    shortSummary: shortText(rawCard.conciseSummaryForDatabase || summary),
+    summaryParagraph: shortText(rawCard.summaryParagraph || summary),
+    personalityLabel: rawCard.personalityLabel || rawCard.shareableLabel || rawCard.headline || 'Early personality signal',
+    personalityTypeSignal: rawCard.personalityTypeSignal || 'Personality signal still forming',
+    greenFlagsSummary: shortText(greenFlags),
+    redFlagsSummary: shortText(redFlags),
+    communicationStyleSummary: shortText(rawCard.communicationStyle || signals.communicationStyle),
+    emotionalSignatureSummary: shortText(rawCard.emotionalSignature || signals.emotionalPattern),
+    attractionEnergySummary: shortText(rawCard.attractionEnergy || rawCard.magneticEnergy || rawCard.conversationMagnet),
+    growthAreasSummary: shortText(growthAreas),
+    keywords: topWords.length ? topWords : ['Early signal'],
+    confidenceLevel: rawCard.confidenceLevel || (signals.notEnoughEvidence?.length ? 'Early Signal' : 'Repeated Pattern'),
+    createdAt: report.dateAnalysed || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    rawCard,
+  };
+}
+
+export function getRelationshipPersonalityCards() {
+  if (typeof window === 'undefined') return [];
+  return readRelationshipPersonalityCards();
+}
+
+export function saveRelationshipPersonalityCardLocal({ analysis, report, preparedConversation }) {
+  if (typeof window === 'undefined' || !analysis || !report) return null;
+  const card = buildRelationshipPersonalityCard({ analysis, report, preparedConversation });
+  const cards = readRelationshipPersonalityCards().filter((item) => {
+    if (card.reportId && item.reportId) return item.reportId !== card.reportId;
+    return item.id !== card.id;
+  });
+  cards.unshift(card);
+  writeRelationshipPersonalityCards(cards.slice(0, 120));
+  return card;
 }
 
 export function getReports() {
@@ -32,9 +135,9 @@ export function saveAnalysisReport({ analysis, preparedConversation }) {
     platform,
     dateAnalysed: new Date().toISOString(),
     dateRange: preparedConversation?.estimatedDateRange || 'Date range unavailable',
-    mainDynamic: recap.mainDynamic || analysis.summary?.currentDynamic || 'Relationship pattern available',
-    compatibilityScore: recap.compatibilityScore || analysis.scores?.compatibility || 0,
-    emotionalTrend: recap.emotionalTrend || 'Mixed',
+    mainDynamic: recap.mainDynamic || analysis.relationshipReport?.overallDynamic || analysis.summary?.currentDynamic || 'Relationship pattern available',
+    compatibilityScore: recap.compatibilityScore || analysis.relationshipReport?.scores?.compatibility || analysis.scores?.compatibility || 0,
+    emotionalTrend: recap.emotionalTrend || analysis.relationshipReport?.emotionalTone || 'Mixed',
     participants: preparedConversation?.participants || preparedConversation?.participantNames || analysis.participants?.detectedParticipants || [],
     messageCount: preparedConversation?.messageCount || 0,
     analysisJson: analysis,
@@ -47,6 +150,7 @@ export function saveAnalysisReport({ analysis, preparedConversation }) {
   const reports = readReports().filter((item) => item.analysisId !== report.analysisId);
   reports.unshift(report);
   writeReports(reports.slice(0, 80));
+  saveRelationshipPersonalityCardLocal({ analysis, report, preparedConversation });
   return report;
 }
 

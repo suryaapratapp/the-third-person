@@ -1,20 +1,33 @@
 import AppShell from './components/AppShell.jsx';
+import { Suspense, lazy } from 'react';
 import HomePage from './pages/HomePage.jsx';
-import NewAnalysisPage from './pages/NewAnalysisPage.jsx';
-import LoadingPage from './pages/LoadingPage.jsx';
-import ResultPage from './pages/ResultPage.jsx';
-import PrivacyPage from './pages/PrivacyPage.jsx';
-import CompanyPage from './pages/CompanyPage.jsx';
-import ProfilePage from './pages/ProfilePage.jsx';
-import PersonalityCardPage from './pages/PersonalityCardPage.jsx';
-import VisionPage from './pages/VisionPage.jsx';
-import ReportsPage from './pages/ReportsPage.jsx';
-import FaqsPage from './pages/FaqsPage.jsx';
-import BestieBotPage from './pages/BestieBotPage.jsx';
-import PricingPage from './pages/PricingPage.jsx';
-import AuthPage from './pages/AuthPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { useRouter } from './state/RouterContext.jsx';
+
+const NewAnalysisPage = lazy(() => import('./pages/NewAnalysisPage.jsx'));
+const LoadingPage = lazy(() => import('./pages/LoadingPage.jsx'));
+const ResultPage = lazy(() => import('./pages/ResultPage.jsx'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage.jsx'));
+const CompanyPage = lazy(() => import('./pages/CompanyPage.jsx'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
+const PersonalityCardPage = lazy(() => import('./pages/PersonalityCardPage.jsx'));
+const VisionPage = lazy(() => import('./pages/VisionPage.jsx'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'));
+const FaqsPage = lazy(() => import('./pages/FaqsPage.jsx'));
+const BestieBotPage = lazy(() => import('./pages/BestieBotPage.jsx'));
+const PricingPage = lazy(() => import('./pages/PricingPage.jsx'));
+const AuthPage = lazy(() => import('./pages/AuthPage.jsx'));
+
+function PageLoading() {
+  return (
+    <section className="flex min-h-screen items-center justify-center px-4 pt-28">
+      <div className="thin-panel max-w-md p-6 text-center">
+        <p className="tech-label text-smoke">ThirdPerson AI</p>
+        <p className="mt-4 text-sm leading-7 text-smoke">Preparing your page…</p>
+      </div>
+    </section>
+  );
+}
 
 function RouteSwitch() {
   const { path } = useRouter();
@@ -29,8 +42,8 @@ function RouteSwitch() {
   if (path === '/personality-card') return <ProtectedRoute><PersonalityCardPage /></ProtectedRoute>;
   if (path === '/vision') return <VisionPage />;
   if (path === '/reports') return <ProtectedRoute><ReportsPage /></ProtectedRoute>;
-  if (path.startsWith('/reports/') && path.endsWith('/bestie')) {
-    const chainId = decodeURIComponent(path.replace('/reports/', '').replace('/bestie', ''));
+  if (path.startsWith('/reports/') && (path.endsWith('/broski') || path.endsWith('/bestie'))) {
+    const chainId = decodeURIComponent(path.replace('/reports/', '').replace('/broski', '').replace('/bestie', ''));
     return <ProtectedRoute><BestieBotPage chainId={chainId} /></ProtectedRoute>;
   }
   if (path === '/faqs') return <FaqsPage />;
@@ -41,7 +54,9 @@ function RouteSwitch() {
 export default function App() {
   return (
     <AppShell>
-      <RouteSwitch />
+      <Suspense fallback={<PageLoading />}>
+        <RouteSwitch />
+      </Suspense>
     </AppShell>
   );
 }

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ParticleBackground from '../components/ParticleBackground.jsx';
-import { claimPayAsYouGoPack, fetchCreditBalances } from '../lib/creditsService.js';
+import { fetchCreditBalances } from '../lib/creditsService.js';
 
 const PRICE_PER_REPORT = 199;
 const CHATS_PER_REPORT = 10;
@@ -23,15 +23,8 @@ export default function PricingPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [balances, setBalances] = useState(null);
   const reason = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('reason') : '';
-  const isLocalTesting = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
-
-  const bestieChats = reportCount * CHATS_PER_REPORT;
+  const guideChats = reportCount * CHATS_PER_REPORT;
   const totalPrice = reportCount * PRICE_PER_REPORT;
-  const testPackId = useMemo(() => {
-    if (reportCount === 5) return 'clarity_pack';
-    if (reportCount === 10) return 'deep_clarity_pack';
-    return '';
-  }, [reportCount]);
 
   useEffect(() => {
     let mounted = true;
@@ -44,7 +37,7 @@ export default function PricingPage() {
   }, []);
 
   const reportBalance = balances?.paidRelationshipReportsLeft ?? '—';
-  const bestieBalance = balances?.paidBestieChatsLeft ?? '—';
+  const guideBalance = balances?.paidBestieChatsLeft ?? '—';
 
   function updateReports(value) {
     setReportCount(clampReports(value));
@@ -55,23 +48,6 @@ export default function PricingPage() {
     setModalOpen(true);
   }
 
-  async function activateLocalTestCredits() {
-    if (!testPackId) {
-      setMessage('Local test activation is available for 5 or 10 reports because those test credit amounts already exist.');
-      return;
-    }
-    setMessage('Adding test credits...');
-    try {
-      await claimPayAsYouGoPack(testPackId);
-      const nextBalances = await fetchCreditBalances();
-      setBalances(nextBalances);
-      setModalOpen(false);
-      setMessage(`Test credits added. You now have ${nextBalances.paidRelationshipReportsLeft} Relationship Reports left and ${nextBalances.paidBestieChatsLeft} Bestie Chats left.`);
-    } catch (error) {
-      setMessage(error.message || 'We could not add test credits right now.');
-    }
-  }
-
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <ParticleBackground className="opacity-45" />
@@ -79,7 +55,7 @@ export default function PricingPage() {
         {reason === 'usage-limit' && (
           <div className="mb-6 rounded-[28px] border border-orange-200/25 bg-orange-300/[0.055] p-5">
             <p className="tech-label text-orange-100">Continue your ThirdPerson POV</p>
-            <p className="mt-3 text-sm leading-7 text-smoke">Top up to unlock more Bestie Chats, more Relationship Reports, and deeper relationship intelligence.</p>
+            <p className="mt-3 text-sm leading-7 text-smoke">Top up to unlock more Guide Chats, more Relationship Reports, and deeper relationship intelligence.</p>
           </div>
         )}
 
@@ -88,7 +64,7 @@ export default function PricingPage() {
           <p className="tech-label text-purple-200">Pricing</p>
           <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Build your clarity pack</h1>
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-8 text-smoke">
-            Choose the number of Relationship Reports you need. Every report adds 10 Bestie Chats, so your follow-up guidance grows with your analysis balance.
+            Choose the number of Relationship Reports you need. Every report adds 10 Guide Chats, so your follow-up guidance grows with your analysis balance.
           </p>
           <div className="mx-auto mt-7 flex max-w-3xl flex-wrap justify-center gap-3">
             {['Pay only for what you need', 'Top up anytime', 'Old reports stay free to open'].map((item) => (
@@ -107,8 +83,8 @@ export default function PricingPage() {
           </div>
           <div className="relative overflow-hidden rounded-[30px] border border-pink-200/20 bg-gradient-to-br from-pink-300/[0.10] via-white/[0.045] to-orange-300/[0.055] p-5 shadow-[0_18px_80px_rgba(236,72,153,0.08)]">
             <div className="absolute -right-10 -top-14 h-36 w-36 rounded-full bg-pink-300/20 blur-3xl" />
-            <p className="tech-label text-pink-100">Bestie Chats left</p>
-            <p className="relative mt-4 serif-title text-6xl leading-none text-bone">{bestieBalance}</p>
+            <p className="tech-label text-pink-100">Guide Chats left</p>
+            <p className="relative mt-4 serif-title text-6xl leading-none text-bone">{guideBalance}</p>
           </div>
         </div>
 
@@ -121,7 +97,7 @@ export default function PricingPage() {
                 <p className="tech-label text-purple-100">Smart credit builder</p>
                 <h2 className="serif-title mt-4 text-5xl leading-tight">Shape your top-up.</h2>
                 <p className="mt-3 max-w-xl text-sm leading-7 text-smoke">
-                  1 Relationship Report includes 10 Bestie Chats. Pick the amount that matches how much clarity you want right now.
+                  1 Relationship Report includes 10 Guide Chats. Pick the amount that matches how much clarity you want right now.
                 </p>
               </div>
               <div className="rounded-full border border-orange-200/25 bg-orange-300/[0.08] px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-orange-100">
@@ -199,8 +175,8 @@ export default function PricingPage() {
                 <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Relationship Reports</p>
               </div>
               <div className="rounded-[26px] border border-pink-200/18 bg-black/24 p-5">
-                <p className="serif-title text-5xl leading-none text-bone">{bestieChats}</p>
-                <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Bestie Chats</p>
+                <p className="serif-title text-5xl leading-none text-bone">{guideChats}</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Guide Chats</p>
               </div>
               <div className="rounded-[26px] border border-orange-200/20 bg-orange-300/[0.055] p-5">
                 <p className="serif-title text-5xl leading-none text-bone">₹{formatInr(totalPrice)}</p>
@@ -216,7 +192,7 @@ export default function PricingPage() {
               Continue with ₹{formatInr(totalPrice)}
             </button>
             <p className="relative mt-4 text-center text-sm leading-7 text-smoke">
-              Pay only for what you need. Top up anytime when your reports or Bestie Chats run out.
+              Pay only for what you need. Top up anytime when your reports or Guide Chats run out.
             </p>
           </article>
 
@@ -225,9 +201,9 @@ export default function PricingPage() {
             <div className="mt-6 space-y-4">
               {[
                 ['1', 'Choose the number of reports you want.'],
-                ['2', 'Bestie Chats are added automatically in multiples of 10.'],
+                ['2', 'Guide Chats are added automatically in multiples of 10.'],
                 ['3', 'Use reports to analyse conversations.'],
-                ['4', 'Use Bestie Chats to ask follow-up questions about your relationship.'],
+                ['4', 'Use Guide Chats to ask follow-up questions about your relationship.'],
               ].map(([step, copy]) => (
                 <div key={step} className="flex gap-4 rounded-[24px] border border-white/10 bg-white/[0.035] p-4">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-purple-200/25 bg-purple-300/10 font-mono text-xs text-bone">{step}</span>
@@ -238,14 +214,14 @@ export default function PricingPage() {
             <div className="mt-6 rounded-[26px] border border-orange-200/18 bg-orange-300/[0.055] p-5">
               <p className="tech-label text-orange-100">Live summary</p>
               <p className="mt-4 text-sm leading-7 text-smoke">
-                {reportCount} Relationship Reports + {bestieChats} Bestie Chats for ₹{formatInr(totalPrice)}.
+                {reportCount} Relationship Reports + {guideChats} Guide Chats for ₹{formatInr(totalPrice)}.
               </p>
             </div>
             <div className="mt-5 grid gap-3">
               {[
-                ['What you get', 'Fresh relationship reports for new conversations, plus Bestie follow-ups to unpack the confusing parts.'],
+                ['What you get', 'Fresh relationship reports for new conversations, plus guide follow-ups to unpack the confusing parts.'],
                 ['Smart usage', 'Opening old reports does not use credits. Duplicate cached reports do not use credits.'],
-                ['Credit safety', 'Failed report generation or failed Bestie replies do not reduce your balance.'],
+                ['Credit safety', 'Failed report generation or failed guide replies do not reduce your balance.'],
               ].map(([label, copy]) => (
                 <div key={label} className="rounded-[24px] border border-white/10 bg-black/18 p-4">
                   <p className="tech-label text-ash">{label}</p>
@@ -265,21 +241,13 @@ export default function PricingPage() {
             <p className="tech-label text-purple-100">Top up selected</p>
             <h3 className="serif-title mt-4 text-4xl leading-tight">Checkout connection is being prepared.</h3>
             <p className="mt-5 text-sm leading-7 text-smoke">
-              Your selected clarity pack is ready: {reportCount} Relationship Reports and {bestieChats} Bestie Chats for ₹{formatInr(totalPrice)}.
+              Your selected clarity pack is ready: {reportCount} Relationship Reports and {guideChats} Guide Chats for ₹{formatInr(totalPrice)}.
             </p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {isLocalTesting && testPackId && (
-                <button type="button" onClick={activateLocalTestCredits} className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
-                  Activate test credits
-                </button>
-              )}
+            <div className="mt-6 grid gap-3">
               <button type="button" onClick={() => setModalOpen(false)} className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-smoke">
                 Close
               </button>
             </div>
-            {isLocalTesting && !testPackId && (
-              <p className="mt-4 text-xs leading-6 text-ash">Local test activation currently supports 5 or 10 reports.</p>
-            )}
           </div>
         </div>
       )}

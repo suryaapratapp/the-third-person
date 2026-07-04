@@ -2,9 +2,9 @@ export default function UsageWarningModal({ status = 'exhausted', feature = 'rep
   const isBestie = feature === 'bestie';
   const exhaustedCopy = isBestie
     ? {
-        title: 'You’re out of Bestie Chats',
-        body: 'You’re out of Bestie Chats. Top up to keep asking your Bestie for guidance.',
-        primary: 'Top up Bestie Chats',
+        title: 'You’re out of Guide Chats',
+        body: 'You’re out of Guide Chats. Top up to keep asking for relationship guidance.',
+        primary: 'Top up Guide Chats',
         secondary: 'Back to Reports',
       }
     : {
@@ -15,7 +15,7 @@ export default function UsageWarningModal({ status = 'exhausted', feature = 'rep
       };
   const nearingCopy = isBestie
     ? {
-        title: 'Your Bestie Chat balance is running low',
+        title: 'Your Guide Chat balance is running low',
         body: 'Top up anytime to keep asking for guidance without interrupting your relationship clarity flow.',
         primary: 'View Packs',
         secondary: 'Continue for now',
@@ -38,7 +38,7 @@ export default function UsageWarningModal({ status = 'exhausted', feature = 'rep
           <h2 className="serif-title mt-4 text-4xl leading-tight text-bone sm:text-5xl">{copy.title}</h2>
           <p className="mt-5 text-sm leading-8 text-smoke">{copy.body}</p>
           <p className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs leading-6 text-ash">
-            Pay-as-you-go packs add separate credits for Relationship Reports and Bestie Chats, so you only top up what you need next.
+            Pay-as-you-go packs add separate credits for Relationship Reports and Guide Chats, so you only top up what you need next.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <button onClick={onPlans} className="rounded-full border border-purple-200/40 bg-purple-300/14 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone hover:border-purple-100/80">
