@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { PiArrowRight, PiCaretDown, PiHeartFill } from 'react-icons/pi';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
@@ -65,9 +66,10 @@ export default function TopNav() {
           <div className="relative" ref={productRef}>
             <button
               onClick={() => setProductOpen((current) => !current)}
-              className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-smoke transition hover:text-bone"
+              className="flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-smoke transition hover:text-bone"
             >
               Product
+              <PiCaretDown className={`text-xs transition-transform duration-200 ${productOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
             {productOpen && (
               <div className="absolute left-0 top-8 w-64 rounded-3xl border border-purple-300/18 bg-[#171523]/95 p-2 shadow-glow backdrop-blur-xl">
@@ -82,7 +84,7 @@ export default function TopNav() {
                     className="flex w-full items-center justify-between border-b border-white/10 px-4 py-3 text-left text-sm text-smoke transition last:border-b-0 hover:bg-purple-300/10 hover:text-bone"
                   >
                     <span>{label}</span>
-                    <span className="text-purple-200/60">→</span>
+                    <PiArrowRight className="text-purple-200/60" aria-hidden="true" />
                   </button>
                 ))}
               </div>
@@ -97,9 +99,9 @@ export default function TopNav() {
           <button
             type="button"
             onClick={() => setTwinFlameOpen(true)}
-            className="relative rounded-full border border-pink-200/25 bg-gradient-to-r from-pink-300/12 via-purple-300/14 to-orange-300/10 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.16em] text-pink-100 shadow-[0_16px_42px_rgba(0,0,0,0.20)] transition hover:-translate-y-0.5 hover:border-pink-300/50 hover:text-bone"
+            className="relative flex items-center rounded-full border border-pink-200/25 bg-gradient-to-r from-pink-300/12 via-purple-300/14 to-orange-300/10 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.16em] text-pink-100 shadow-[0_16px_42px_rgba(0,0,0,0.20)] transition hover:-translate-y-0.5 hover:border-pink-300/50 hover:text-bone"
           >
-            <span className="mr-2 text-pink-100">♥</span>
+            <PiHeartFill className="mr-2 text-pink-100" aria-hidden="true" />
             Compatibility Match
           </button>
           <button
@@ -111,9 +113,10 @@ export default function TopNav() {
           <div className="relative" ref={companyRef}>
             <button
               onClick={() => setCompanyOpen((current) => !current)}
-              className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-smoke transition hover:text-bone"
+              className="flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-smoke transition hover:text-bone"
             >
               Company
+              <PiCaretDown className={`text-xs transition-transform duration-200 ${companyOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
             {companyOpen && (
               <div className="absolute right-0 top-8 w-56 rounded-3xl border border-purple-300/18 bg-[#171523]/95 p-2 shadow-glow backdrop-blur-xl">
@@ -130,7 +133,7 @@ export default function TopNav() {
                     className="flex w-full items-center justify-between border-b border-white/10 px-4 py-3 text-left text-sm text-smoke transition last:border-b-0 hover:bg-purple-300/10 hover:text-bone"
                   >
                     <span>{label}</span>
-                    <span className="text-purple-200/60">→</span>
+                    <PiArrowRight className="text-purple-200/60" aria-hidden="true" />
                   </button>
                 ))}
               </div>
@@ -150,7 +153,7 @@ export default function TopNav() {
             className="grid h-9 w-9 grid-cols-3 gap-1 border border-purple-300/20 p-2 transition hover:border-purple-300/60"
           >
             {Array.from({ length: 9 }).map((_, index) => (
-                <span key={index} className="h-1 w-1 rounded-full bg-gradient-to-br from-purple-100 via-pink-100 to-blue-100" />
+                <span key={index} className="h-1 w-1 rounded-full bg-gradient-to-br from-purple-100 via-pink-100 to-orange-100" />
             ))}
           </button>
           {open && (

@@ -159,7 +159,7 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
             <div className="flex h-12 w-12 items-center justify-center rounded-full border border-purple-200/35 bg-purple-300/10 text-xl">◈</div>
           </div>
           <div className="mt-5 h-1 bg-white/10">
-            <div className="h-1 w-4/5 rounded-full bg-gradient-to-r from-purple-300 via-pink-300 to-blue-300" />
+            <div className="h-1 w-4/5 rounded-full bg-gradient-to-r from-purple-300 via-pink-300 to-orange-300" />
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {[

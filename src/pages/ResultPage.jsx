@@ -56,12 +56,12 @@ function scoreTone(key, score) {
 
 function CardShell({ id, title, emoji, summary, children, className = '', accent = 'purple' }) {
   const accentClass = {
-    purple: 'from-purple-300/18 via-pink-300/10 to-blue-300/10',
+    purple: 'from-purple-300/18 via-pink-300/10 to-violet-300/10',
     pink: 'from-pink-300/18 via-purple-300/10 to-orange-300/10',
-    blue: 'from-blue-300/18 via-cyan-300/10 to-purple-300/10',
+    blue: 'from-violet-300/18 via-purple-300/10 to-fuchsia-300/10',
     orange: 'from-orange-300/16 via-pink-300/10 to-purple-300/10',
-    green: 'from-emerald-300/14 via-cyan-300/10 to-purple-300/10',
-  }[accent] || 'from-purple-300/18 via-pink-300/10 to-blue-300/10';
+    green: 'from-emerald-300/14 via-green-200/8 to-purple-300/10',
+  }[accent] || 'from-purple-300/18 via-pink-300/10 to-violet-300/10';
 
   return (
     <section id={id} data-export-bg="#100d21" className={`glass-card glow-border relative overflow-hidden p-5 sm:p-6 ${className}`}>
@@ -83,7 +83,7 @@ function Badge({ children, tone = 'purple' }) {
   const colors = {
     purple: 'border-purple-200/25 bg-purple-300/10 text-purple-100',
     pink: 'border-pink-200/25 bg-pink-300/10 text-pink-100',
-    blue: 'border-blue-200/25 bg-blue-300/10 text-blue-100',
+    blue: 'border-violet-200/25 bg-violet-300/10 text-violet-100',
     orange: 'border-orange-200/25 bg-orange-300/10 text-orange-100',
     green: 'border-emerald-200/25 bg-emerald-300/10 text-emerald-100',
   };
@@ -121,7 +121,7 @@ function ScoreBubble({ item }) {
         </div>
       </div>
       <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full bg-gradient-to-r from-pink-300 via-purple-300 to-cyan-300" style={{ width: `${score}%` }} />
+        <div className="h-full rounded-full bg-gradient-to-r from-pink-300 via-purple-300 to-orange-300" style={{ width: `${score}%` }} />
       </div>
     </div>
   );
@@ -387,7 +387,7 @@ export default function ResultPage() {
           <CardShell id="emotional-timeline" title="Emotional Timeline" emoji="✨" summary="Timeline of emotional phases." accent="blue">
             <div className="overflow-x-auto pb-3">
               <div className="relative flex min-w-[920px] items-start gap-5 px-2">
-                <div className="absolute left-12 right-12 top-[4.1rem] h-1 rounded-full bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 opacity-70" />
+                <div className="absolute left-12 right-12 top-[4.1rem] h-1 rounded-full bg-gradient-to-r from-orange-300 via-purple-300 to-pink-300 opacity-70" />
                 {(timeline.length ? timeline : Array.from({ length: 5 })).map((item = {}, index) => (
                   <button
                     key={`${item.period}-${index}`}
@@ -395,7 +395,7 @@ export default function ResultPage() {
                     className="group relative w-40 shrink-0 text-left"
                   >
                     <p className="h-12 font-mono text-[0.67rem] uppercase tracking-[0.13em] text-ash">{compactPeriod(item.period, index)}</p>
-                    <span className={`relative z-10 block h-7 w-7 rounded-full border ${selectedTimeline === index ? 'border-cyan-100 bg-cyan-200 shadow-[0_0_34px_rgba(34,211,238,0.55)]' : 'border-white/35 bg-white/10'} transition group-hover:border-pink-200`} />
+                    <span className={`relative z-10 block h-7 w-7 rounded-full border ${selectedTimeline === index ? 'border-violet-100 bg-violet-200 shadow-[0_0_34px_rgba(167,139,250,0.55)]' : 'border-white/35 bg-white/10'} transition group-hover:border-pink-200`} />
                     <div className="mt-5 rounded-2xl border border-white/12 bg-white/[0.05] p-4 backdrop-blur">
                       <p className="text-sm font-semibold text-bone">{item.title || ['Soft beginning', 'Flirty rise', 'Confusion phase', 'Distance phase', 'Clarity moment'][index % 5]}</p>
                       <p className="mt-2 text-xs leading-5 text-smoke">{item.sentiment || 'mixed'} • {item.compatibility || scores.compatibility || 50}/100</p>
@@ -551,7 +551,7 @@ export default function ResultPage() {
             <div className="grid gap-4 md:grid-cols-4">
               {[
                 ['Warm signals', mixedSignals.warmSignals, '💗', 'border-pink-200/16 bg-pink-300/[0.055]'],
-                ['Distant signals', mixedSignals.distantSignals, '🌫️', 'border-blue-200/16 bg-blue-300/[0.055]'],
+                ['Distant signals', mixedSignals.distantSignals, '🌫️', 'border-violet-200/16 bg-violet-300/[0.055]'],
                 ['Confusing signals', mixedSignals.confusingSignals, '🌀', 'border-purple-200/16 bg-purple-300/[0.055]'],
                 ['Stable signals', mixedSignals.stableSignals, '🫶', 'border-emerald-200/16 bg-emerald-300/[0.045]'],
               ].map(([label, value, icon, cls]) => (
@@ -577,7 +577,7 @@ export default function ResultPage() {
                   <p className="mt-4 text-sm leading-7 text-smoke">{safe(energy.explanation, 'The energy balance needs more data, but effort and clarity are the main things to watch.')}</p>
                 </div>
                 <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-gradient-to-r from-orange-300 via-pink-300 to-cyan-300" style={{ width: `${energy.score || scores.effortBalance || 50}%` }} />
+                  <div className="h-full rounded-full bg-gradient-to-r from-orange-300 via-pink-300 to-purple-300" style={{ width: `${energy.score || scores.effortBalance || 50}%` }} />
                 </div>
               </div>
               <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
@@ -618,7 +618,7 @@ export default function ResultPage() {
                 ['Avoidance pattern', analysis.communicationPatterns?.avoidancePatterns],
               ].map(([label, value], index) => (
                 <div key={label} className="relative rounded-[24px] border border-white/10 bg-white/[0.05] p-4">
-                  {index < 4 && <span className="absolute -right-3 top-1/2 hidden h-px w-6 bg-gradient-to-r from-cyan-300 to-pink-300 lg:block" />}
+                  {index < 4 && <span className="absolute -right-3 top-1/2 hidden h-px w-6 bg-gradient-to-r from-purple-300 to-pink-300 lg:block" />}
                   <p className="tech-label text-ash">{label}</p>
                   <p className="mt-3 text-sm leading-7 text-smoke">{safe(value)}</p>
                 </div>
@@ -630,7 +630,7 @@ export default function ResultPage() {
                 <p className="mt-3 text-sm leading-7 text-smoke">{safe(analysis.relationshipReport?.communicationPattern || analysis.communicationPatterns?.relationshipPattern || summary.currentDynamic)}</p>
               </div>
               <div className="sticky-glass rotate-[1deg] p-4">
-                <p className="tech-label text-cyan-100">Quote evidence</p>
+                <p className="tech-label text-purple-100">Quote evidence</p>
                 <p className="mt-3 text-sm leading-7 text-smoke">{receipts[0]?.quote ? `“${receipts[0].quote.slice(0, 180)}”` : 'More clear quote evidence will appear when the uploaded chat has stronger moments.'}</p>
               </div>
             </div>
@@ -677,7 +677,7 @@ export default function ResultPage() {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {receipts.length ? receipts.map((receipt, index) => (
                 <div key={`${receipt.title}-${index}`} className="rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
-                  <p className="tech-label text-cyan-100">{receipt.title || `Moment ${index + 1}`}</p>
+                  <p className="tech-label text-purple-100">{receipt.title || `Moment ${index + 1}`}</p>
                   <p className="mt-3 font-mono text-sm leading-7 text-bone">“{String(receipt.quote).slice(0, 170)}”</p>
                   <p className="mt-3 text-sm leading-7 text-smoke">{safe(receipt.why)}</p>
                   <Badge tone="blue">{safe(receipt.signal, 'relationship signal')}</Badge>

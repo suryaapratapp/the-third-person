@@ -240,7 +240,7 @@ export default function BestieBotPage({ chainId }) {
               </div>
             </aside>
 
-            <div className="flex min-h-[620px] flex-col rounded-[32px] border border-white/12 bg-gradient-to-br from-white/[0.06] via-purple-300/[0.035] to-blue-300/[0.025] p-4">
+            <div className="flex min-h-[620px] flex-col rounded-[32px] border border-white/12 bg-gradient-to-br from-white/[0.06] via-purple-300/[0.035] to-pink-300/[0.025] p-4">
               <div className="flex-1 space-y-4 overflow-y-auto pr-1">
                 {messages.map((message, index) => (
                   <div key={`${message.role}-${index}`} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>

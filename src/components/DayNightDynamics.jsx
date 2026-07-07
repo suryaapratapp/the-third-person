@@ -16,7 +16,7 @@ export default function DayNightDynamics({ dynamics }) {
     ['Most active period', dynamics.mostActivePeriod, 'bg-purple-300/10 text-purple-100'],
     ['Warmest period', dynamics.warmestPeriod, 'bg-orange-300/10 text-orange-100'],
     ['Highest tension period', dynamics.highestTensionPeriod, 'bg-pink-300/10 text-pink-100'],
-    ['Deepest conversation period', dynamics.deepestConversationPeriod, 'bg-blue-300/10 text-blue-100'],
+    ['Deepest conversation period', dynamics.deepestConversationPeriod, 'bg-violet-300/10 text-violet-100'],
   ];
 
   return (

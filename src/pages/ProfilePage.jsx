@@ -94,7 +94,7 @@ export default function ProfilePage() {
               </p>
             </div>
             <div className="flex flex-col items-center gap-3">
-              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-purple-200/40 bg-gradient-to-br from-purple-300/20 via-pink-300/15 to-blue-300/20 text-3xl text-bone">
+              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-purple-200/40 bg-gradient-to-br from-purple-300/20 via-pink-300/15 to-orange-300/15 text-3xl text-bone">
                 {profile.profileImage ? <img src={profile.profileImage} alt="Profile preview" className="h-full w-full object-cover" /> : getInitials(profile)}
               </div>
               {zodiac && <span className="font-mono text-xs uppercase tracking-[0.13em] text-purple-100">{getZodiacGlyph(zodiac)} {zodiac}</span>}

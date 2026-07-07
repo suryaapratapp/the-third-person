@@ -54,7 +54,7 @@ export default function CardActions({ targetId, name, summary }) {
       <button aria-label={`Download ${name}`} title="Download" onClick={download} className="flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.045] text-smoke backdrop-blur transition hover:bg-purple-300/15 hover:text-bone">
         <DownloadIcon />
       </button>
-      <button aria-label={`Share ${name}`} title="Share" onClick={share} className="flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.045] text-smoke backdrop-blur transition hover:bg-blue-300/15 hover:text-bone">
+      <button aria-label={`Share ${name}`} title="Share" onClick={share} className="flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.045] text-smoke backdrop-blur transition hover:bg-violet-300/15 hover:text-bone">
         <ShareIcon />
       </button>
       {message && (

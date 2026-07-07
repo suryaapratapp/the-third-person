@@ -1,17 +1,18 @@
+import { PiHeartFill, PiSparkleFill } from 'react-icons/pi';
 import { useRouter } from '../state/RouterContext.jsx';
 
 function BestieIllustration() {
   return (
     <div className="relative mx-auto flex h-72 max-w-sm items-center justify-center">
-      <div className="absolute inset-0 rounded-[36px] bg-gradient-to-br from-purple-400/20 via-pink-400/15 to-blue-400/20 blur-2xl" />
+      <div className="absolute inset-0 rounded-[36px] bg-gradient-to-br from-purple-400/20 via-pink-400/15 to-orange-400/15 blur-2xl" />
       <div className="relative h-48 w-48 rounded-full border border-pink-100/30 bg-gradient-to-br from-purple-200/20 via-pink-200/20 to-orange-200/20 p-4 shadow-glow">
-        <div className="absolute -left-8 top-8 text-3xl text-pink-200">♡</div>
-        <div className="absolute -right-6 top-12 text-2xl text-orange-200">✦</div>
-        <div className="absolute bottom-4 right-0 text-3xl text-blue-200">♡</div>
+        <PiHeartFill className="absolute -left-8 top-8 text-3xl text-pink-200" aria-hidden="true" />
+        <PiSparkleFill className="absolute -right-6 top-12 text-2xl text-orange-200" aria-hidden="true" />
+        <PiHeartFill className="absolute bottom-4 right-0 text-3xl text-violet-200" aria-hidden="true" />
         <div className="h-full w-full rounded-full border border-white/20 bg-black/65">
-          <div className="mx-auto mt-9 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-pink-200 via-purple-200 to-blue-200 text-4xl text-black">✨</div>
+          <div className="mx-auto mt-9 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-pink-200 via-purple-200 to-orange-200 text-4xl text-black">✨</div>
           <div className="mx-auto mt-4 h-2 w-20 rounded-full bg-pink-200/80" />
-          <div className="mx-auto mt-3 h-2 w-12 rounded-full bg-blue-200/70" />
+          <div className="mx-auto mt-3 h-2 w-12 rounded-full bg-purple-200/70" />
         </div>
       </div>
     </div>

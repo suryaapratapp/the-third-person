@@ -21,7 +21,7 @@ const platformData = {
     initials: 'IM',
     Icon: SiImessage,
     color: '#34C759',
-    accent: 'from-blue-300/20 to-purple-300/10',
+    accent: 'from-emerald-300/20 to-purple-300/10',
     steps: [
       'iMessage does not provide the same simple full chat export flow on all devices.',
       'For now, copy and paste conversation text where possible.',
@@ -90,7 +90,7 @@ const platformData = {
     initials: 'OT',
     Icon: BsThreeDots,
     color: '#C4B5FD',
-    accent: 'from-purple-300/20 to-blue-300/10',
+    accent: 'from-purple-300/20 to-pink-300/10',
     steps: [
       'Export your conversation as .txt, .json, or .csv if your messaging app supports it.',
       'Or copy and paste the conversation manually.',

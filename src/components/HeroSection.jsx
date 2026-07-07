@@ -1,5 +1,6 @@
 import ParticleBackground from './ParticleBackground.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
+import { PiArrowRight } from 'react-icons/pi';
 import { SiImessage, SiInstagram, SiMessenger, SiSnapchat, SiTelegram, SiWhatsapp } from 'react-icons/si';
 
 const messagingApps = [
@@ -37,10 +38,12 @@ export default function HeroSection() {
         </p>
         <button
           onClick={() => navigate('/analysis/new')}
-          className="scan-line mt-10 flex w-full max-w-xl items-center justify-between border border-purple-300/30 bg-black/40 px-4 py-4 text-left text-smoke transition hover:border-purple-200/70 sm:px-6"
+          className="scan-line group mt-10 flex w-full max-w-xl items-center justify-between border border-purple-300/30 bg-gradient-to-r from-black/60 via-signal/10 to-black/60 px-4 py-4 text-left text-smoke transition hover:border-bloom/60 sm:px-6"
         >
           <span className="font-mono text-xs tracking-wide">Start a conversation analysis</span>
-          <span className="ml-5 border-l border-white/15 pl-5 text-2xl">→</span>
+          <span className="ml-5 flex border-l border-white/15 pl-5 transition group-hover:border-bloom/40">
+            <PiArrowRight className="text-xl text-bloom transition group-hover:translate-x-0.5" aria-hidden="true" />
+          </span>
         </button>
         <div className="mt-5 text-center">
           <p className="text-sm text-smoke">No credit card · One-click Google signup · Your data stays private</p>

@@ -33,8 +33,8 @@ const worldSlots = [
     match: /family|mom|dad|brother|sister|cousin/i,
     icon: '⌂',
     number: '02',
-    accentClass: 'from-cyan-300/22 via-blue-300/12 to-purple-300/10',
-    iconClass: 'text-cyan-100 bg-cyan-300/12 border-cyan-200/22',
+    accentClass: 'from-rose-300/22 via-orange-300/12 to-purple-300/10',
+    iconClass: 'text-rose-100 bg-rose-300/12 border-rose-200/22',
     fallback: 'Upload a family chat to understand your care, boundaries, and emotional role.',
     keywords: ['Caring', 'Responsible', 'Warm'],
   },
@@ -55,7 +55,7 @@ const worldSlots = [
     match: /ex/i,
     icon: '↺',
     number: '04',
-    accentClass: 'from-fuchsia-300/22 via-pink-300/12 to-blue-300/10',
+    accentClass: 'from-fuchsia-300/22 via-pink-300/12 to-purple-300/10',
     iconClass: 'text-fuchsia-100 bg-fuchsia-300/12 border-fuchsia-200/22',
     fallback: 'Upload an ex chat to understand old patterns, closure, and emotional residue.',
     keywords: ['Reflective', 'Careful', 'Healing'],
@@ -66,7 +66,7 @@ const worldSlots = [
     match: /colleague|coworker|work/i,
     icon: '▣',
     number: '05',
-    accentClass: 'from-purple-300/22 via-blue-300/12 to-cyan-300/10',
+    accentClass: 'from-purple-300/22 via-violet-300/12 to-fuchsia-300/10',
     iconClass: 'text-purple-100 bg-purple-300/12 border-purple-200/22',
     fallback: 'Upload a colleague chat to see your work tone, clarity, and boundaries.',
     keywords: ['Professional', 'Focused', 'Reliable'],
@@ -88,8 +88,8 @@ const worldSlots = [
     match: /manager|boss/i,
     icon: '☉',
     number: '07',
-    accentClass: 'from-blue-300/22 via-indigo-300/12 to-purple-300/10',
-    iconClass: 'text-blue-100 bg-blue-300/12 border-blue-200/22',
+    accentClass: 'from-violet-300/24 via-purple-300/14 to-rose-300/8',
+    iconClass: 'text-violet-100 bg-violet-300/12 border-violet-200/22',
     fallback: 'Upload a manager chat to understand respect, pressure, and assertiveness.',
     keywords: ['Measured', 'Respectful', 'Aware'],
   },
@@ -145,7 +145,7 @@ function ProfileAvatar({ profile }) {
       {profile.profileImage ? (
         <img src={profile.profileImage} alt="Profile" className="h-full w-full object-cover" />
       ) : (
-        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-300/30 via-pink-300/20 to-blue-300/20 font-mono text-3xl text-bone">
+        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-300/30 via-pink-300/20 to-orange-300/15 font-mono text-3xl text-bone">
           {getInitials(profile)}
         </div>
       )}
@@ -182,11 +182,11 @@ function PeopleMapCard({ item }) {
 
 function SectionCard({ id, title, value, accent = 'purple' }) {
   const accentClass = {
-    purple: 'from-purple-300/16 to-blue-300/8',
+    purple: 'from-purple-300/16 to-violet-300/8',
     pink: 'from-pink-300/16 to-purple-300/8',
     orange: 'from-orange-300/14 to-pink-300/8',
-    blue: 'from-blue-300/16 to-cyan-300/8',
-    green: 'from-emerald-300/12 to-blue-300/8',
+    blue: 'from-violet-300/16 to-purple-300/8',
+    green: 'from-emerald-300/12 to-purple-300/8',
   }[accent];
   return (
     <section id={id} data-export-bg="#0b1020" className="glass-card relative overflow-hidden p-5">
@@ -263,7 +263,7 @@ function OverallReport({ profile, overall }) {
             </div>
           </div>
           <div className="rounded-[30px] border border-white/16 bg-white/[0.045] p-6">
-            <p className="tech-label text-blue-100">You are...</p>
+            <p className="tech-label text-purple-100">You are...</p>
             <div className="mt-5 flex flex-wrap gap-2">
               {keywords.map((keyword) => (
                 <span key={keyword} className="rounded-full border border-white/15 px-3 py-2 text-sm text-bone">{keyword}</span>

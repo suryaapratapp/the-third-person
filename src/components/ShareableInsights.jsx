@@ -49,7 +49,7 @@ export default function ShareableInsights({ analysis, personName = 'Their' }) {
 
       <section id="card-mixed-signals" className="thin-panel relative p-5">
         <CardActions targetId="card-mixed-signals" name="mixed-signals-map" summary={m.bestieNote} />
-        <p className="tech-label text-blue-200">Mixed Signals Map 🧭</p>
+        <p className="tech-label text-purple-200">Mixed Signals Map 🧭</p>
         <div className="mt-5 grid gap-4 md:grid-cols-4">
           <InfoCard title="Warm signals">{(m.warmSignals || []).join(', ') || 'Not enough data'}</InfoCard>
           <InfoCard title="Distant signals">{(m.distantSignals || []).join(', ') || 'Not enough data'}</InfoCard>

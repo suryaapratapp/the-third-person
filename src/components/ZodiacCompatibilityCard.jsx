@@ -44,8 +44,8 @@ export default function ZodiacCompatibilityCard({ analysis, prepared, personName
           <p className="tech-label text-orange-100">Compatibility read</p>
           <p className="mt-3 text-sm leading-7 text-smoke">{zodiac.interpretation}</p>
         </div>
-        <div className="border border-blue-300/15 bg-blue-300/[0.04] p-4">
-          <p className="tech-label text-blue-100">Conversation reality check</p>
+        <div className="border border-violet-300/15 bg-violet-300/[0.04] p-4">
+          <p className="tech-label text-violet-100">Conversation reality check</p>
           <p className="mt-3 text-sm leading-7 text-smoke">{zodiac.conversationLayer}</p>
         </div>
       </div>

@@ -2,7 +2,7 @@ export default function ParticleBackground({ className = '', showAxis = true }) 
   return (
     <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
       <div className="aurora-orb aurora-orb-pink left-[-10rem] top-[8rem]" />
-      <div className="aurora-orb aurora-orb-blue right-[-12rem] top-[4rem]" />
+      <div className="aurora-orb aurora-orb-purple right-[-12rem] top-[4rem]" />
       <div className="aurora-ring right-[8%] top-[18%] hidden sm:block" />
       <div className="absolute inset-0 grid-bg opacity-25" />
       <div className="absolute left-[-6%] top-[15%] hidden h-[52%] w-[46%] rotate-[-9deg] dot-field opacity-35 [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)] md:block" />

@@ -23,7 +23,7 @@ export default function CommunicationStyleSignals({ signals, personName = 'Their
   return (
     <section id="card-communication-style-signals" className="thin-panel relative p-5">
       <CardActions targetId="card-communication-style-signals" name="communication-style-signals" summary={signals.disclaimer} />
-      <p className="tech-label text-blue-200">Thinking & Communication Style</p>
+      <p className="tech-label text-purple-200">Thinking & Communication Style</p>
       <p className="mt-4 max-w-3xl text-sm leading-7 text-smoke">
         This is a reflective read, not a fixed label. It simply highlights communication traits that may affect how someone processes emotions, attention, routine, conflict, or social energy.
       </p>

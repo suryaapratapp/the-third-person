@@ -78,7 +78,7 @@ export default function PricingPage() {
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <div className="relative overflow-hidden rounded-[30px] border border-purple-200/20 bg-gradient-to-br from-purple-300/[0.12] via-white/[0.045] to-blue-300/[0.05] p-5 shadow-[0_18px_80px_rgba(168,85,247,0.08)]">
+          <div className="relative overflow-hidden rounded-[30px] border border-purple-200/20 bg-gradient-to-br from-purple-300/[0.12] via-white/[0.045] to-violet-300/[0.05] p-5 shadow-[0_18px_80px_rgba(168,85,247,0.08)]">
             <div className="absolute -right-10 -top-14 h-36 w-36 rounded-full bg-purple-300/20 blur-3xl" />
             <p className="tech-label text-purple-100">Relationship Reports left</p>
             <p className="relative mt-4 serif-title text-6xl leading-none text-bone">{reportBalance}</p>
@@ -189,7 +189,7 @@ export default function PricingPage() {
             <button
               type="button"
               onClick={handleCheckout}
-              className="glass-button relative mt-8 w-full rounded-full px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone"
+              className="btn btn-primary relative mt-8 w-full"
             >
               Continue with ₹{formatInr(totalPrice)}
             </button>
@@ -205,7 +205,7 @@ export default function PricingPage() {
           </article>
 
           <aside className="thin-panel rounded-[34px] p-6 sm:p-8">
-            <p className="tech-label text-blue-200">How it works</p>
+            <p className="tech-label text-purple-200">How it works</p>
             <div className="mt-6 space-y-4">
               {[
                 ['1', 'Choose the number of reports you want.'],
