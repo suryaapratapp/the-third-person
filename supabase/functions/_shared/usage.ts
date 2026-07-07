@@ -53,24 +53,7 @@ export async function logBlockedCredit(admin: ReturnType<typeof createAdminClien
   });
 }
 
-export async function consumeCredit(admin: ReturnType<typeof createAdminClient>, userId: string, creditType: CreditType) {
-  const { data, error } = await admin.rpc('consume_analysis_credit', {
-    p_user_id: userId,
-    p_credit_type: creditType,
-  });
-  if (error) throw error;
-
-  const remaining = Number(data);
-  if (!Number.isFinite(remaining) || remaining < 0) {
-    await admin.from('ai_usage_logs').insert({
-      user_id: userId,
-      action: creditType === 'relationship_report' ? 'generate_relationship_report' : 'ai_bestie_chat',
-      status: 'blocked_no_credits',
-      metadata: { creditType },
-    });
-    return { allowed: false, remaining: 0 };
-  }
-
+async function recordDailyUsage(admin: ReturnType<typeof createAdminClient>, userId: string, creditType: CreditType) {
   const today = todayKey();
   const { data: daily } = await admin
     .from('daily_message_usage')
@@ -89,9 +72,37 @@ export async function consumeCredit(admin: ReturnType<typeof createAdminClient>,
   } else {
     await admin.from('daily_message_usage').insert(nextDaily);
   }
+}
+
+// Reserves a credit BEFORE the caller does any expensive AI provider work.
+// The underlying RPC takes a row lock, so only as many concurrent callers as
+// there are real remaining credits will ever get allowed=true — this closes
+// the race where multiple simultaneous requests near the last credit could
+// each trigger a paid AI call before an after-the-fact check caught them.
+// If the caller's subsequent work fails, call refundCredit(creditId) to give
+// the credit back.
+export async function reserveCredit(admin: ReturnType<typeof createAdminClient>, userId: string, creditType: CreditType) {
+  const { data, error } = await admin.rpc('consume_analysis_credit', {
+    p_user_id: userId,
+    p_credit_type: creditType,
+  });
+  if (error) throw error;
+
+  if (!data?.allowed) {
+    await logBlockedCredit(admin, userId, creditType);
+    return { allowed: false, remaining: 0, creditId: null as string | null };
+  }
+
+  await recordDailyUsage(admin, userId, creditType);
 
   return {
     allowed: true,
-    remaining,
+    remaining: Number(data.remaining) || 0,
+    creditId: data.creditId as string | null,
   };
+}
+
+export async function refundCredit(admin: ReturnType<typeof createAdminClient>, creditId: string | null) {
+  if (!creditId) return;
+  await admin.rpc('refund_analysis_credit', { p_credit_id: creditId });
 }

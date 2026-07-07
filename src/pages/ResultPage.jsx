@@ -19,7 +19,6 @@ import {
 import CardActions from '../components/CardActions.jsx';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { exportElementAsImage, shareCardSummary } from '../lib/exportElementAsImage.js';
-import { getZodiacGlyph } from '../lib/zodiac.js';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
@@ -37,10 +36,6 @@ function safe(value, fallback = emptyText) {
 
 function list(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
-}
-
-function titleFromKey(key = '') {
-  return key.replace(/([A-Z])/g, ' $1').replace(/^./, (char) => char.toUpperCase());
 }
 
 function compactPeriod(period = '', index = 0) {
@@ -167,7 +162,6 @@ export default function ResultPage() {
   const prepared = flow.preparedConversation || {};
   const meta = prepared.metadata || analysis?.conversationRecap || {};
   const personName = meta.personName || flow.personName || analysis?.participants?.selectedOtherPerson || 'Their';
-  const profileName = [prepared?.metadata?.userProfile?.firstName, prepared?.metadata?.userProfile?.lastName].filter(Boolean).join(' ') || analysis?.participants?.likelyMainUser || prepared?.metadata?.likelyMainUser || 'You';
 
   const relationshipReport = analysis?.relationshipReport || {};
   const summary = {

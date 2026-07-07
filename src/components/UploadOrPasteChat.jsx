@@ -180,7 +180,7 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
               <div>
                 <p className="tech-label text-pink-100">Sensitive details protected</p>
                 <p className="mt-2 text-sm leading-7 text-smoke">
-                  {prep.sensitive.protectionSummary} These details are replaced before the conversation is prepared for analysis.
+                  {prep.sensitive.protectionSummary} Please still review your conversation yourself before uploading if it contains anything you would not want analysed.
                 </p>
               </div>
               <button

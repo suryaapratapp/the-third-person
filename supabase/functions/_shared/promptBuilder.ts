@@ -162,6 +162,7 @@ export function buildRelationshipAnalysisPrompt({
     'For long chats, use the provided chronological chunk summaries for final synthesis. Do not ask for or rely on full raw chat text during final synthesis.',
     'Broski context must be a concise memory summary that can answer future questions without sending the full raw chat again.',
     'For personality signals, use Not enough evidence yet when traits are not clearly visible.',
+    'relationshipReport.attachmentVibe, relationshipReport.friendsWouldNotice, relationshipReport.communicationStyleSignals, relationshipReport.energyMatchScore, and relationshipReport.simpleSummaryForYoungAudience must all be derived specifically from this conversation\'s actual evidence (message patterns, timing, tone, topics). Do not return generic or templated text for these fields — if evidence is thin, say so explicitly rather than inventing detail.',
   ].join('\n\n');
 
   const userContent = JSON.stringify({

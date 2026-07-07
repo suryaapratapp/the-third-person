@@ -1,13 +1,15 @@
 import AppShell from './components/AppShell.jsx';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import HomePage from './pages/HomePage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { useRouter } from './state/RouterContext.jsx';
+import { applyRouteSeo } from './lib/seo.js';
 
 const NewAnalysisPage = lazy(() => import('./pages/NewAnalysisPage.jsx'));
-const LoadingPage = lazy(() => import('./pages/LoadingPage.jsx'));
 const ResultPage = lazy(() => import('./pages/ResultPage.jsx'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage.jsx'));
+const TermsPage = lazy(() => import('./pages/TermsPage.jsx'));
+const RefundPolicyPage = lazy(() => import('./pages/RefundPolicyPage.jsx'));
 const CompanyPage = lazy(() => import('./pages/CompanyPage.jsx'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
 const PersonalityCardPage = lazy(() => import('./pages/PersonalityCardPage.jsx'));
@@ -32,11 +34,16 @@ function PageLoading() {
 function RouteSwitch() {
   const { path } = useRouter();
 
+  useEffect(() => {
+    applyRouteSeo(path);
+  }, [path]);
+
   if (path === '/auth') return <AuthPage />;
   if (path === '/analysis/new') return <ProtectedRoute><NewAnalysisPage /></ProtectedRoute>;
-  if (path === '/analysis/loading') return <ProtectedRoute><LoadingPage /></ProtectedRoute>;
   if (path === '/analysis/result') return <ProtectedRoute><ResultPage /></ProtectedRoute>;
   if (path === '/privacy') return <PrivacyPage />;
+  if (path === '/terms') return <TermsPage />;
+  if (path === '/refund-policy') return <RefundPolicyPage />;
   if (path === '/company') return <CompanyPage />;
   if (path === '/profile') return <ProtectedRoute><ProfilePage /></ProtectedRoute>;
   if (path === '/personality-card') return <ProtectedRoute><PersonalityCardPage /></ProtectedRoute>;

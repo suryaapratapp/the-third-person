@@ -290,8 +290,11 @@ export default function PersonalityCardPage() {
   const [message, setMessage] = useState('');
 
   const peopleMap = useMemo(() => buildPeopleMap(relationshipCards), [relationshipCards]);
-  const hasPaidAccess = Boolean(credits?.hasPaidPack);
-  const canGenerate = relationshipCards.length > 0 && hasPaidAccess;
+  // Understand Yourself spends one Relationship Report credit per
+  // generation (there is no separate credit type for it), so gate on actual
+  // remaining balance rather than "has ever bought any pack" — otherwise the
+  // button reads as unlocked for someone who is fully out of credits.
+  const hasPaidAccess = Boolean(credits?.paidRelationshipReportsLeft > 0);
 
   useEffect(() => {
     let mounted = true;

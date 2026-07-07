@@ -276,6 +276,7 @@ export default function BestieBotPage({ chainId }) {
                     }
                   }}
                   placeholder="Ask what you need to understand..."
+                  aria-label={`Message the Relationship Guide about ${context.personName}`}
                   className="min-h-14 flex-1 resize-none rounded-3xl border border-white/12 bg-black/50 px-5 py-4 text-sm text-bone outline-none placeholder:text-ash focus:border-purple-200/60"
                 />
                 <button onClick={() => send()} disabled={!input.trim() || isThinking} className="rounded-3xl border border-purple-200/30 bg-gradient-to-r from-purple-300/20 via-pink-300/16 to-orange-300/14 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone disabled:opacity-40">

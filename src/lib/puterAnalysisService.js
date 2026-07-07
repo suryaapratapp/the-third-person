@@ -121,6 +121,7 @@ function buildSystemPrompt() {
     'Never encourage manipulation, stalking, revenge, harassment, emotional control, coercion, or repeated unwanted contact.',
     'Use careful wording such as may suggest, could indicate, appears to, and based on the conversation.',
     'If evidence is weak or the sample is small, say that evidence is limited.',
+    'relationshipReport.attachmentVibe, relationshipReport.friendsWouldNotice, relationshipReport.communicationStyleSignals, relationshipReport.energyMatchScore, and relationshipReport.simpleSummaryForYoungAudience must all be derived specifically from this conversation, not generic or templated text.',
     'Return only valid JSON matching the schema. Do not wrap in markdown. Do not include commentary outside JSON.',
   ].join('\n');
 }
@@ -210,6 +211,47 @@ function buildRelationshipUserPrompt(payload) {
         scores: {},
         advice: {},
         screenshotWorthySummary: '',
+        attachmentVibe: {
+          userCommunicationVibe: '',
+          otherCommunicationVibe: '',
+          dynamicCreated: '',
+          howToCommunicateBetter: '',
+        },
+        friendsWouldNotice: {
+          theyWouldNotice: '',
+          theyMightWarnYouAbout: '',
+          theyMightRemindYou: '',
+        },
+        communicationStyleSignals: {
+          user: {
+            traitIntensity: '',
+            attentionStyleSignals: [],
+            emotionalProcessingStyle: '',
+            socialEnergyPattern: '',
+            routineOrConsistencySignals: [],
+            possibleOverwhelmSignals: [],
+            communicationTips: [],
+          },
+          otherPerson: {
+            traitIntensity: '',
+            attentionStyleSignals: [],
+            emotionalProcessingStyle: '',
+            socialEnergyPattern: '',
+            routineOrConsistencySignals: [],
+            possibleOverwhelmSignals: [],
+            communicationTips: [],
+          },
+        },
+        energyMatchScore: {
+          score: 0,
+          userEnergy: '',
+          otherPersonEnergy: '',
+          effortBalance: '',
+          emotionalAvailability: '',
+          consistency: '',
+          explanation: '',
+        },
+        simpleSummaryForYoungAudience: '',
       },
       mainUserPersonalitySignals: {
         communicationStyle: '',
@@ -271,6 +313,11 @@ function buildRelationshipUserPrompt(payload) {
         growthAreas: [],
         confidenceNotes: [],
         needsMoreChatsFor: [],
+        socialEnergy: '',
+        shareTrigger: '',
+        reactionStyle: '',
+        mainCharacterPattern: '',
+        relationshipPattern: '',
       },
       bestieContextSummary: {
         shortSummary: '',
@@ -380,6 +427,26 @@ function validateRelationshipAnalysis(candidate) {
       confidenceNotes: candidate.personalityCardUpdate?.confidenceNotes || [],
       needsMoreChatsFor: candidate.personalityCardUpdate?.needsMoreChatsFor || candidate.mainUserPersonalitySignals?.notEnoughEvidence || [],
     };
+    const cardUpdate = candidate.personalityCardUpdate || {};
+    candidate.personalityCardViral = {
+      ...(candidate.personalityCardViral || {}),
+      emotionalSignature: cardUpdate.emotionalSignature,
+      conversationMagnet: cardUpdate.conversationMagnet,
+      greenFlags: cardUpdate.greenFlags || [],
+      redFlags: cardUpdate.redFlags || [],
+      viralOneLiner: cardUpdate.headline || cardUpdate.viralOneLiner,
+      socialEnergy: cardUpdate.socialEnergy,
+      shareTrigger: cardUpdate.shareTrigger,
+      reactionStyle: cardUpdate.reactionStyle,
+      humourStyle: cardUpdate.humourStyle,
+      mainCharacterPattern: cardUpdate.mainCharacterPattern,
+      relationshipPattern: cardUpdate.relationshipPattern,
+    };
+    candidate.attachmentVibe = report.attachmentVibe || candidate.attachmentVibe;
+    candidate.friendsWouldNotice = report.friendsWouldNotice || candidate.friendsWouldNotice;
+    candidate.communicationStyleSignals = report.communicationStyleSignals || candidate.communicationStyleSignals;
+    candidate.energyMatchScore = report.energyMatchScore || candidate.energyMatchScore;
+    candidate.simpleSummaryForYoungAudience = report.simpleSummaryForYoungAudience || candidate.simpleSummaryForYoungAudience;
   }
   const hasSummary = candidate.summary && typeof candidate.summary === 'object';
   const hasScores = candidate.scores && typeof candidate.scores === 'object';

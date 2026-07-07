@@ -31,7 +31,7 @@ export default function ResponsibleIntelligenceSection() {
           ))}
         </div>
         <div className="relative mx-auto mt-10 max-w-4xl border border-white/16 px-4 py-5">
-          <p className="tech-label text-smoke">The goal isn't to know everything — it's to understand enough to act wisely.</p>
+          <p className="tech-label text-smoke">The goal isn’t to know everything — it’s to understand enough to act wisely.</p>
         </div>
       </div>
     </section>

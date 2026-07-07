@@ -209,6 +209,7 @@ function buildDayNightBreakdown(messages) {
 function topWordsFrom(messages) {
   const counts = new Map();
   messages.forEach(({ message }) => {
+    // eslint-disable-next-line no-misleading-character-class -- Devanagari range is intentional for Hindi word detection
     message.toLowerCase().replace(/[^a-z\u0900-\u097F\s']/g, ' ').split(/\s+/).forEach((raw) => {
       const word = raw.replace(/'/g, '');
       if (word.length < 3 || stopWords.has(word)) return;

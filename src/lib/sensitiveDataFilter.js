@@ -19,7 +19,10 @@ export function filterSensitiveData(rawText = '') {
   const protectedItems = [];
   const findings = {
     emails: unique(collectMatches(protectedText, /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi)),
-    phoneNumbers: unique(collectMatches(protectedText, /(?:\+?91[-\s]?)?(?:\b[6-9]\d{9}\b|\b\d{3}[-\s]\d{3}[-\s]\d{4}\b)/g)),
+    phoneNumbers: unique([
+      ...collectMatches(protectedText, /(?:\+?91[-\s]?)?(?:\b[6-9]\d{9}\b|\b\d{3}[-\s]\d{3}[-\s]\d{4}\b)/g),
+      ...collectMatches(protectedText, /\+\d{1,3}[-\s]?\d{6,14}\b/g),
+    ]),
     cardLikeNumbers: unique(collectMatches(protectedText, /\b(?:\d[ -]*?){13,19}\b/g)),
     addresses: unique(collectMatches(protectedText, /\b(?:flat|house|building|apt|apartment|sector|street|road|lane|nagar|colony|block)\b[^.\n]{8,90}/gi)),
     urls: unique(collectMatches(protectedText, /\bhttps?:\/\/[^\s]+|\bwww\.[^\s]+/gi)),
@@ -67,8 +70,8 @@ export function filterSensitiveData(rawText = '') {
     findings,
     protectedItems: uniqueProtectedItems,
     protectionSummary: totalProtectedItems
-      ? `${totalProtectedItems} sensitive detail${totalProtectedItems === 1 ? '' : 's'} protected before analysis.`
-      : 'No obvious sensitive details needed protection.',
+      ? `${totalProtectedItems} likely sensitive detail${totalProtectedItems === 1 ? '' : 's'} found and redacted automatically. This is a best-effort scan, not a guarantee.`
+      : 'No obvious sensitive details were found by our automatic scan. This is a best-effort check, not a guarantee.',
     safePreview: protectedText.slice(0, 420),
   };
 }

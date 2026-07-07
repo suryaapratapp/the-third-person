@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /analysis/
+Disallow: /reports
+Disallow: /reports/
+Disallow: /profile
+Disallow: /personality-card
+Disallow: /auth
+
+Sitemap: https://thethirdperson.ai/sitemap.xml

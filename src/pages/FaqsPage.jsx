@@ -12,10 +12,24 @@ const faqs = [
   ['Is this therapy?', 'No. ThirdPerson AI is a reflection and relationship clarity tool. It is not therapy, legal advice, or a final judgment.'],
 ];
 
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(([question, answer]) => ({
+    '@type': 'Question',
+    name: question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: answer,
+    },
+  })),
+};
+
 export default function FaqsPage() {
   const [open, setOpen] = useState(0);
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <ParticleBackground className="opacity-45" />
       <div className="relative mx-auto max-w-5xl">
         <div className="corner-frame accent-panel p-6 text-center sm:p-12">

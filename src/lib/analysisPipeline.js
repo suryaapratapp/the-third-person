@@ -28,6 +28,7 @@ export function estimateTokensFromText(text = '') {
 
 export function removeEmojiAndControlNoise(text = '') {
   return String(text)
+    // eslint-disable-next-line no-control-regex -- intentionally stripping control characters from uploaded chat text
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
     .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
     .replace(/[^\S\r\n]+/g, ' ')

@@ -30,28 +30,30 @@ export default function NewAnalysisPage() {
   }, [flow, step]);
 
   const bodies = [
-    <PlatformSelector value={flow.platform} onChange={(platform) => {
+    <PlatformSelector key="platform" value={flow.platform} onChange={(platform) => {
       updateFlow({ platform });
       window.setTimeout(() => setStep(1), 220);
     }} />,
-    <RelationshipSelector value={flow.relationshipType} onChange={(relationshipType) => {
+    <RelationshipSelector key="relationship" value={flow.relationshipType} onChange={(relationshipType) => {
       updateFlow({ relationshipType });
       window.setTimeout(() => setStep(2), 220);
     }} />,
     <PersonDetailsForm
+      key="person-details"
       value={flow.personName}
       onChange={(personName) => updateFlow({ personName })}
       dateOfBirth={flow.otherPersonDateOfBirth}
       onDateChange={(otherPersonDateOfBirth) => updateFlow({ otherPersonDateOfBirth })}
     />,
     <UploadOrPasteChat
+      key="upload"
       mode={flow.sourceMode}
       fileName={flow.fileName}
       fileSize={flow.fileSize}
       text={flow.chatText}
       onChange={updateFlow}
     />,
-    <ReviewAnalysisStep flow={flow} updateFlow={updateFlow} onStart={(target = '/analysis/loading') => navigate(target)} />,
+    <ReviewAnalysisStep key="review" flow={flow} updateFlow={updateFlow} onStart={(target = '/analysis/result') => navigate(target)} />,
   ];
 
   return (

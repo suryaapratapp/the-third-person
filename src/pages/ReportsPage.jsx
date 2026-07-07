@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { groupReports } from '../lib/reportsStore.js';
 import { useRouter } from '../state/RouterContext.jsx';
@@ -66,20 +66,26 @@ export default function ReportsPage() {
         </div>
 
         <div className="mt-6 grid gap-3 md:grid-cols-5">
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search person" className="border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none focus:border-purple-200/60" />
-          <select value={platform} onChange={(event) => setPlatform(event.target.value)} className="border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search person"
+            aria-label="Search reports by person"
+            className="border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none focus:border-purple-200/60"
+          />
+          <select value={platform} onChange={(event) => setPlatform(event.target.value)} aria-label="Filter by app" className="border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none">
             <option value="">All apps</option>
             {platforms.map((item) => <option key={item}>{item}</option>)}
           </select>
-          <select value={relation} onChange={(event) => setRelation(event.target.value)} className="border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none">
+          <select value={relation} onChange={(event) => setRelation(event.target.value)} aria-label="Filter by relationship type" className="border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none">
             <option value="">All relations</option>
             {relations.map((item) => <option key={item}>{item}</option>)}
           </select>
-          <select value={month} onChange={(event) => setMonth(event.target.value)} className="border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none">
+          <select value={month} onChange={(event) => setMonth(event.target.value)} aria-label="Filter by month" className="border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none">
             <option value="">All months</option>
             {months.map((item) => <option key={item}>{item}</option>)}
           </select>
-          <select value={sort} onChange={(event) => setSort(event.target.value)} className="border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none">
+          <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Sort order" className="border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none">
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
           </select>

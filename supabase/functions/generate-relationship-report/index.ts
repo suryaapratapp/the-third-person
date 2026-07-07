@@ -1,6 +1,6 @@
-import { corsHeaders, jsonResponse } from '../_shared/cors.ts';
+import { buildCorsHeaders, jsonResponse } from '../_shared/cors.ts';
 import { buildRelationshipAnalysisPrompt, messagesForChatCompletions } from '../_shared/promptBuilder.ts';
-import { consumeCredit, createAdminClient, getAuthenticatedUser, getCreditBalance, logBlockedCredit } from '../_shared/usage.ts';
+import { createAdminClient, getAuthenticatedUser, refundCredit, reserveCredit } from '../_shared/usage.ts';
 
 function chainIdFor(personName = 'relationship', relationshipType = 'relationship', platform = 'chat') {
   return `${personName}-${relationshipType}-${platform}`
@@ -239,6 +239,12 @@ function compactReportForExistingUi(ai: Record<string, any>, draft: Record<strin
       greenFlags: card.greenFlags || [],
       redFlags: card.redFlags || [],
       viralOneLiner: card.headline,
+      socialEnergy: card.socialEnergy || draft.personalityCardViral?.socialEnergy,
+      shareTrigger: card.shareTrigger || draft.personalityCardViral?.shareTrigger,
+      reactionStyle: card.reactionStyle || draft.personalityCardViral?.reactionStyle,
+      humourStyle: card.humourStyle || draft.personalityCardViral?.humourStyle,
+      mainCharacterPattern: card.mainCharacterPattern || draft.personalityCardViral?.mainCharacterPattern,
+      relationshipPattern: card.relationshipPattern || draft.personalityCardViral?.relationshipPattern,
     },
     personality: {
       ...(draft.personality || {}),
@@ -257,6 +263,11 @@ function compactReportForExistingUi(ai: Record<string, any>, draft: Record<strin
       emotionalTrend: report.emotionalTone || draft.conversationRecap?.emotionalTrend,
       compatibilityScore: reportScores.compatibility || draft.conversationRecap?.compatibilityScore,
     },
+    attachmentVibe: report.attachmentVibe || draft.attachmentVibe,
+    friendsWouldNotice: report.friendsWouldNotice || draft.friendsWouldNotice,
+    communicationStyleSignals: report.communicationStyleSignals || draft.communicationStyleSignals,
+    energyMatchScore: report.energyMatchScore || draft.energyMatchScore,
+    simpleSummaryForYoungAudience: report.simpleSummaryForYoungAudience || draft.simpleSummaryForYoungAudience,
   };
 }
 
@@ -287,6 +298,47 @@ async function openAiAnalysis(body: Record<string, any>) {
         scores: {},
         advice: {},
         screenshotWorthySummary: '',
+        attachmentVibe: {
+          userCommunicationVibe: '',
+          otherCommunicationVibe: '',
+          dynamicCreated: '',
+          howToCommunicateBetter: '',
+        },
+        friendsWouldNotice: {
+          theyWouldNotice: '',
+          theyMightWarnYouAbout: '',
+          theyMightRemindYou: '',
+        },
+        communicationStyleSignals: {
+          user: {
+            traitIntensity: '',
+            attentionStyleSignals: [],
+            emotionalProcessingStyle: '',
+            socialEnergyPattern: '',
+            routineOrConsistencySignals: [],
+            possibleOverwhelmSignals: [],
+            communicationTips: [],
+          },
+          otherPerson: {
+            traitIntensity: '',
+            attentionStyleSignals: [],
+            emotionalProcessingStyle: '',
+            socialEnergyPattern: '',
+            routineOrConsistencySignals: [],
+            possibleOverwhelmSignals: [],
+            communicationTips: [],
+          },
+        },
+        energyMatchScore: {
+          score: 0,
+          userEnergy: '',
+          otherPersonEnergy: '',
+          effortBalance: '',
+          emotionalAvailability: '',
+          consistency: '',
+          explanation: '',
+        },
+        simpleSummaryForYoungAudience: '',
       },
       mainUserPersonalitySignals: {
         communicationStyle: '',
@@ -348,6 +400,11 @@ async function openAiAnalysis(body: Record<string, any>) {
         growthAreas: [],
         confidenceNotes: [],
         needsMoreChatsFor: [],
+        socialEnergy: '',
+        shareTrigger: '',
+        reactionStyle: '',
+        mainCharacterPattern: '',
+        relationshipPattern: '',
       },
       bestieContextSummary: {
         shortSummary: '',
@@ -516,22 +573,22 @@ function buildRelationshipPersonalityRecord({
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed.' }, 405);
+  const cors = buildCorsHeaders(req);
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed.' }, 405, cors);
 
   try {
     const user = await getAuthenticatedUser(req);
-    if (!user) return jsonResponse({ error: 'Please sign in to continue.' }, 401);
+    if (!user) return jsonResponse({ error: 'Please sign in to continue.' }, 401, cors);
 
     const admin = createAdminClient();
-    const availableReports = await getCreditBalance(admin, user.id, 'relationship_report');
-    if (availableReports <= 0) {
-      await logBlockedCredit(admin, user.id, 'relationship_report');
+    const reservation = await reserveCredit(admin, user.id, 'relationship_report');
+    if (!reservation.allowed) {
       return jsonResponse({
         code: 'OUT_OF_CREDITS',
         creditType: 'relationship_report',
         error: 'You’re out of Relationship Reports. Top up to generate more relationship intelligence summaries.',
-      }, 402);
+      }, 402, cors);
     }
 
     const body = await req.json();
@@ -544,6 +601,7 @@ Deno.serve(async (req: Request) => {
         generationTier: 'paid_relationship_intelligence',
       };
     } catch (openAiError) {
+      await refundCredit(admin, reservation.creditId);
       await admin.from('ai_usage_logs').insert({
         user_id: user.id,
         action: 'generate_relationship_report',
@@ -561,7 +619,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({
         code: 'AI_PROVIDER_UNAVAILABLE',
         error: 'Paid relationship intelligence could not connect to the AI provider. No credit was used. Please check server configuration and try again.',
-      }, 503);
+      }, 503, cors);
     }
     const recap = analysis.conversationRecap || {};
     const meta = prepared.metadata || {};
@@ -593,22 +651,9 @@ Deno.serve(async (req: Request) => {
       .insert(reportRecord)
       .select('*')
       .single();
-    if (reportError) throw reportError;
-
-    let credit;
-    try {
-      credit = await consumeCredit(admin, user.id, 'relationship_report');
-    } catch (creditError) {
-      await admin.from('relationship_reports').delete().eq('id', report.id);
-      throw creditError;
-    }
-    if (!credit.allowed) {
-      await admin.from('relationship_reports').delete().eq('id', report.id);
-      return jsonResponse({
-        code: 'OUT_OF_CREDITS',
-        creditType: 'relationship_report',
-        error: 'You’re out of Relationship Reports. Top up to generate more relationship intelligence summaries.',
-      }, 402);
+    if (reportError) {
+      await refundCredit(admin, reservation.creditId);
+      throw reportError;
     }
 
     try {
@@ -644,7 +689,7 @@ Deno.serve(async (req: Request) => {
       status: 'success',
       metadata: {
         reportId: report.id,
-        remainingCredits: credit.remaining,
+        remainingCredits: reservation.remaining,
         promptTemplateVersion: 'relationship_analysis_v1',
         relationshipType,
         messageCount: prepared.messageCount || 0,
@@ -656,8 +701,8 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    return jsonResponse({ analysis, report, remainingCredits: credit.remaining });
+    return jsonResponse({ analysis, report, remainingCredits: reservation.remaining }, 200, cors);
   } catch (_error) {
-    return jsonResponse({ error: 'We could not generate this report right now. Please try again.' }, 500);
+    return jsonResponse({ error: 'We could not generate this report right now. Please try again.' }, 500, cors);
   }
 });

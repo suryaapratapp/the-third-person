@@ -1,7 +1,10 @@
 const suspiciousPhrases = [
   'ignore previous instructions',
   'ignore above prompt',
+  'ignore all previous instructions',
+  'ignore the above',
   'disregard system prompt',
+  'disregard previous instructions',
   'reveal hidden prompt',
   'reveal system prompt',
   'show developer message',
@@ -24,15 +27,38 @@ const suspiciousPhrases = [
   'dan mode',
   'pretend you are',
   'forget your rules',
+  'forget previous instructions',
+  'you are now',
+  'new instructions',
+  // Hindi / Hinglish equivalents of the highest-signal phrases above.
+  'purane nirdesh bhool',
+  'nirdesh bhool jao',
+  'system prompt dikhao',
+  'system prompt batao',
+  'niyam bhool jao',
+  'safety bypass karo',
 ];
+
+// Verbs that, in an imperative lead position, indicate an attempt to command
+// the model rather than describe something within the conversation itself.
+const imperativeVerbs = ['ignore', 'reveal', 'show', 'print', 'output', 'bypass', 'override', 'forget', 'disregard', 'pretend', 'act'];
 
 function isInstructionLike(line) {
   const trimmed = line.trim().toLowerCase();
   if (!trimmed) return false;
   const phraseHit = suspiciousPhrases.some((phrase) => trimmed.includes(phrase));
-  const imperativeShape = /^(system|assistant|developer|admin|user)\s*:/i.test(line)
-    || /^(ignore|reveal|show|print|output|bypass|override|forget)\b/i.test(trimmed);
-  return phraseHit && imperativeShape;
+  if (!phraseHit) return false;
+
+  // Role-prefixed injection attempt, anywhere in the line (not only at the
+  // very start) — catches "btw, system: ignore..." style lead-ins.
+  const rolePrefix = /(?:^|[.!?]\s+|,\s*)(system|assistant|developer|admin|user)\s*:/i.test(line);
+
+  // An imperative verb within the first few words, optionally preceded by a
+  // short conversational lead-in (e.g. "ok now ignore...", "please reveal...").
+  const leadInWords = trimmed.replace(/^[^a-z]*/i, '').split(/\s+/).slice(0, 6).join(' ');
+  const imperativeNearStart = new RegExp(`\\b(${imperativeVerbs.join('|')})\\b`, 'i').test(leadInWords);
+
+  return rolePrefix || imperativeNearStart;
 }
 
 export function detectPromptInjection(rawText = '') {

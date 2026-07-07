@@ -121,6 +121,8 @@ export default function TopNav() {
                   ['About Company', '/company'],
                   ['Vision', '/vision'],
                   ['FAQs', '/faqs'],
+                  ['Terms of Service', '/terms'],
+                  ['Refund Policy', '/refund-policy'],
                 ].map(([label, href]) => (
                   <button
                     key={label}
@@ -185,12 +187,17 @@ export default function TopNav() {
         </div>
       </div>
       {twinFlameOpen && (
-        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 px-4 backdrop-blur">
+        <div
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 px-4 backdrop-blur"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="compatibility-match-heading"
+        >
           <div className="relative max-w-lg overflow-hidden rounded-[34px] border border-pink-200/20 bg-[#171523]/95 p-7 text-center shadow-[0_28px_120px_rgba(0,0,0,0.30)]">
             <div className="pointer-events-none absolute -left-16 -top-16 h-44 w-44 rounded-full bg-pink-300/20 blur-3xl" />
             <div className="pointer-events-none absolute -right-16 -bottom-16 h-44 w-44 rounded-full bg-orange-300/16 blur-3xl" />
             <p className="tech-label relative text-pink-100">Coming soon</p>
-            <h3 className="serif-title relative mt-4 text-5xl leading-tight text-bone">Compatibility Match</h3>
+            <h3 id="compatibility-match-heading" className="serif-title relative mt-4 text-5xl leading-tight text-bone">Compatibility Match</h3>
             <p className="relative mt-5 text-sm leading-7 text-smoke">
               A refined compatibility experience is being prepared around emotional rhythm, communication style, and relationship fit.
             </p>

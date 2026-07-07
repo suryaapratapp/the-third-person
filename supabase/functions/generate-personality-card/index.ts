@@ -1,6 +1,6 @@
-import { corsHeaders, jsonResponse } from '../_shared/cors.ts';
+import { buildCorsHeaders, jsonResponse } from '../_shared/cors.ts';
 import { buildPersonalityCardPrompt, messagesForChatCompletions } from '../_shared/promptBuilder.ts';
-import { createAdminClient, getAuthenticatedUser } from '../_shared/usage.ts';
+import { createAdminClient, getAuthenticatedUser, refundCredit, reserveCredit } from '../_shared/usage.ts';
 
 function parseJsonText(text: string) {
   const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
@@ -22,18 +22,6 @@ const CODEBASE_PERSONALITY_SYSTEM_PROMPT = [
   'Support English, Hindi, Hinglish, and mixed-language output where natural.',
   'Return valid JSON only.',
 ].join('\n');
-
-async function hasPaidPack(admin: ReturnType<typeof createAdminClient>, userId: string) {
-  const { data, error } = await admin
-    .from('analysis_credits')
-    .select('id')
-    .eq('user_id', userId)
-    .neq('source', 'free')
-    .gt('credits_granted', 0)
-    .limit(1);
-  if (error) throw error;
-  return Boolean(data?.length);
-}
 
 async function openAiPersonality(body: Record<string, any>) {
   const apiKey = Deno.env.get('OPENAI_API_KEY');
@@ -142,25 +130,36 @@ async function openAiPersonality(body: Record<string, any>) {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed.' }, 405);
+  const cors = buildCorsHeaders(req);
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed.' }, 405, cors);
 
   try {
     const user = await getAuthenticatedUser(req);
-    if (!user) return jsonResponse({ error: 'Please sign in to continue.' }, 401);
+    if (!user) return jsonResponse({ error: 'Please sign in to continue.' }, 401, cors);
     const admin = createAdminClient();
-    const paid = await hasPaidPack(admin, user.id);
-    if (!paid) {
+
+    // Understand Yourself is a premium feature layered on the same
+    // Relationship Report credit pool (there is no separate credit type for
+    // it). Reserving atomically here also fixes a previous bug where this
+    // gate only checked whether the user had EVER had a paid pack
+    // (credits_granted > 0) instead of remaining balance, and never actually
+    // debited a credit — making generation free and unlimited forever after
+    // a single past purchase.
+    const reservation = await reserveCredit(admin, user.id, 'relationship_report');
+    if (!reservation.allowed) {
       return jsonResponse({
         code: 'OUT_OF_CREDITS',
+        creditType: 'relationship_report',
         error: 'Top up to generate paid Personality Card intelligence.',
-      }, 402);
+      }, 402, cors);
     }
 
     const body = await req.json();
     const personality = await openAiPersonality(body).catch(() => null);
     if (!personality) {
-      return jsonResponse({ error: 'Personality Card could not be generated right now.' }, 503);
+      await refundCredit(admin, reservation.creditId);
+      return jsonResponse({ error: 'Personality Card could not be generated right now. No credit was used.' }, 503, cors);
     }
 
     const understandYourself = personality.understandYourself || personality;
@@ -195,13 +194,14 @@ Deno.serve(async (req: Request) => {
       metadata: {
         relationshipPersonalityCardCount: sourceCardIds.length,
         promptTemplateVersion: 'understand_yourself_v1',
+        remainingCredits: reservation.remaining,
         relationshipTypes: (body.relationshipPersonalityCards || body.cards || []).map((card: Record<string, any>) => card.relationshipType).filter(Boolean),
         detectedLanguages: body.languageProfile?.languagesUsed || body.runtimeContext?.languageProfile?.languagesUsed || [],
       },
     });
 
-    return jsonResponse({ personality: understandYourself, understandYourself });
+    return jsonResponse({ personality: understandYourself, understandYourself, remainingCredits: reservation.remaining }, 200, cors);
   } catch (_error) {
-    return jsonResponse({ error: 'Personality Card could not be generated right now.' }, 500);
+    return jsonResponse({ error: 'Personality Card could not be generated right now.' }, 500, cors);
   }
 });

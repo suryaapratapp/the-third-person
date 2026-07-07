@@ -145,7 +145,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
     setProcessingStage('');
     setPendingFreeAnalysis(null);
     setSecureSignInMessage('');
-    onStart('/analysis/loading');
+    onStart('/analysis/result');
   }
 
   async function continueSecureFreeAnalysis() {
@@ -394,12 +394,18 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         />
       )}
       {isGenerating && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 px-4 backdrop-blur">
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 px-4 backdrop-blur"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="analysis-progress-heading"
+          aria-live="polite"
+        >
           <div className="accent-panel max-w-lg p-7 text-center">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-purple-200/40 bg-purple-300/10">
               <div className="h-12 w-12 animate-spin rounded-full border-2 border-purple-200 border-t-transparent" />
             </div>
-            <h3 className="serif-title mt-6 text-4xl">Preparing your private analysis…</h3>
+            <h3 id="analysis-progress-heading" className="serif-title mt-6 text-4xl">Preparing your private analysis…</h3>
             <div className="mt-5 space-y-2 font-mono text-xs uppercase tracking-[0.13em] text-smoke">
               <p>{processingStage || 'Preparing private relationship intelligence…'}</p>
               <p>Checking previous reports…</p>
@@ -411,10 +417,22 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         </div>
       )}
       {pendingFreeAnalysis && !isGenerating && (
-        <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/80 px-4 backdrop-blur">
+        <div
+          className="fixed inset-0 z-[85] flex items-center justify-center bg-black/80 px-4 backdrop-blur"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="secure-signin-heading"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setPendingFreeAnalysis(null);
+              setSecureSignInMessage('');
+              setAnalysisError('');
+            }
+          }}
+        >
           <div className="accent-panel max-w-lg p-7 text-center">
             <p className="tech-label text-smoke">ThirdPerson AI free analysis</p>
-            <h3 className="serif-title mt-5 text-4xl">Open secure analysis sign-in</h3>
+            <h3 id="secure-signin-heading" className="serif-title mt-5 text-4xl">Open secure analysis sign-in</h3>
             <p className="mt-5 text-sm leading-7 text-smoke">
               Safari may block sign-in windows unless they are opened directly from a tap. Tap the button below to continue securely.
             </p>

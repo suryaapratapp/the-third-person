@@ -49,7 +49,7 @@ function looksLikeConversation(text = '') {
   return chatLike >= 2 || chatLike / Math.max(1, lines.length) > 0.2;
 }
 
-export function scanUploadedFileContent({ fileName = '', fileType = '', text = '' }) {
+export function scanUploadedFileContent({ fileName = '', text = '' }) {
   const technicalFlags = [];
   const reasons = [];
   let cleanedText = String(text || '');

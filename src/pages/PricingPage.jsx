@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { fetchCreditBalances } from '../lib/creditsService.js';
+import { useRouter } from '../state/RouterContext.jsx';
 
 const PRICE_PER_REPORT = 199;
 const CHATS_PER_REPORT = 10;
@@ -18,6 +19,7 @@ function clampReports(value) {
 }
 
 export default function PricingPage() {
+  const { navigate } = useRouter();
   const [reportCount, setReportCount] = useState(1);
   const [message, setMessage] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -194,6 +196,12 @@ export default function PricingPage() {
             <p className="relative mt-4 text-center text-sm leading-7 text-smoke">
               Pay only for what you need. Top up anytime when your reports or Guide Chats run out.
             </p>
+            <p className="relative mt-3 text-center text-xs leading-6 text-ash">
+              By continuing you agree to our{' '}
+              <button type="button" onClick={() => navigate('/terms')} className="text-purple-200 underline hover:text-bone">Terms of Service</button>
+              {' '}and{' '}
+              <button type="button" onClick={() => navigate('/refund-policy')} className="text-purple-200 underline hover:text-bone">Refund Policy</button>.
+            </p>
           </article>
 
           <aside className="thin-panel rounded-[34px] p-6 sm:p-8">
@@ -236,10 +244,16 @@ export default function PricingPage() {
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 px-4 backdrop-blur">
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 px-4 backdrop-blur"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="checkout-modal-heading"
+          onKeyDown={(event) => { if (event.key === 'Escape') setModalOpen(false); }}
+        >
           <div className="accent-panel max-w-lg rounded-[34px] p-7 text-center">
             <p className="tech-label text-purple-100">Top up selected</p>
-            <h3 className="serif-title mt-4 text-4xl leading-tight">Checkout connection is being prepared.</h3>
+            <h3 id="checkout-modal-heading" className="serif-title mt-4 text-4xl leading-tight">Checkout connection is being prepared.</h3>
             <p className="mt-5 text-sm leading-7 text-smoke">
               Your selected clarity pack is ready: {reportCount} Relationship Reports and {guideChats} Guide Chats for ₹{formatInr(totalPrice)}.
             </p>

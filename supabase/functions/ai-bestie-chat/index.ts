@@ -1,6 +1,6 @@
-import { corsHeaders, jsonResponse } from '../_shared/cors.ts';
+import { buildCorsHeaders, jsonResponse } from '../_shared/cors.ts';
 import { buildBestiePrompt, messagesForChatCompletions } from '../_shared/promptBuilder.ts';
-import { consumeCredit, createAdminClient, getAuthenticatedUser, getCreditBalance, logBlockedCredit } from '../_shared/usage.ts';
+import { createAdminClient, getAuthenticatedUser, refundCredit, reserveCredit } from '../_shared/usage.ts';
 
 function supportsCustomTemperature(model: string) {
   return !model.startsWith('gpt-5');
@@ -84,32 +84,33 @@ async function openAiBestieReply(message: string, context: Record<string, any>, 
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed.' }, 405);
+  const cors = buildCorsHeaders(req);
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed.' }, 405, cors);
 
   try {
     const user = await getAuthenticatedUser(req);
-    if (!user) return jsonResponse({ error: 'Please sign in to continue.' }, 401);
+    if (!user) return jsonResponse({ error: 'Please sign in to continue.' }, 401, cors);
 
     const body = await req.json();
     const { chainId, userMessage, analysisChainContext } = body;
-    if (!chainId || !userMessage) return jsonResponse({ error: 'Please ask a relationship question.' }, 400);
+    if (!chainId || !userMessage) return jsonResponse({ error: 'Please ask a relationship question.' }, 400, cors);
 
     const admin = createAdminClient();
-    const availableMessages = await getCreditBalance(admin, user.id, 'bestie_message');
-    if (availableMessages <= 0) {
-      await logBlockedCredit(admin, user.id, 'bestie_message');
+    const reservation = await reserveCredit(admin, user.id, 'bestie_message');
+    if (!reservation.allowed) {
       return jsonResponse({
         code: 'OUT_OF_CREDITS',
         creditType: 'bestie_message',
         error: 'You’re out of Broski Chats. Top up to keep asking Broski for guidance.',
-      }, 402);
+      }, 402, cors);
     }
 
     let text: string;
     try {
       text = await openAiBestieReply(userMessage, analysisChainContext || {}, body);
     } catch (openAiError) {
+      await refundCredit(admin, reservation.creditId);
       await admin.from('ai_usage_logs').insert({
         user_id: user.id,
         action: 'ai_bestie_chat',
@@ -127,7 +128,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({
         code: 'AI_PROVIDER_UNAVAILABLE',
         error: 'Broski could not connect to the AI provider. No Broski Chat credit was used. Please check server configuration and try again.',
-      }, 503);
+      }, 503, cors);
     }
 
     const { data: userMessageRecord, error: userMessageError } = await admin.from('bestie_messages').insert({
@@ -137,7 +138,10 @@ Deno.serve(async (req: Request) => {
       content: userMessage,
       metadata: { source: 'bestie_chat' },
     }).select('*').single();
-    if (userMessageError) throw userMessageError;
+    if (userMessageError) {
+      await refundCredit(admin, reservation.creditId);
+      throw userMessageError;
+    }
 
     const { data: assistantMessage, error: assistantMessageError } = await admin
       .from('bestie_messages')
@@ -150,31 +154,15 @@ Deno.serve(async (req: Request) => {
       })
       .select('*')
       .single();
-    if (assistantMessageError) throw assistantMessageError;
-
-    let credit;
-    try {
-      credit = await consumeCredit(admin, user.id, 'bestie_message');
-    } catch (creditError) {
+    if (assistantMessageError) {
+      await refundCredit(admin, reservation.creditId);
       if (userMessageRecord?.id) await admin.from('bestie_messages').delete().eq('id', userMessageRecord.id);
-      if (assistantMessage?.id) await admin.from('bestie_messages').delete().eq('id', assistantMessage.id);
-      throw creditError;
-    }
-    if (!credit.allowed) {
-      if (userMessageRecord?.id) await admin.from('bestie_messages').delete().eq('id', userMessageRecord.id);
-      if (assistantMessage?.id) await admin.from('bestie_messages').delete().eq('id', assistantMessage.id);
-      return jsonResponse({
-        code: 'OUT_OF_CREDITS',
-        creditType: 'bestie_message',
-        error: 'You’re out of Broski Chats. Top up to keep asking Broski for guidance.',
-      }, 402);
+      throw assistantMessageError;
     }
 
-    if (assistantMessage?.id) {
-      await admin.from('bestie_messages').update({
-        metadata: { source: 'bestie_chat', remainingCredits: credit.remaining },
-      }).eq('id', assistantMessage.id);
-    }
+    await admin.from('bestie_messages').update({
+      metadata: { source: 'bestie_chat', remainingCredits: reservation.remaining },
+    }).eq('id', assistantMessage.id);
 
     await admin.from('ai_usage_logs').insert({
       user_id: user.id,
@@ -184,15 +172,15 @@ Deno.serve(async (req: Request) => {
       metadata: {
         chainId,
         messageId: assistantMessage?.id,
-        remainingCredits: credit.remaining,
+        remainingCredits: reservation.remaining,
         promptTemplateVersion: 'bestie_chat_v1',
         relationshipType: body.relationshipType,
         detectedLanguageStyle: body.detectedLanguageStyle,
       },
     });
 
-    return jsonResponse({ text, message: assistantMessage, remainingCredits: credit.remaining });
+    return jsonResponse({ text, message: assistantMessage, remainingCredits: reservation.remaining }, 200, cors);
   } catch (_error) {
-    return jsonResponse({ error: 'Broski could not reply right now. Please try again.' }, 500);
+    return jsonResponse({ error: 'Broski could not reply right now. Please try again.' }, 500, cors);
   }
 });
