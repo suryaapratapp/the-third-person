@@ -12,6 +12,7 @@ import {
 } from '../lib/supabaseDataService.js';
 import { getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
 import { useRouter } from '../state/RouterContext.jsx';
+import PersonalityInsightDialog from '../components/PersonalityInsightDialog.jsx';
 
 const emptyText = 'Not enough evidence yet.';
 
@@ -153,9 +154,13 @@ function ProfileAvatar({ profile }) {
   );
 }
 
-function PeopleMapCard({ item }) {
+function PeopleMapCard({ item, onSelect }) {
   return (
-    <article className="glass-card glow-border group relative min-h-[248px] overflow-hidden p-5 transition duration-200 hover:-translate-y-0.5">
+    <button
+      type="button"
+      onClick={() => onSelect(item)}
+      className="glass-card glow-border group relative min-h-[248px] w-full overflow-hidden p-5 text-left transition duration-200 hover:-translate-y-0.5"
+    >
       <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accentClass} opacity-95 transition duration-300 group-hover:opacity-100`} />
       <div className="relative flex items-start justify-between">
         <span className={`flex h-11 w-11 items-center justify-center rounded-2xl border px-2 py-2 text-2xl leading-none ${item.iconClass}`}>{item.icon}</span>
@@ -176,7 +181,7 @@ function PeopleMapCard({ item }) {
       </div>
       <div className="absolute right-5 top-24 rounded-full border border-white/12 bg-white/[0.07] px-4 py-3 text-xl text-bone">•••</div>
       <span className="absolute bottom-4 right-5 rounded-full border border-white/12 bg-black/20 px-2.5 py-1 font-mono text-[0.58rem] uppercase tracking-[0.10em] text-smoke">{item.confidence}</span>
-    </article>
+    </button>
   );
 }
 
@@ -288,6 +293,7 @@ export default function PersonalityCardPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState('');
+  const [selectedItem, setSelectedItem] = useState(null);
 
   const peopleMap = useMemo(() => buildPeopleMap(relationshipCards), [relationshipCards]);
   // Understand Yourself spends one Relationship Report credit per
@@ -442,7 +448,7 @@ export default function PersonalityCardPage() {
             <p className="mt-5 rounded-full border border-white/12 bg-white/[0.05] px-5 py-3 font-mono text-xs uppercase tracking-[0.16em] text-pink-100 backdrop-blur">You, in relationships ✧</p>
           </div>
           <div className="relative mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {peopleMap.map((item) => <PeopleMapCard key={item.key} item={item} />)}
+            {peopleMap.map((item) => <PeopleMapCard key={item.key} item={item} onSelect={setSelectedItem} />)}
           </div>
           <div className="relative mt-8 flex flex-wrap items-center justify-between gap-4 font-mono text-sm text-smoke">
             <p>✧ One person, many personalities. All authentic, all you.</p>
@@ -464,6 +470,7 @@ export default function PersonalityCardPage() {
           </p>
         </section>
       </div>
+      <PersonalityInsightDialog item={selectedItem} onClose={() => setSelectedItem(null)} />
     </section>
   );
 }

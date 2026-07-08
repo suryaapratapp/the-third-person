@@ -97,6 +97,12 @@ export default function TopNav() {
             Pricing
           </button>
           <button
+            onClick={() => menuNavigate('/blog')}
+            className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-smoke transition hover:text-bone"
+          >
+            Blog
+          </button>
+          <button
             type="button"
             onClick={() => setTwinFlameOpen(true)}
             className="relative flex items-center rounded-full border border-pink-200/25 bg-gradient-to-r from-pink-300/12 via-purple-300/14 to-orange-300/10 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.16em] text-pink-100 shadow-[0_16px_42px_rgba(0,0,0,0.20)] transition hover:-translate-y-0.5 hover:border-pink-300/50 hover:text-bone"
@@ -165,6 +171,7 @@ export default function TopNav() {
                 ['Vision', '/vision'],
                 ['FAQs', '/faqs'],
                 ['Pricing', '/pricing'],
+                ['Blog', '/blog'],
                 ['Compatibility Match', 'coming-soon'],
                 ['Privacy', '/privacy'],
                 ['Contact', '/company#contact'],

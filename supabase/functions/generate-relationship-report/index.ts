@@ -32,7 +32,7 @@ const CODEBASE_REPORT_SYSTEM_PROMPT = [
   'Return valid JSON only.',
 ].join('\n');
 
-async function callOpenAiJson({
+async function fetchOpenAiText({
   apiKey,
   model,
   messages,
@@ -63,7 +63,28 @@ async function callOpenAiJson({
   const data = await response.json();
   const text = data.choices?.[0]?.message?.content;
   if (!text) throw new Error('OPENAI_REPORT_EMPTY_RESPONSE');
-  return parseJsonText(text);
+  return text;
+}
+
+async function callOpenAiJson(options: {
+  apiKey: string;
+  model: string;
+  messages: Array<{ role: string; content: string }>;
+  temperature?: number;
+}) {
+  const text = await fetchOpenAiText(options);
+  try {
+    return parseJsonText(text);
+  } catch {
+    // The model returned malformed JSON. Retry once with an explicit correction
+    // instruction rather than failing the whole report generation immediately.
+    const correctionMessages = [
+      ...options.messages,
+      { role: 'user', content: 'Your previous response could not be parsed as valid JSON. Return ONLY valid JSON matching the requested schema — no markdown formatting, no code fences, no commentary before or after it.' },
+    ];
+    const retryText = await fetchOpenAiText({ ...options, messages: correctionMessages });
+    return parseJsonText(retryText);
+  }
 }
 
 function chunkSummarySchema() {
@@ -125,7 +146,7 @@ async function summarizeChunk({
       lastMessages: chunk.lastMessages,
       representativeMessages: chunkMessagesForAi(chunk),
     },
-    instruction: 'Extract relationship signals, main-user personality signals, gentle red and green flags, turning points, important moments, useful quotes, and Broski context. Keep it concise. If evidence is weak, say not enough evidence yet.',
+    instruction: 'Extract relationship signals, main-user personality signals, gentle red and green flags, turning points, important moments, useful quotes, and AI Relationship Coach context. Keep it concise. If evidence is weak, say not enough evidence yet.',
     outputSchema: chunkSummarySchema(),
   });
   return callOpenAiJson({
@@ -217,6 +238,11 @@ function compactReportForExistingUi(ai: Record<string, any>, draft: Record<strin
     communicationPatterns: {
       ...(draft.communicationPatterns || {}),
       relationshipPattern: report.communicationPattern || draft.communicationPatterns?.relationshipPattern,
+      userStyle: report.communicationPatterns?.userStyle || draft.communicationPatterns?.userStyle,
+      otherPersonStyle: report.communicationPatterns?.otherPersonStyle || draft.communicationPatterns?.otherPersonStyle,
+      conflictStyle: report.communicationPatterns?.conflictStyle || draft.communicationPatterns?.conflictStyle,
+      repairAttempts: report.communicationPatterns?.repairAttempts || draft.communicationPatterns?.repairAttempts,
+      avoidancePatterns: report.communicationPatterns?.avoidancePatterns || draft.communicationPatterns?.avoidancePatterns,
     },
     relationshipSpecificInsights: report.relationshipSpecificCards || draft.relationshipSpecificInsights || [],
     bestieBreakdown: typeof report.bestieBreakdown === 'string'
@@ -285,6 +311,13 @@ async function openAiAnalysis(body: Record<string, any>) {
         emotionalTone: '',
         effortBalance: '',
         communicationPattern: '',
+        communicationPatterns: {
+          userStyle: '',
+          otherPersonStyle: '',
+          conflictStyle: '',
+          repairAttempts: '',
+          avoidancePatterns: '',
+        },
         redFlags: [],
         greenFlags: [],
         mixedSignals: [],
@@ -373,6 +406,16 @@ async function openAiAnalysis(body: Record<string, any>) {
         viralOneLiner: '',
         confidenceLevel: 'Early Signal | Repeated Pattern | Strong Pattern | Not Enough Evidence',
         conciseSummaryForDatabase: '',
+        personalityScores: {
+          speakingStyle: { score: 0, label: '' },
+          humourScore: 0,
+          calmnessScore: 0,
+          egoScore: 0,
+          empathyScore: 0,
+          expressivenessScore: 0,
+          patienceScore: 0,
+          signatureBehaviours: [],
+        },
       },
       personalityCardUpdate: {
         headline: '',
@@ -568,6 +611,7 @@ function buildRelationshipPersonalityRecord({
     growth_areas_summary: shortText(growthAreas),
     keywords: keywords.length ? keywords : ['Early signal'],
     confidence_level: rawCard.confidenceLevel || (signals.notEnoughEvidence?.length ? 'Early Signal' : 'Repeated Pattern'),
+    personality_scores: rawCard.personalityScores || null,
     updated_at: new Date().toISOString(),
   };
 }

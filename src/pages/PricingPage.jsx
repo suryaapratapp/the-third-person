@@ -57,7 +57,7 @@ export default function PricingPage() {
         {reason === 'usage-limit' && (
           <div className="mb-6 rounded-[28px] border border-orange-200/25 bg-orange-300/[0.055] p-5">
             <p className="tech-label text-orange-100">Continue your ThirdPerson POV</p>
-            <p className="mt-3 text-sm leading-7 text-smoke">Top up to unlock more Guide Chats, more Relationship Reports, and deeper relationship intelligence.</p>
+            <p className="mt-3 text-sm leading-7 text-smoke">Top up to unlock more Coach Chats, more Relationship Reports, and deeper relationship intelligence.</p>
           </div>
         )}
 
@@ -66,7 +66,7 @@ export default function PricingPage() {
           <p className="tech-label text-purple-200">Pricing</p>
           <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Build your clarity pack</h1>
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-8 text-smoke">
-            Choose the number of Relationship Reports you need. Every report adds 10 Guide Chats, so your follow-up guidance grows with your analysis balance.
+            Choose the number of Relationship Reports you need. Every report adds 10 Coach Chats, so your follow-up guidance grows with your analysis balance.
           </p>
           <div className="mx-auto mt-7 flex max-w-3xl flex-wrap justify-center gap-3">
             {['Pay only for what you need', 'Top up anytime', 'Old reports stay free to open'].map((item) => (
@@ -85,7 +85,7 @@ export default function PricingPage() {
           </div>
           <div className="relative overflow-hidden rounded-[30px] border border-pink-200/20 bg-gradient-to-br from-pink-300/[0.10] via-white/[0.045] to-orange-300/[0.055] p-5 shadow-[0_18px_80px_rgba(236,72,153,0.08)]">
             <div className="absolute -right-10 -top-14 h-36 w-36 rounded-full bg-pink-300/20 blur-3xl" />
-            <p className="tech-label text-pink-100">Guide Chats left</p>
+            <p className="tech-label text-pink-100">Coach Chats left</p>
             <p className="relative mt-4 serif-title text-6xl leading-none text-bone">{guideBalance}</p>
           </div>
         </div>
@@ -99,7 +99,7 @@ export default function PricingPage() {
                 <p className="tech-label text-purple-100">Smart credit builder</p>
                 <h2 className="serif-title mt-4 text-5xl leading-tight">Shape your top-up.</h2>
                 <p className="mt-3 max-w-xl text-sm leading-7 text-smoke">
-                  1 Relationship Report includes 10 Guide Chats. Pick the amount that matches how much clarity you want right now.
+                  1 Relationship Report includes 10 Coach Chats. Pick the amount that matches how much clarity you want right now.
                 </p>
               </div>
               <div className="rounded-full border border-orange-200/25 bg-orange-300/[0.08] px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-orange-100">
@@ -178,7 +178,7 @@ export default function PricingPage() {
               </div>
               <div className="rounded-[26px] border border-pink-200/18 bg-black/24 p-5">
                 <p className="serif-title text-5xl leading-none text-bone">{guideChats}</p>
-                <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Guide Chats</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Coach Chats</p>
               </div>
               <div className="rounded-[26px] border border-orange-200/20 bg-orange-300/[0.055] p-5">
                 <p className="serif-title text-5xl leading-none text-bone">₹{formatInr(totalPrice)}</p>
@@ -194,7 +194,7 @@ export default function PricingPage() {
               Continue with ₹{formatInr(totalPrice)}
             </button>
             <p className="relative mt-4 text-center text-sm leading-7 text-smoke">
-              Pay only for what you need. Top up anytime when your reports or Guide Chats run out.
+              Pay only for what you need. Top up anytime when your reports or Coach Chats run out.
             </p>
             <p className="relative mt-3 text-center text-xs leading-6 text-ash">
               By continuing you agree to our{' '}
@@ -209,9 +209,9 @@ export default function PricingPage() {
             <div className="mt-6 space-y-4">
               {[
                 ['1', 'Choose the number of reports you want.'],
-                ['2', 'Guide Chats are added automatically in multiples of 10.'],
+                ['2', 'Coach Chats are added automatically in multiples of 10.'],
                 ['3', 'Use reports to analyse conversations.'],
-                ['4', 'Use Guide Chats to ask follow-up questions about your relationship.'],
+                ['4', 'Use Coach Chats to ask follow-up questions about your relationship.'],
               ].map(([step, copy]) => (
                 <div key={step} className="flex gap-4 rounded-[24px] border border-white/10 bg-white/[0.035] p-4">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-purple-200/25 bg-purple-300/10 font-mono text-xs text-bone">{step}</span>
@@ -222,14 +222,14 @@ export default function PricingPage() {
             <div className="mt-6 rounded-[26px] border border-orange-200/18 bg-orange-300/[0.055] p-5">
               <p className="tech-label text-orange-100">Live summary</p>
               <p className="mt-4 text-sm leading-7 text-smoke">
-                {reportCount} Relationship Reports + {guideChats} Guide Chats for ₹{formatInr(totalPrice)}.
+                {reportCount} Relationship Reports + {guideChats} Coach Chats for ₹{formatInr(totalPrice)}.
               </p>
             </div>
             <div className="mt-5 grid gap-3">
               {[
-                ['What you get', 'Fresh relationship reports for new conversations, plus guide follow-ups to unpack the confusing parts.'],
+                ['What you get', 'Fresh relationship reports for new conversations, plus coach follow-ups to unpack the confusing parts.'],
                 ['Smart usage', 'Opening old reports does not use credits. Duplicate cached reports do not use credits.'],
-                ['Credit safety', 'Failed report generation or failed guide replies do not reduce your balance.'],
+                ['Credit safety', 'Failed report generation or failed coach replies do not reduce your balance.'],
               ].map(([label, copy]) => (
                 <div key={label} className="rounded-[24px] border border-white/10 bg-black/18 p-4">
                   <p className="tech-label text-ash">{label}</p>
@@ -255,7 +255,7 @@ export default function PricingPage() {
             <p className="tech-label text-purple-100">Top up selected</p>
             <h3 id="checkout-modal-heading" className="serif-title mt-4 text-4xl leading-tight">Checkout connection is being prepared.</h3>
             <p className="mt-5 text-sm leading-7 text-smoke">
-              Your selected clarity pack is ready: {reportCount} Relationship Reports and {guideChats} Guide Chats for ₹{formatInr(totalPrice)}.
+              Your selected clarity pack is ready: {reportCount} Relationship Reports and {guideChats} Coach Chats for ₹{formatInr(totalPrice)}.
             </p>
             <div className="mt-6 grid gap-3">
               <button type="button" onClick={() => setModalOpen(false)} className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-smoke">

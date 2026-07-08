@@ -19,6 +19,8 @@ const FaqsPage = lazy(() => import('./pages/FaqsPage.jsx'));
 const BestieBotPage = lazy(() => import('./pages/BestieBotPage.jsx'));
 const PricingPage = lazy(() => import('./pages/PricingPage.jsx'));
 const AuthPage = lazy(() => import('./pages/AuthPage.jsx'));
+const BlogIndexPage = lazy(() => import('./pages/BlogIndexPage.jsx'));
+const BlogPostPage = lazy(() => import('./pages/BlogPostPage.jsx'));
 
 function PageLoading() {
   return (
@@ -49,12 +51,14 @@ function RouteSwitch() {
   if (path === '/personality-card') return <ProtectedRoute><PersonalityCardPage /></ProtectedRoute>;
   if (path === '/vision') return <VisionPage />;
   if (path === '/reports') return <ProtectedRoute><ReportsPage /></ProtectedRoute>;
-  if (path.startsWith('/reports/') && (path.endsWith('/broski') || path.endsWith('/bestie'))) {
-    const chainId = decodeURIComponent(path.replace('/reports/', '').replace('/broski', '').replace('/bestie', ''));
+  if (path.startsWith('/reports/') && (path.endsWith('/coach') || path.endsWith('/broski') || path.endsWith('/bestie'))) {
+    const chainId = decodeURIComponent(path.replace('/reports/', '').replace('/coach', '').replace('/broski', '').replace('/bestie', ''));
     return <ProtectedRoute><BestieBotPage chainId={chainId} /></ProtectedRoute>;
   }
   if (path === '/faqs') return <FaqsPage />;
   if (path === '/pricing') return <PricingPage />;
+  if (path === '/blog') return <BlogIndexPage />;
+  if (path.startsWith('/blog/')) return <BlogPostPage slug={path.replace('/blog/', '')} />;
   return <HomePage />;
 }
 

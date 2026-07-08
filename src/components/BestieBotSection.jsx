@@ -34,8 +34,8 @@ export default function BestieBotSection() {
     <section className="relative overflow-hidden border-t border-white/10 px-4 py-20 sm:px-8">
       <div className="mx-auto grid max-w-[1320px] gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
         <div>
-          <p className="tech-label text-pink-200">Relationship Guide</p>
-          <h2 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Meet your relationship guide.</h2>
+          <p className="tech-label text-pink-200">AI Relationship Coach</p>
+          <h2 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Meet your AI Relationship Coach.</h2>
           <p className="mt-6 max-w-2xl text-sm leading-8 text-smoke">
             A private AI guide that understands your analysis chain and helps you talk through what happened, what changed, what went wrong, and what you can do next.
           </p>

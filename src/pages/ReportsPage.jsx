@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import ParticleBackground from '../components/ParticleBackground.jsx';
+import RotatingQuote from '../components/RotatingQuote.jsx';
 import { groupReports } from '../lib/reportsStore.js';
 import { useRouter } from '../state/RouterContext.jsx';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
@@ -102,6 +103,9 @@ export default function ReportsPage() {
             <button onClick={() => navigate('/analysis/new')} className="glass-button mt-7 px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
               Start a conversation analysis
             </button>
+            <div className="mx-auto mt-7 max-w-md border-t border-white/10 pt-6">
+              <RotatingQuote />
+            </div>
           </div>
         ) : (
           <div className="mt-8 space-y-5">
@@ -124,10 +128,10 @@ export default function ReportsPage() {
                   </button>
                   <div className="mt-5 flex flex-wrap gap-3">
                     <button
-                      onClick={() => navigate(`/reports/${encodeURIComponent(chain.chainId)}/broski`)}
+                      onClick={() => navigate(`/reports/${encodeURIComponent(chain.chainId)}/coach`)}
                       className="rounded-full border border-pink-200/30 bg-pink-300/10 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-pink-100 transition hover:border-pink-300/70"
                     >
-                      Open Relationship Guide
+                      Open AI Relationship Coach
                     </button>
                     <button
                       onClick={() => setOpenChain(open ? '' : chain.chainId)}

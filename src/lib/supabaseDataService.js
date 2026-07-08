@@ -161,6 +161,7 @@ export function rowToRelationshipPersonalityCard(row) {
     growthAreasSummary: row.growth_areas_summary || 'Not enough evidence yet.',
     keywords: row.keywords || [],
     confidenceLevel: row.confidence_level || 'Early Signal',
+    personalityScores: row.personality_scores || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

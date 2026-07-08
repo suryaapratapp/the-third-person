@@ -1,5 +1,7 @@
+import { getBlogPostMetaBySlug } from './blogPostsMeta.js';
+
 const SITE_NAME = 'ThirdPerson AI';
-const DEFAULT_DESCRIPTION = 'ThirdPerson AI turns a real chat history with someone into a private relationship intelligence report — sentiment, red and green flags, communication style, and an ongoing AI Relationship Guide.';
+const DEFAULT_DESCRIPTION = 'ThirdPerson AI turns a real chat history with someone into a private relationship intelligence report — sentiment, red and green flags, communication style, and an ongoing AI Relationship Coach.';
 
 const PAGE_SEO = {
   '/': {
@@ -24,7 +26,7 @@ const PAGE_SEO = {
   },
   '/pricing': {
     title: `Pricing — ${SITE_NAME}`,
-    description: 'Pay-as-you-go Relationship Reports and Guide Chats. Only pay for the clarity you need.',
+    description: 'Pay-as-you-go Relationship Reports and Coach Chats. Only pay for the clarity you need.',
   },
   '/faqs': {
     title: `FAQs — ${SITE_NAME}`,
@@ -58,14 +60,31 @@ const PAGE_SEO = {
     title: `Profile — ${SITE_NAME}`,
     description: 'Manage your ThirdPerson AI profile and preferences.',
   },
+  '/blog': {
+    title: `Blog — ${SITE_NAME}`,
+    description: 'Export guides for every supported messaging app, and a closer look at the psychology behind how we communicate.',
+  },
 };
 
 function metaFor(path) {
   if (PAGE_SEO[path]) return PAGE_SEO[path];
   if (path.startsWith('/reports/')) {
     return {
-      title: `Relationship Guide — ${SITE_NAME}`,
-      description: 'Talk through a specific relationship with your AI Relationship Guide.',
+      title: `AI Relationship Coach — ${SITE_NAME}`,
+      description: 'Talk through a specific relationship with your AI Relationship Coach.',
+    };
+  }
+  if (path.startsWith('/blog/')) {
+    const post = getBlogPostMetaBySlug(path.replace('/blog/', ''));
+    if (post) {
+      return {
+        title: post.seoTitle || `${post.title} — ${SITE_NAME}`,
+        description: post.seoDescription || post.excerpt,
+      };
+    }
+    return {
+      title: `Blog — ${SITE_NAME}`,
+      description: 'Export guides for every supported messaging app, and a closer look at the psychology behind how we communicate.',
     };
   }
   return PAGE_SEO['/'];

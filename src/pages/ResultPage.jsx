@@ -28,9 +28,18 @@ const emotionalWords = ['love', 'miss', 'care', 'sorry', 'hurt', 'fine', 'trust'
 const affectionWords = ['love', 'miss', 'care', 'jaan', 'baby', 'cute', 'kiss', 'hug', 'yaad', 'pyaar', 'pyar'];
 const conflictWords = ['fight', 'angry', 'hurt', 'ignored', 'leave', 'block', 'blocked', 'lie', 'toxic', 'hate', 'gussa', 'naraz', 'stop'];
 
+function stringifyUnexpectedValue(value) {
+  if (typeof value !== 'object' || value === null) return String(value);
+  return value.label || value.text || value.title || value.summary || value.value || '';
+}
+
 function safe(value, fallback = emptyText) {
-  if (Array.isArray(value)) return value.length ? value.join(', ') : fallback;
+  if (Array.isArray(value)) {
+    if (!value.length) return fallback;
+    return value.map((item) => (typeof item === 'object' && item !== null ? stringifyUnexpectedValue(item) : item)).filter(Boolean).join(', ') || fallback;
+  }
   if (value === 0) return value;
+  if (value && typeof value === 'object') return stringifyUnexpectedValue(value) || fallback;
   return value || fallback;
 }
 
@@ -355,7 +364,7 @@ export default function ResultPage() {
           <CardShell id="report-summary-card" title="Relationship Summary" emoji="✨" summary={analysis.screenshotWorthySummary || summary.currentDynamic} accent="pink">
             <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
               <div>
-                <h2 className="serif-title text-4xl leading-tight sm:text-5xl">{analysis.screenshotWorthySummary || relationshipReport.vibeLabel || 'This connection has signals worth reading gently.'}</h2>
+                <h2 className="serif-title text-4xl leading-tight sm:text-5xl">{safe(analysis.screenshotWorthySummary || relationshipReport.vibeLabel, 'This connection has signals worth reading gently.')}</h2>
                 <p className="mt-5 text-base leading-8 text-smoke">{safe(summary.relationshipOverview)}</p>
               </div>
               <div className="grid gap-3">
@@ -573,11 +582,11 @@ export default function ResultPage() {
               <div className="flex flex-col justify-between rounded-[28px] border border-orange-200/16 bg-orange-300/[0.055] p-5">
                 <div>
                   <p className="tech-label text-orange-100">Overall energy match</p>
-                  <p className="serif-title mt-3 text-7xl">{energy.score || scores.effortBalance || 50}</p>
+                  <p className="serif-title mt-3 text-7xl">{Number(energy.score ?? scores.effortBalance) || 50}</p>
                   <p className="mt-4 text-sm leading-7 text-smoke">{safe(energy.explanation, 'The energy balance needs more data, but effort and clarity are the main things to watch.')}</p>
                 </div>
                 <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-gradient-to-r from-orange-300 via-pink-300 to-purple-300" style={{ width: `${energy.score || scores.effortBalance || 50}%` }} />
+                  <div className="h-full rounded-full bg-gradient-to-r from-orange-300 via-pink-300 to-purple-300" style={{ width: `${Number(energy.score ?? scores.effortBalance) || 50}%` }} />
                 </div>
               </div>
               <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
@@ -707,7 +716,7 @@ export default function ResultPage() {
               </div>
             </div>
             <div data-export-ignore className="mt-6 flex flex-wrap gap-3">
-              <button onClick={() => navigate('/reports')} className="glass-button rounded-full px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Open Relationship Guide</button>
+              <button onClick={() => navigate('/reports')} className="glass-button rounded-full px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Open AI Relationship Coach</button>
               <button onClick={exportFullReport} className="glass-button rounded-full px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Download Report Card</button>
               <button onClick={shareSummary} className="glass-button rounded-full px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Share Summary</button>
             </div>

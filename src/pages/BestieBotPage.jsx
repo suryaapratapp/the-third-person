@@ -8,6 +8,7 @@ import { getZodiacSign } from '../lib/zodiac.js';
 import { useRouter } from '../state/RouterContext.jsx';
 import { fetchCreditBalances } from '../lib/creditsService.js';
 import UsageWarningModal from '../components/UsageWarningModal.jsx';
+import { COACH_PERSONAS, DEFAULT_PERSONA_ID, getPersonaById } from '../lib/personas.js';
 
 const starters = [
   'Is this person into me?',
@@ -43,13 +44,16 @@ export default function BestieBotPage({ chainId }) {
   const [toast, setToast] = useState('');
   const [creditBlock, setCreditBlock] = useState(null);
   const [balances, setBalances] = useState(null);
+  const [selectedPersonaId, setSelectedPersonaId] = useState(DEFAULT_PERSONA_ID);
+  const activePersona = getPersonaById(selectedPersonaId);
   const bottomRef = useRef(null);
   const [messages, setMessages] = useState([
     {
       role: 'bot',
+      personaId: DEFAULT_PERSONA_ID,
       text: context
         ? `I have the full relationship chain for ${context.personName}. Ask what you need clarity on, and I’ll keep the guidance honest, kind, and grounded.`
-        : 'Run an analysis first so the Relationship Guide can understand the relationship properly.',
+        : 'Run an analysis first so your AI Relationship Coach can understand the relationship properly.',
     },
   ]);
 
@@ -70,6 +74,7 @@ export default function BestieBotPage({ chainId }) {
       if (current.length > 1) return current;
       return [{
         role: 'bot',
+        personaId: DEFAULT_PERSONA_ID,
         text: `I have the full relationship chain for ${context.personName}. Ask what you need clarity on, and I’ll keep the guidance honest, kind, and grounded.`,
       }];
     });
@@ -93,40 +98,42 @@ export default function BestieBotPage({ chainId }) {
     const key = 'thirdperson_saved_bestie_insights_v1';
     const saved = JSON.parse(window.localStorage.getItem(key) || '[]');
     window.localStorage.setItem(key, JSON.stringify([{ chainId, text, savedAt: new Date().toISOString() }, ...saved].slice(0, 60)));
-    setToast('Guide insight saved.');
+    setToast('Coach insight saved.');
   }
 
   async function shareReply(text) {
     try {
-      if (navigator.share) await navigator.share({ title: 'ThirdPerson Relationship Guide', text });
+      if (navigator.share) await navigator.share({ title: 'ThirdPerson AI Relationship Coach', text });
       else {
         await navigator.clipboard?.writeText(text);
-        setToast('Guide reply copied.');
+        setToast('Coach reply copied.');
       }
     } catch {
       await navigator.clipboard?.writeText(text);
-      setToast('Guide reply copied.');
+      setToast('Coach reply copied.');
     }
   }
 
   async function copyReply(text) {
     await navigator.clipboard?.writeText(text);
-    setToast('Guide reply copied.');
+    setToast('Coach reply copied.');
   }
 
   async function send(text = input) {
     const trimmed = text.trim();
     if (!trimmed || !context || isThinking) return;
+    const sendingPersonaId = selectedPersonaId;
     setInput('');
     setMessages((current) => [...current, { role: 'user', text: trimmed }]);
     setIsThinking(true);
-    setStatusText('Checking Guide Chat balance…');
-    setStatusText('Preparing guide reply…');
+    setStatusText('Checking Coach Chat balance…');
+    setStatusText(`${getPersonaById(sendingPersonaId).name} is thinking…`);
     const backendResponse = await askBestieViaSupabase({
       chainId,
       userMessage: trimmed,
       analysisChainContext: context,
       userProfile,
+      personaId: sendingPersonaId,
       detectedLanguageStyle: context.languageStyle,
       languageProfile: context.languageProfile,
       relationshipType: context.relationshipType,
@@ -137,19 +144,19 @@ export default function BestieBotPage({ chainId }) {
     });
     if (backendResponse?.error) {
       setStatusText('');
-      setMessages((current) => [...current, { role: 'bot', text: backendResponse.error }]);
+      setMessages((current) => [...current, { role: 'bot', personaId: sendingPersonaId, text: backendResponse.error }]);
       setIsThinking(false);
       return;
     }
     if (!backendResponse?.text) {
       setStatusText('');
-      setMessages((current) => [...current, { role: 'bot', text: 'The Relationship Guide is temporarily unavailable. Please try again in a moment.' }]);
+      setMessages((current) => [...current, { role: 'bot', personaId: sendingPersonaId, text: 'Your AI Relationship Coach is temporarily unavailable. Please try again in a moment.' }]);
       setIsThinking(false);
       return;
     }
     const response = backendResponse;
     setStatusText('');
-    setMessages((current) => [...current, { role: 'bot', text: response.text }]);
+    setMessages((current) => [...current, { role: 'bot', personaId: sendingPersonaId, text: response.text }]);
     setBalances((current) => current ? {
       ...current,
       bestieChatsLeft: Math.max(current.bestieChatsLeft - 1, 0),
@@ -164,10 +171,10 @@ export default function BestieBotPage({ chainId }) {
         <ParticleBackground className="opacity-45" />
         <div className="relative mx-auto max-w-4xl text-center">
           <div className="accent-panel p-8 sm:p-12">
-            <p className="tech-label text-smoke">ThirdPerson Relationship Guide</p>
+            <p className="tech-label text-smoke">ThirdPerson AI Relationship Coach</p>
             <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Run an analysis first.</h1>
             <p className="mx-auto mt-5 max-w-2xl text-sm leading-8 text-smoke">
-              Run an analysis first so the Relationship Guide can understand the relationship properly.
+              Run an analysis first so your AI Relationship Coach can understand the relationship properly.
             </p>
             <button onClick={() => navigate('/analysis/new')} className="glass-button mt-8 px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">Start an analysis</button>
           </div>
@@ -194,14 +201,14 @@ export default function BestieBotPage({ chainId }) {
             <div className="flex items-start gap-4">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-pink-200/30 bg-gradient-to-br from-pink-300/20 via-purple-300/16 to-orange-300/14 text-2xl shadow-glow">✨</div>
               <div>
-                <p className="tech-label text-pink-200">ThirdPerson Relationship Guide</p>
+                <p className="tech-label text-pink-200">ThirdPerson AI Relationship Coach</p>
                 <h1 className="serif-title mt-3 text-5xl leading-none sm:text-7xl">Talk through {context.personName}.</h1>
               </div>
               <p className="mt-4 max-w-3xl text-sm leading-7 text-smoke">
                 Ask anything about this relationship: what changed, what feels unclear, what to reply, or what may need more attention.
               </p>
               <p className="mt-3 max-w-3xl rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-xs leading-6 text-ash">
-                The Relationship Guide uses your report summaries, personality signals, and important moments for faster replies.
+                Your AI Relationship Coach uses your report summaries, personality signals, and important moments for faster replies.
               </p>
             </div>
             <button onClick={() => navigate('/reports')} className="glass-button px-4 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Back to reports</button>
@@ -236,16 +243,44 @@ export default function BestieBotPage({ chainId }) {
                 Zodiac, if available, is treated as a fun reflection layer. The real chat patterns matter more.
               </div>
               <div className="mt-3 rounded-3xl border border-purple-300/15 bg-purple-300/[0.05] p-4 text-sm leading-7 text-smoke">
-                {balances ? `${balances.paidRelationshipReportsLeft} paid Relationship Reports left • ${balances.paidBestieChatsLeft} paid Guide Chats left` : 'Checking your credit balance…'}
+                {balances ? `${balances.paidRelationshipReportsLeft} paid Relationship Reports left • ${balances.paidBestieChatsLeft} paid Coach Chats left` : 'Checking your credit balance…'}
               </div>
             </aside>
 
             <div className="flex min-h-[620px] flex-col rounded-[32px] border border-white/12 bg-gradient-to-br from-white/[0.06] via-purple-300/[0.035] to-pink-300/[0.025] p-4">
-              <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+              <div>
+                <p className="tech-label text-ash">Choose your coach</p>
+                <div className="mt-3 flex gap-2 overflow-x-auto pb-1" role="radiogroup" aria-label="Choose your AI Relationship Coach persona">
+                  {COACH_PERSONAS.map((persona) => {
+                    const active = persona.id === selectedPersonaId;
+                    return (
+                      <button
+                        key={persona.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        title={persona.description}
+                        onClick={() => setSelectedPersonaId(persona.id)}
+                        className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 transition ${active ? 'border-bloom/60 bg-gradient-to-r from-purple-300/18 via-pink-300/16 to-orange-300/10 text-bone' : 'border-white/12 bg-white/[0.035] text-smoke hover:border-purple-200/40 hover:text-bone'}`}
+                      >
+                        <span className="text-base leading-none" aria-hidden="true">{persona.emoji}</span>
+                        <span className="font-mono text-[0.65rem] uppercase tracking-[0.1em]">{persona.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-xs leading-5 text-ash">{activePersona.description}</p>
+              </div>
+              <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
                 {messages.map((message, index) => (
                   <div key={`${message.role}-${index}`} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[82%] rounded-[26px] px-5 py-4 text-sm leading-7 shadow-[0_14px_40px_rgba(0,0,0,0.16)] ${message.role === 'user' ? 'bg-purple-300/18 text-bone' : 'border border-pink-200/10 bg-white/[0.07] text-smoke'}`}>
-                      {message.role === 'bot' && <p className="mb-2 font-mono text-[0.62rem] uppercase tracking-[0.13em] text-pink-200">Relationship Guide</p>}
+                      {message.role === 'bot' && (
+                        <p className="mb-2 flex items-center gap-1.5 font-mono text-[0.62rem] uppercase tracking-[0.13em] text-pink-200">
+                          <span aria-hidden="true">{getPersonaById(message.personaId).emoji}</span>
+                          {getPersonaById(message.personaId).name}
+                        </p>
+                      )}
                       <p>{message.text}</p>
                       {message.role === 'bot' && index > 0 && (
                         <div className="mt-4 flex flex-wrap gap-2" data-export-ignore>
@@ -259,7 +294,7 @@ export default function BestieBotPage({ chainId }) {
                 ))}
                 {isThinking && (
                   <div className="max-w-[82%] rounded-[24px] border border-pink-200/10 bg-white/[0.06] px-5 py-4 text-sm text-smoke">
-                    {statusText || 'The Relationship Guide is reading the relationship chain…'}
+                    {statusText || `${activePersona.name} is reading the relationship chain…`}
                   </div>
                 )}
                 <div ref={bottomRef} />
@@ -276,7 +311,7 @@ export default function BestieBotPage({ chainId }) {
                     }
                   }}
                   placeholder="Ask what you need to understand..."
-                  aria-label={`Message the Relationship Guide about ${context.personName}`}
+                  aria-label={`Message your AI Relationship Coach about ${context.personName}`}
                   className="min-h-14 flex-1 resize-none rounded-3xl border border-white/12 bg-black/50 px-5 py-4 text-sm text-bone outline-none placeholder:text-ash focus:border-purple-200/60"
                 />
                 <button onClick={() => send()} disabled={!input.trim() || isThinking} className="rounded-3xl border border-purple-200/30 bg-gradient-to-r from-purple-300/20 via-pink-300/16 to-orange-300/14 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone disabled:opacity-40">

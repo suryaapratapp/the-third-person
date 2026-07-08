@@ -37,7 +37,7 @@ export default function ProtectedRoute({ children }) {
           <p className="tech-label text-purple-200">Private account required</p>
           <h1 className="serif-title mt-4 text-5xl">Sign in to continue.</h1>
           <p className="mt-5 text-sm leading-8 text-smoke">
-            Your reports, guide chats, and profile stay connected to your private account.
+            Your reports, coach chats, and profile stay connected to your private account.
           </p>
           <button
             onClick={() => navigate(`/auth?next=${encodeURIComponent(path)}`)}

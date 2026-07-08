@@ -157,16 +157,18 @@ export function buildRelationshipAnalysisPrompt({
     'Do not infer basic structure from raw text when parser metadata is provided. Use parser metadata as the source of truth for participants, counts, dates, language style, and timing patterns.',
     'Make exactly one combined generation from this uploaded conversation. The same JSON response must power both the Relationship Report and the relationship-specific main-user Personality Card.',
     'relationshipReport must contain one strong summaryParagraph, then short dashboard-safe labels/cards. Keep cards compact and visual.',
+    'relationshipReport.summaryParagraph must be a concise 3-5 sentence overview of this specific conversation: the overall relationship vibe, its overall health, and one key highlight worth noticing. Not a single line, and not an extended essay.',
     'relationshipPersonalityCard must describe only how the main user appears inside this selected relationship type. It must include conciseSummaryForDatabase so future Understand Yourself generation can use summaries without raw chats.',
     'The Personality Card copy should be compact: one strong paragraph, then short chips/phrases. Do not write long blocks inside card fields.',
     'For long chats, use the provided chronological chunk summaries for final synthesis. Do not ask for or rely on full raw chat text during final synthesis.',
-    'Broski context must be a concise memory summary that can answer future questions without sending the full raw chat again.',
+    'The AI Relationship Coach context must be a concise memory summary that can answer future questions without sending the full raw chat again.',
     'For personality signals, use Not enough evidence yet when traits are not clearly visible.',
-    'relationshipReport.attachmentVibe, relationshipReport.friendsWouldNotice, relationshipReport.communicationStyleSignals, relationshipReport.energyMatchScore, and relationshipReport.simpleSummaryForYoungAudience must all be derived specifically from this conversation\'s actual evidence (message patterns, timing, tone, topics). Do not return generic or templated text for these fields — if evidence is thin, say so explicitly rather than inventing detail.',
+    'relationshipReport.attachmentVibe, relationshipReport.friendsWouldNotice, relationshipReport.communicationStyleSignals, relationshipReport.energyMatchScore, relationshipReport.simpleSummaryForYoungAudience, and relationshipReport.communicationPatterns (userStyle, otherPersonStyle, conflictStyle, repairAttempts, avoidancePatterns) must all be derived specifically from this conversation\'s actual evidence (message patterns, timing, tone, topics). Do not return generic or templated text for these fields — if evidence is thin, say so explicitly rather than inventing detail.',
+    'relationshipPersonalityCard.personalityScores must score the main user 0-100 on: speakingStyle (a score plus a short label like "Direct & Playful"), humourScore, calmnessScore, egoScore (a playful "ego meter", not a clinical judgement), empathyScore, expressivenessScore (emoji/affection usage), and patienceScore (response behaviour under conflict) — all derived from this conversation only. Also include signatureBehaviours: 3-5 short first-person-readable bullet observations (e.g. "You usually initiate conversations"). If evidence is thin for a given score, use a value near 50 and say so in signatureBehaviours rather than guessing confidently.',
   ].join('\n\n');
 
   const userContent = JSON.stringify({
-    task: 'Generate one combined ThirdPerson AI response containing the Relationship Report, relationship-specific main-user Personality Card, main-user Personality Signals, Broski context summary, and future-use report summary',
+    task: 'Generate one combined ThirdPerson AI response containing the Relationship Report, relationship-specific main-user Personality Card, main-user Personality Signals, AI Relationship Coach context summary, and future-use report summary',
     relationshipContext: {
       relationshipType: resolvedRelationship,
       otherPersonName: otherPersonName || parsedConversation.metadata?.personName,
@@ -245,11 +247,12 @@ export function buildBestiePrompt({
   languageProfile = {},
 }: PromptBuildInput): PromptBundle {
   const developerInstructions = [
-    'You are ThirdPerson Broski, a relationship clarity companion inside ThirdPerson AI.',
+    'You are replying as the user\'s selected AI Relationship Coach persona inside ThirdPerson AI.',
     `Relationship type: ${relationshipType || 'Relationship'}`,
     `Other person: ${otherPersonName || 'This person'}`,
     `Relationship-specific focus: ${relationshipFocus(relationshipType || '').join(', ')}`,
     buildLanguageToneInstructions(languageProfile, []),
+    'The persona system prompt above defines your voice, tone, and personality and takes priority over the generic tone note above — use that note only to pick which language/style to reply in (English, Hindi, Hinglish), never to override the persona\'s personality.',
     safetyInstructions(),
     'Answer concisely unless the user asks for a detailed explanation.',
     'Use only report summaries, analysis chain context, personality card summary, relevant moments, red flags, and green flags. Do not request or analyse the full raw chat.',

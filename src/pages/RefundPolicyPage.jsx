@@ -3,8 +3,8 @@ import ParticleBackground from '../components/ParticleBackground.jsx';
 const updated = new Intl.DateTimeFormat('en-IN', { dateStyle: 'long' }).format(new Date());
 
 const refundSections = [
-  ['What you are buying', 'Paid credit packs add a fixed number of Relationship Reports and Guide Chats to your account. Credits are consumed only when a report or Guide Chat is successfully generated.'],
-  ['Failed generations are never charged', 'If a Relationship Report, Guide Chat, or Personality Card cannot be generated because of an AI provider error or a technical failure on our side, the credit for that attempt is automatically returned to your balance. You should never lose a credit for a generation that did not complete.'],
+  ['What you are buying', 'Paid credit packs add a fixed number of Relationship Reports and Coach Chats to your account. Credits are consumed only when a report or Coach Chat is successfully generated.'],
+  ['Failed generations are never charged', 'If a Relationship Report, Coach Chat, or Personality Card cannot be generated because of an AI provider error or a technical failure on our side, the credit for that attempt is automatically returned to your balance. You should never lose a credit for a generation that did not complete.'],
   ['Unused credit packs', 'If you have not used any credit from a pack, you can request a full refund within 7 days of purchase by contacting support@thethirdperson.ai with your account email and order details.'],
   ['Partially used credit packs', 'Once at least one credit from a pack has been used, the pack is treated as in use and is non-refundable, in line with standard practice for prepaid digital usage credits. Remaining unused credits stay on your account for future use.'],
   ['Accidental or duplicate purchases', 'If you were charged twice for the same pack due to a payment error, contact support@thethirdperson.ai with your payment reference and we will refund the duplicate charge.'],

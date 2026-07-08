@@ -145,10 +145,10 @@ export default function AuthPage() {
           <p className="tech-label text-purple-200">Private access</p>
           <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Welcome to ThirdPerson AI.</h1>
           <p className="mt-6 max-w-2xl text-sm leading-8 text-smoke">
-            Sign in to keep your reports, relationship chains, guide chats, and personality insights connected to you.
+            Sign in to keep your reports, relationship chains, coach chats, and personality insights connected to you.
           </p>
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            {['Private reports', 'Guide chat', 'Personality card'].map((item) => (
+            {['Private reports', 'Coach chat', 'Personality card'].map((item) => (
               <div key={item} className="rounded-3xl border border-white/10 bg-white/[0.045] p-4 font-mono text-xs uppercase tracking-[0.13em] text-smoke">
                 {item}
               </div>

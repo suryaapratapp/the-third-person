@@ -8,6 +8,7 @@ import { getUserProfile } from '../lib/profileStore.js';
 import { buildZodiacCompatibility, getZodiacElement, getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
 import { generateRelationshipReportViaSupabase } from '../lib/backendAiService.js';
 import { fetchUsageEntitlements } from '../lib/creditsService.js';
+import RotatingQuote from './RotatingQuote.jsx';
 import UsageWarningModal from './UsageWarningModal.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 import { generateFreeRelationshipAnalysisViaPuter } from '../lib/puterFreeAiService.js';
@@ -413,6 +414,9 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
               <p>Creating clarity notes</p>
               <p>Building your relationship report</p>
             </div>
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <RotatingQuote />
+            </div>
           </div>
         </div>
       )}
@@ -479,7 +483,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
           Preparing secure analysis
         </p>
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-xs leading-6 text-smoke">
-          {entitlements ? `${entitlements.paidRelationshipReportsLeft} paid Relationship Reports left • ${entitlements.paidBestieChatsLeft} paid Guide Chats left • ${entitlements.freeAnalysesRemaining} free analyses left` : 'Checking your credit balance…'}
+          {entitlements ? `${entitlements.paidRelationshipReportsLeft} paid Relationship Reports left • ${entitlements.paidBestieChatsLeft} paid Coach Chats left • ${entitlements.freeAnalysesRemaining} free analyses left` : 'Checking your credit balance…'}
         </div>
         <button
           disabled={!canStart || isGenerating}

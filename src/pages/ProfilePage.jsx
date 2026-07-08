@@ -129,7 +129,7 @@ export default function ProfilePage() {
             <div className="sm:col-span-2 rounded-[28px] border border-white/10 bg-white/[0.035] p-5">
               <p className="tech-label text-purple-100">Preferred analysis languages</p>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-smoke">
-                Select the languages that commonly appear in your conversations. ThirdPerson AI will try to match the tone and language style in your reports and guide replies.
+                Select the languages that commonly appear in your conversations. ThirdPerson AI will try to match the tone and language style in your reports and coach replies.
               </p>
               <div className="mt-5 flex max-h-72 flex-wrap gap-2 overflow-y-auto pr-1">
                 {supportedAnalysisLanguages.map((language) => {
