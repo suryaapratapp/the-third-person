@@ -1,20 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  Cell,
-  Pie,
-  PieChart,
   PolarAngleAxis,
   PolarGrid,
   Radar,
   RadarChart,
   ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
 } from 'recharts';
 import CardActions from '../components/CardActions.jsx';
 import ParticleBackground from '../components/ParticleBackground.jsx';
@@ -23,11 +13,7 @@ import { fetchRelationshipReportById } from '../lib/supabaseDataService.js';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
-const chartColors = ['#a78bfa', '#f472b6', '#38bdf8', '#fb923c', '#34d399', '#818cf8'];
 const emptyText = 'Not enough evidence yet';
-const emotionalWords = ['love', 'miss', 'care', 'sorry', 'hurt', 'fine', 'trust', 'confused', 'ignored', 'distant', 'honest', 'jaan', 'pyaar', 'pyar', 'yaad'];
-const affectionWords = ['love', 'miss', 'care', 'jaan', 'baby', 'cute', 'kiss', 'hug', 'yaad', 'pyaar', 'pyar'];
-const conflictWords = ['fight', 'angry', 'hurt', 'ignored', 'leave', 'block', 'blocked', 'lie', 'toxic', 'hate', 'gussa', 'naraz', 'stop'];
 
 function stringifyUnexpectedValue(value) {
   if (typeof value !== 'object' || value === null) return String(value);
@@ -133,28 +119,6 @@ function ScoreBubble({ item }) {
       <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
         <div className="h-full rounded-full bg-gradient-to-r from-pink-300 via-purple-300 to-orange-300" style={{ width: `${score}%` }} />
       </div>
-    </div>
-  );
-}
-
-function WeightedChips({ words = [], fallback = emptyText }) {
-  const items = list(words).slice(0, 18);
-  if (!items.length) return <p className="text-sm leading-7 text-smoke">{fallback}</p>;
-  return (
-    <div className="flex flex-wrap items-center gap-3">
-      {items.map((item, index) => {
-        const count = Number(item.count || item.weight || 1);
-        const size = Math.min(1.35, 0.74 + count / 18);
-        return (
-          <span
-            key={`${item.word || item.label}-${index}`}
-            className="rounded-full border border-white/14 bg-white/[0.07] px-3 py-2 font-mono uppercase tracking-[0.11em] text-bone shadow-[0_0_28px_rgba(168,85,247,0.12)]"
-            style={{ fontSize: `${size}rem` }}
-          >
-            {item.word || item.label}
-          </span>
-        );
-      })}
     </div>
   );
 }
@@ -293,9 +257,7 @@ export default function ResultPage({ reportId = '' }) {
     mainEmotionalPattern: relationshipReport.emotionalTone || analysis?.summary?.mainEmotionalPattern,
   };
   const scores = analysis?.scores || {};
-  const mixedSignals = analysis?.mixedSignalsMap || {};
   const energy = analysis?.energyMatchScore || {};
-  const dayNight = analysis?.dayNightDynamics || relationshipReport.dayNightDynamics || {};
   const timeline = list(analysis?.timeline).length ? list(analysis.timeline) : list(analysis?.turningPoints).map((point, index) => ({
     period: point.period || `Phase ${index + 1}`,
     title: point.title || 'Signal shift',
@@ -306,13 +268,10 @@ export default function ResultPage({ reportId = '' }) {
     compatibility: scores.compatibility || 50,
   }));
   const timelineArc = analysis?.timelineArc || relationshipReport.timelineArc || '';
-  const storyboard = list(analysis?.sentimentStoryboard);
   const flags = {
     red: list(relationshipReport.redFlags || analysis?.improvedRedFlags || analysis?.redFlags),
     green: list(relationshipReport.greenFlags || analysis?.improvedGreenFlags || analysis?.greenFlags),
   };
-  const senderStats = list(prepared.senderStats || analysis?.participants?.messageCountByParticipant);
-  const volumeByPeriod = list(dayNight.volumeByPeriod || prepared.dailyNightBreakdown);
   const reportDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   // Honest evidence framing: the parser already computes warningFlags and a
   // parse confidence, but nothing surfaced them — so a 6-message chat used to
@@ -420,17 +379,6 @@ export default function ResultPage({ reportId = '' }) {
       : scores[key] ?? 50,
   }));
 
-  const dayPie = volumeByPeriod.map((item) => ({ name: item.period, value: item.percentage || item.count || 0 }));
-  const participantPie = senderStats.map((item) => ({ name: item.sender, value: item.count || 0 }));
-  const signalPie = [
-    { name: 'Green signals', value: Math.max(flags.green.length, 1) },
-    { name: 'Red signals', value: Math.max(flags.red.length, 1) },
-  ];
-  const affectionTensionPie = [
-    { name: 'Affection', value: prepared.affectionSignals?.count || dayNight.affectionByPeriod?.reduce((sum, item) => sum + (item.count || 0), 0) || 1 },
-    { name: 'Tension', value: prepared.conflictSignals?.count || dayNight.tensionByPeriod?.reduce((sum, item) => sum + (item.count || 0), 0) || 1 },
-  ];
-
   const radarData = [
     { subject: 'You', value: Number(energy.score || scores.effortBalance || 50) },
     { subject: personName, value: Number(scores.communicationHealth || 50) },
@@ -439,42 +387,11 @@ export default function ResultPage({ reportId = '' }) {
     { subject: 'Trust', value: Number(scores.trustSignal || 50) },
   ];
 
-  const receipts = [
-    ...list(analysis.turningPoints).map((point) => ({
-      title: point.title,
-      quote: point.quote,
-      why: point.whyItMatters,
-      signal: point.whatChanged,
-    })),
-    ...list(prepared.importantMoments).slice(0, 5).map((moment) => ({
-      title: moment.period || 'Emotional moment',
-      quote: moment.text || moment.message,
-      why: 'This stood out because it carried emotional language or a repeated signal.',
-      signal: list(moment.emotionalTags).join(', ') || 'emotional signal',
-    })),
-  ].filter((item) => item.quote).slice(0, 8);
-
-  const reportStickyNotes = list(relationshipReport.stickyNotes || analysis.aiStickyNotes);
-  const stickyNotes = reportStickyNotes.length
-    ? reportStickyNotes.map((note, index) => [
-      note.label || note.title || ['What the AI noticed', 'What feels important', 'What not to ignore', 'What needs clarity'][index % 4],
-      note.value || note.text || note.summary || note,
-    ])
-    : [
-      ['What the AI noticed', summary.mainEmotionalPattern || analysis.simpleSummaryForYoungAudience],
-      ['What feels important', energy.explanation || summary.currentDynamic],
-      ['What not to ignore', analysis.bestieBreakdown?.whatNotToIgnore],
-      ['What needs clarity', mixedSignals.bestieNote],
-      ['Guidance note', analysis.friendsWouldNotice?.theyMightRemindYou],
-      ['The soft truth', analysis.screenshotWorthySummary || relationshipReport.vibeLabel],
-      ['The next best move', relationshipReport.nextBestMove || analysis.advice?.nextBestStep],
-    ];
-  const reportWordCloud = list(relationshipReport.wordCloud);
-  const wordCloudWords = {
-    userTopWords: analysis.wordCloud?.userTopWords || reportWordCloud.filter((item) => item.owner === 'mainUser' || item.group === 'mainUser'),
-    otherTopWords: analysis.wordCloud?.otherTopWords || reportWordCloud.filter((item) => item.owner === 'otherPerson' || item.group === 'otherPerson'),
-    shared: reportWordCloud.length ? reportWordCloud : list(prepared.topWords),
-  };
+  // Top words are counted locally by the parser — no AI tokens spent on
+  // something a simple frequency count does exactly and for free.
+  const topWords = list(prepared.topWords)
+    .filter((item) => item && item.word)
+    .slice(0, 5);
 
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
@@ -632,102 +549,23 @@ export default function ResultPage({ reportId = '' }) {
             )}
           </CardShell>
 
-          <CardShell id="sentiment-storyboard" title="Sentiment Storyboard" emoji="🎬" summary="Relationship story scenes from this chat." accent="purple">
-            <div className="h-64">
-              <ResponsiveContainer>
-                <AreaChart data={storyboard.length ? storyboard : timeline.map((item, index) => ({ period: compactPeriod(item.period, index), intensity: item.compatibility || 50 }))} margin={{ top: 10, right: 14, left: -22, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="storyGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f472b6" stopOpacity={0.55} />
-                      <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.04} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="period" tick={{ fill: '#b9b7b1', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#7b7a75', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: 'rgba(10,8,24,.92)', border: '1px solid rgba(255,255,255,.18)', borderRadius: 16, color: '#f3f1ed' }} />
-                  <Area type="monotone" dataKey="intensity" stroke="#f472b6" fill="url(#storyGradient)" strokeWidth={2.4} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-6 flex gap-4 overflow-x-auto pb-2">
-              {(storyboard.length ? storyboard : timeline.slice(0, 5)).map((item, index) => (
-                <div key={`${item.period}-${index}`} className="sticky-glass min-w-[250px] rotate-[-1deg] p-4 even:rotate-[1deg]">
-                  <p className="text-3xl">{['✨', '💬', '🌙', '💭', '🫶'][index % 5]}</p>
-                  <p className="mt-3 text-lg text-bone">{item.sceneTitle || item.title || ['The warm phase', 'The mixed signal moment', 'The emotional distance', 'The repair attempt', 'The current energy'][index % 5]}</p>
-                  <p className="mt-2 font-mono text-xs uppercase tracking-[0.12em] text-ash">{compactPeriod(item.period, index)} • {item.emotion || item.sentiment || 'mixed'}</p>
-                  <p className="mt-3 text-sm leading-6 text-smoke">{safe(item.explanation || item.happened || item.whatChanged, 'This scene needs more conversation evidence.')}</p>
-                </div>
-              ))}
-            </div>
-          </CardShell>
-
-          <CardShell id="day-night-dynamics" title="Day vs Night Dynamics" emoji="🌙" summary={dayNight.interpretation} accent="blue">
-            <p className="max-w-3xl text-sm leading-7 text-smoke">A softer look at when the conversation feels warmer, heavier, more active, or more emotionally intense.</p>
-            <div className="mt-5 grid gap-4 lg:grid-cols-[1.2fr_.8fr]">
-              <div className="h-80 rounded-[26px] border border-white/10 bg-black/15 p-4">
-                <ResponsiveContainer>
-                  <BarChart data={volumeByPeriod}>
-                    <XAxis dataKey="period" tick={{ fill: '#b9b7b1', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: '#7b7a75', fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ background: 'rgba(10,8,24,.92)', border: '1px solid rgba(255,255,255,.18)', borderRadius: 16, color: '#f3f1ed' }} />
-                    <Bar dataKey="count" radius={[12, 12, 0, 0]}>
-                      {volumeByPeriod.map((item, index) => <Cell key={item.period || index} fill={['#38bdf8', '#f472b6', '#7c3aed'][index % 3]} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+          <CardShell id="word-cloud" title="Top Words" emoji="☁️" summary="The five words used most across this conversation." accent="pink">
+            <p className="max-w-2xl text-sm leading-7 text-smoke">
+              The five words that came up most across this conversation, counted directly from the messages.
+            </p>
+            {topWords.length ? (
+              <div className="mt-5 grid gap-3 sm:grid-cols-5">
+                {topWords.map((item, index) => (
+                  <div key={item.word} className="rounded-[24px] border border-white/10 bg-white/[0.05] p-4 text-center">
+                    <p className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-ash">#{index + 1}</p>
+                    <p className="mt-2 break-words text-xl text-bone">{item.word}</p>
+                    <p className="mt-2 font-mono text-xs text-smoke">{item.count}×</p>
+                  </div>
+                ))}
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="h-72 rounded-[26px] border border-white/10 bg-black/15 p-4">
-                  <ResponsiveContainer>
-                    <PieChart>
-                      <Pie data={dayPie} dataKey="value" nameKey="name" innerRadius={54} outerRadius={90} paddingAngle={4}>
-                        {dayPie.map((entry, index) => <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />)}
-                      </Pie>
-                      <Tooltip contentStyle={{ background: 'rgba(10,8,24,.92)', border: '1px solid rgba(255,255,255,.18)', borderRadius: 16, color: '#f3f1ed' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="grid gap-3">
-                  {[
-                    ['Most active period', dayNight.mostActivePeriod, '06:00–17:59 / 18:00–21:59 / 22:00–05:59'],
-                    ['Warmest period', dayNight.warmestPeriod],
-                    ['Highest tension period', dayNight.highestTensionPeriod],
-                    ['Deepest conversation period', dayNight.deepestConversationPeriod],
-                  ].map(([label, value, note]) => (
-                    <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.055] p-4">
-                      <p className="tech-label text-ash">{label}</p>
-                      <p className="mt-2 text-xl text-bone">{safe(value)}</p>
-                      {note && <p className="mt-1 text-xs text-ash">Day / Evening / Night windows</p>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <p className="mt-5 text-sm leading-7 text-smoke">{safe(dayNight.interpretation, 'More timestamped chats can make this section stronger.')}</p>
-          </CardShell>
-
-          <CardShell id="word-cloud" title="Word Cloud / Top Words" emoji="☁️" summary="Weighted language chips from this conversation." accent="pink">
-            <div className="grid gap-5 lg:grid-cols-3">
-              <div className="rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
-                <p className="tech-label mb-4 text-ash">Your top words</p>
-                <WeightedChips words={wordCloudWords.userTopWords || []} />
-              </div>
-              <div className="rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
-                <p className="tech-label mb-4 text-ash">{personName}’s top words</p>
-                <WeightedChips words={wordCloudWords.otherTopWords || []} />
-              </div>
-              <div className="rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
-                <p className="tech-label mb-4 text-ash">Shared emotional words</p>
-                <WeightedChips words={wordCloudWords.shared.filter((item) => emotionalWords.includes(String(item.word || item.label || item).toLowerCase()))} fallback="No strong emotional word cluster yet." />
-              </div>
-              <div className="rounded-[24px] border border-orange-200/15 bg-orange-300/[0.055] p-4 lg:col-span-3">
-                <p className="tech-label mb-4 text-orange-100">Affection + conflict signals</p>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <WeightedChips words={wordCloudWords.shared.filter((item) => affectionWords.includes(String(item.word || item.label || item).toLowerCase()))} fallback="Affection words were not strong in this sample." />
-                  <WeightedChips words={wordCloudWords.shared.filter((item) => conflictWords.includes(String(item.word || item.label || item).toLowerCase()))} fallback="Conflict words were not strong in this sample." />
-                </div>
-              </div>
-            </div>
+            ) : (
+              <div className="mt-5"><EmptyHint>Not enough message text yet to count word frequency.</EmptyHint></div>
+            )}
           </CardShell>
 
           <div className="grid gap-5 lg:grid-cols-2">
@@ -783,27 +621,6 @@ export default function ResultPage({ reportId = '' }) {
             </CardShell>
           </div>
 
-          <CardShell id="mixed-signals-map" title="Mixed Signals Map" emoji="🧭" summary={mixedSignals.bestieNote} accent="purple">
-            <div className="grid gap-4 md:grid-cols-4">
-              {[
-                ['Warm signals', mixedSignals.warmSignals, '💗', 'border-pink-200/16 bg-pink-300/[0.055]'],
-                ['Distant signals', mixedSignals.distantSignals, '🌫️', 'border-violet-200/16 bg-violet-300/[0.055]'],
-                ['Confusing signals', mixedSignals.confusingSignals, '🌀', 'border-purple-200/16 bg-purple-300/[0.055]'],
-                ['Stable signals', mixedSignals.stableSignals, '🫶', 'border-emerald-200/16 bg-emerald-300/[0.045]'],
-              ].map(([label, value, icon, cls]) => (
-                <div key={label} className={`rounded-[24px] border p-4 ${cls}`}>
-                  <p className="text-2xl">{icon}</p>
-                  <p className="tech-label mt-3 text-ash">{label}</p>
-                  <p className="mt-3 text-sm leading-7 text-smoke">{safe(value)}</p>
-                </div>
-              ))}
-            </div>
-            <div className="sticky-glass mx-auto mt-5 max-w-3xl rotate-[-1deg] p-5">
-              <p className="tech-label text-orange-100">Guidance note</p>
-              <p className="mt-3 text-lg leading-8 text-bone">{safe(mixedSignals.bestieNote, 'This looks like mixed signals, not a clear yes. More consistency would make the signal stronger.')}</p>
-            </div>
-          </CardShell>
-
           <CardShell id="energy-match" title="Energy Match Score" emoji="⚡" summary={energy.explanation} accent="orange">
             <div className="grid gap-5 xl:grid-cols-[.75fr_1.25fr]">
               <div className="flex flex-col justify-between rounded-[28px] border border-orange-200/16 bg-orange-300/[0.055] p-5">
@@ -844,59 +661,6 @@ export default function ResultPage({ reportId = '' }) {
             </div>
           </CardShell>
 
-          <CardShell id="communication-pattern-map" title="Communication Pattern Map" emoji="💬" summary={analysis.communicationPatterns?.conflictStyle} accent="blue">
-            <div className="grid gap-4 lg:grid-cols-5">
-              {[
-                ['Your style', analysis.communicationPatterns?.userStyle],
-                [`${personName}’s style`, analysis.communicationPatterns?.otherPersonStyle],
-                ['Conflict style', analysis.communicationPatterns?.conflictStyle],
-                ['Repair attempts', analysis.communicationPatterns?.repairAttempts],
-                ['Avoidance pattern', analysis.communicationPatterns?.avoidancePatterns],
-              ].map(([label, value], index) => (
-                <div key={label} className="relative rounded-[24px] border border-white/10 bg-white/[0.05] p-4">
-                  {index < 4 && <span className="absolute -right-3 top-1/2 hidden h-px w-6 bg-gradient-to-r from-purple-300 to-pink-300 lg:block" />}
-                  <p className="tech-label text-ash">{label}</p>
-                  <p className="mt-3 text-sm leading-7 text-smoke">{safe(value)}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <div className="sticky-glass p-4">
-                <p className="tech-label text-purple-100">Clarity pattern</p>
-                <p className="mt-3 text-sm leading-7 text-smoke">{safe(analysis.relationshipReport?.communicationPattern || analysis.communicationPatterns?.relationshipPattern || summary.currentDynamic)}</p>
-              </div>
-              <div className="sticky-glass rotate-[1deg] p-4">
-                <p className="tech-label text-purple-100">Quote evidence</p>
-                <p className="mt-3 text-sm leading-7 text-smoke">{receipts[0]?.quote ? `“${receipts[0].quote.slice(0, 180)}”` : 'More clear quote evidence will appear when the uploaded chat has stronger moments.'}</p>
-              </div>
-            </div>
-          </CardShell>
-
-          <CardShell id="pie-chart-lab" title="Signal Donut Lab" emoji="🍩" summary="Pie charts for participant, time, and signal balance." accent="purple">
-            <div className="grid gap-5 lg:grid-cols-4">
-              {[
-                ['Message share', participantPie],
-                ['Day / evening / night', dayPie],
-                ['Flag balance', signalPie],
-                ['Affection vs tension', affectionTensionPie],
-              ].map(([label, data], chartIndex) => (
-                <div key={label} className="rounded-[26px] border border-white/10 bg-black/15 p-4">
-                  <p className="tech-label text-ash">{label}</p>
-                  <div className="mt-3 h-56">
-                    <ResponsiveContainer>
-                      <PieChart>
-                        <Pie data={data.length ? data : [{ name: emptyText, value: 1 }]} dataKey="value" nameKey="name" innerRadius={45} outerRadius={76} paddingAngle={4}>
-                          {(data.length ? data : [{ name: emptyText }]).map((entry, index) => <Cell key={`${entry.name}-${index}`} fill={chartColors[(index + chartIndex) % chartColors.length]} />)}
-                        </Pie>
-                        <Tooltip contentStyle={{ background: 'rgba(10,8,24,.92)', border: '1px solid rgba(255,255,255,.18)', borderRadius: 16, color: '#f3f1ed' }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardShell>
-
           {list(analysis.reportSummaryForFutureUse?.personalityDelta).length > 0 && (
             <CardShell id="personality-update" title="Personality Update" emoji="🧬" summary="How this analysis refined your personality profile." accent="green">
               <p className="max-w-3xl text-sm leading-7 text-smoke">
@@ -918,31 +682,6 @@ export default function ResultPage({ reportId = '' }) {
               <p className="mt-4 text-xs leading-6 text-ash">See the full picture in Understand Yourself, where every analysis builds on the last.</p>
             </CardShell>
           )}
-
-          <CardShell id="ai-sticky-notes" title="AI Sticky Notes" emoji="💭" summary="Small reflections from this report." accent="orange">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {stickyNotes.map(([label, value], index) => (
-                <div key={label} className={`sticky-glass min-h-44 p-5 ${index % 2 ? 'rotate-[1deg]' : 'rotate-[-1deg]'}`}>
-                  <span className="block h-3 w-3 rounded-full bg-gradient-to-r from-pink-300 to-orange-300 shadow-[0_0_22px_rgba(251,146,60,0.55)]" />
-                  <p className="tech-label mt-4 text-ash">{label}</p>
-                  <p className="mt-3 text-sm leading-7 text-bone">{safe(value, 'More chats can make this sticky note clearer.')}</p>
-                </div>
-              ))}
-            </div>
-          </CardShell>
-
-          <CardShell id="receipts-ai-noticed" title="Receipts AI Noticed" emoji="🧾" summary="Short representative moments from the conversation." accent="blue">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {receipts.length ? receipts.map((receipt, index) => (
-                <div key={`${receipt.title}-${index}`} className="rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
-                  <p className="tech-label text-purple-100">{receipt.title || `Moment ${index + 1}`}</p>
-                  <p className="mt-3 font-mono text-sm leading-7 text-bone">“{String(receipt.quote).slice(0, 170)}”</p>
-                  <p className="mt-3 text-sm leading-7 text-smoke">{safe(receipt.why)}</p>
-                  <Badge tone="blue">{safe(receipt.signal, 'relationship signal')}</Badge>
-                </div>
-              )) : <EmptyHint>No short receipts are strong enough yet. More message history can reveal better evidence.</EmptyHint>}
-            </div>
-          </CardShell>
 
           <CardShell id="next-best-move" title="Next Best Move" emoji="💬" summary={analysis.advice?.nextBestStep} accent="orange">
             <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">

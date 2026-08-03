@@ -7,6 +7,7 @@ type PromptBuildInput = {
   protectedConversationText?: string;
   languageProfile?: Record<string, unknown>;
   outputSchema?: Record<string, unknown>;
+  focusInstruction?: string;
   previousPersonalityCard?: Record<string, unknown> | null;
   newPersonalitySignals?: Record<string, unknown> | null;
   userQuestion?: string;
@@ -144,11 +145,13 @@ export function buildRelationshipAnalysisPrompt({
   protectedConversationText = '',
   languageProfile = {},
   outputSchema = {},
+  focusInstruction = '',
   previousPersonalityCard = null,
 }: PromptBuildInput): PromptBundle {
   const resolvedRelationship = relationshipType || parsedConversation.metadata?.relationshipType || 'Relationship';
   const profileLanguages = (mainUserProfile as Record<string, any>)?.preferredAnalysisLanguages || [];
   const developerInstructions = [
+    ...(focusInstruction ? [focusInstruction] : []),
     `Selected relationship type: ${resolvedRelationship}`,
     `Selected other person: ${otherPersonName || parsedConversation.metadata?.personName || 'Not provided'}`,
     `Relationship-specific focus: ${relationshipFocus(resolvedRelationship).join(', ')}`,
@@ -156,13 +159,16 @@ export function buildRelationshipAnalysisPrompt({
     safetyInstructions(),
     'Do not infer basic structure from raw text when parser metadata is provided. Use parser metadata as the source of truth for participants, counts, dates, language style, and timing patterns.',
     'Make exactly one combined generation from this uploaded conversation. The same JSON response must power both the Relationship Report and the relationship-specific main-user Personality Card.',
-    'Return ONE JSON object matching combinedGenerationSchema exactly. The TOP-LEVEL keys of your response must be exactly: relationshipReport, mainUserPersonalitySignals, relationshipPersonalityCard, personalityCardUpdate, bestieContextSummary, reportSummaryForFutureUse, detectedLanguageStyle, confidenceNotes, needsMoreChatsFor. Never wrap the response in any other key and never move relationshipReport fields to the top level.',
+    'Return ONE JSON object whose TOP-LEVEL keys are exactly the keys of the combinedGenerationSchema provided in this request — no more, no fewer. Never wrap the response in any other key, and never move nested fields (such as relationshipReport fields) to the top level.',
     'POPULATE EVERY FIELD of the schema — relationshipReport.timeline, relationshipReport.scores (0-100 integers for every listed score), redFlags, greenFlags, mixedSignals, dayNightDynamics, wordCloud, stickyNotes, dashboardCards, advice, and nextBestMove are all REQUIRED, not optional. A typical healthy output has 1-4 redFlags AND 2-4 greenFlags — an empty flags array is only acceptable when the conversation truly shows nothing notable in that direction. Only use empty strings/arrays or "Not enough evidence yet." where the conversation genuinely lacks signal for that specific field. Write every field from YOUR OWN analysis of the actual messages — never generic filler.',
     'relationshipReport must contain one strong summaryParagraph, then short dashboard-safe labels/cards. Keep cards compact and visual.',
     'relationshipReport.summaryParagraph must be a concise 3-5 sentence overview of this specific conversation: the overall relationship vibe, its overall health, and one key highlight worth noticing. Not a single line, and not an extended essay.',
     'relationshipPersonalityCard must describe only how the main user appears inside this selected relationship type. It must include conciseSummaryForDatabase so future Understand Yourself generation can use summaries without raw chats.',
     'The Personality Card copy should be compact: one strong paragraph, then short chips/phrases. Do not write long blocks inside card fields.',
     'For long chats, use the provided chronological chunk summaries for final synthesis. Do not ask for or rely on full raw chat text during final synthesis.',
+    ...((parsedConversation as Record<string, any>)?.longChatMode || ((parsedConversation as Record<string, any>)?.chunkSummaries || []).length
+      ? ['LONG CHAT MODE: raw message text is deliberately withheld because this conversation is too long to send in full. The chronological chunkSummaries inside parsedConversationSummary ARE your evidence — treat them exactly as you would raw messages. You MUST still produce a complete relationshipReport.timeline (3-6 phases) and relationshipReport.timelineArc by merging adjacent chunk summaries into meaningful phases, drawing each phase\'s evidence quote from that period\'s usefulQuotes or turningPoints. An empty or omitted timeline is NOT acceptable when chunk summaries are present — the timeline is the most important part of a long-chat report.']
+      : []),
     'The AI Relationship Coach context must be a concise memory summary that can answer future questions without sending the full raw chat again.',
     'For personality signals, use Not enough evidence yet when traits are not clearly visible.',
     'CALIBRATE TO THE EVIDENCE AVAILABLE. parsedConversationSummary includes messageCount, parseConfidence and warningFlags. When the sample is small (under ~10 messages), parseConfidence is low, or warningFlags are present, you MUST downgrade certainty everywhere: prefer "Early Signal"/"Not Enough Evidence" confidence values, use hedged language ("in this short sample", "this may suggest"), return fewer flags and fewer timeline phases, and say plainly in summaryParagraph that the sample is limited. Never produce a confident, fully-populated report from a handful of messages.',
@@ -263,7 +269,8 @@ export function buildBestiePrompt({
     buildLanguageToneInstructions(languageProfile, []),
     'The persona system prompt above defines your voice, tone, and personality and takes priority over the generic tone note above — use that note only to pick which language/style to reply in (English, Hindi, Hinglish), never to override the persona\'s personality.',
     safetyInstructions(),
-    'Answer concisely unless the user asks for a detailed explanation.',
+    'BE CONCISE AND DIRECT. This is a chat, not a report. Answer the question that was actually asked in at most 120 words total across all fields. Lead with the answer, then at most two short supporting sentences. No preamble, no restating the question, no bullet lists, no headings, no sign-offs.',
+    'Only fill whatToDoNext when there is a genuinely useful next step, and whatNotToIgnore when there is a real risk worth naming; otherwise return them as empty strings rather than padding the reply.',
     'Use only report summaries, analysis chain context, personality card summary, relevant moments, red flags, and green flags. Do not request or analyse the full raw chat.',
   ].join('\n\n');
 
@@ -278,13 +285,12 @@ export function buildBestiePrompt({
       analysisChainSummary,
       latestRelationshipReportSummary: latestReportSummary,
       personalityCardSummary,
+      // Trimmed from six fields to three: the old shape produced long, padded
+      // replies (and six fields of output tokens) for what is a chat message.
       outputSchema: {
-        answer: '',
-        quickTake: '',
-        whatThisMayMean: '',
-        whatToDoNext: '',
-        whatNotToIgnore: '',
-        gentleRealityCheck: '',
+        answer: 'the direct answer, 2-4 sentences maximum',
+        whatToDoNext: 'one specific next step, or empty string',
+        whatNotToIgnore: 'one real risk worth naming, or empty string',
       },
     }),
     debugMetadata: {

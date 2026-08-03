@@ -6,6 +6,10 @@ import { getUserProfile } from '../lib/profileStore.js';
 import { fetchRelationshipReports } from '../lib/supabaseDataService.js';
 import { getZodiacSign } from '../lib/zodiac.js';
 import { useRouter } from '../state/RouterContext.jsx';
+
+// Keep in sync with MAX_QUESTION_CHARS in supabase/functions/ai-bestie-chat.
+// The server rejects longer questions; this stops the user hitting that error.
+const MAX_QUESTION_CHARS = 600;
 import { fetchCreditBalances } from '../lib/creditsService.js';
 import UsageWarningModal from '../components/UsageWarningModal.jsx';
 import { COACH_PERSONAS, DEFAULT_PERSONA_ID, getPersonaById } from '../lib/personas.js';
@@ -303,7 +307,8 @@ export default function BestieBotPage({ chainId }) {
               <div className="sticky bottom-0 mt-4 flex gap-3 rounded-[28px] border border-white/10 bg-black/35 p-2 backdrop-blur">
                 <textarea
                   value={input}
-                  onChange={(event) => setInput(event.target.value)}
+                  maxLength={MAX_QUESTION_CHARS}
+                  onChange={(event) => setInput(event.target.value.slice(0, MAX_QUESTION_CHARS))}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' && !event.shiftKey) {
                       event.preventDefault();
@@ -318,6 +323,10 @@ export default function BestieBotPage({ chainId }) {
                   Send
                 </button>
               </div>
+              <p className={`mt-2 text-right font-mono text-[0.63rem] uppercase tracking-[0.12em] ${input.length >= MAX_QUESTION_CHARS ? 'text-orange-100' : 'text-ash'}`}>
+                {input.length} / {MAX_QUESTION_CHARS}
+                {input.length >= MAX_QUESTION_CHARS ? ' · ask one thing at a time' : ''}
+              </p>
             </div>
           </div>
         </div>

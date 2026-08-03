@@ -1,6 +1,7 @@
 import { buildCorsHeaders, jsonResponse } from '../_shared/cors.ts';
 import { buildPersonalityCardPrompt, messagesForChatCompletions } from '../_shared/promptBuilder.ts';
 import { createAdminClient, getAuthenticatedUser, refundCredit, reserveCredit } from '../_shared/usage.ts';
+import { upsertMergedPersonality } from '../_shared/personalityMerge.ts';
 
 function parseJsonText(text: string) {
   const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
@@ -177,14 +178,14 @@ Deno.serve(async (req: Request) => {
       // The migration may not be applied in older environments. Keep the generated profile usable.
     }
 
-    await admin.from('user_personality').upsert({
-      user_id: user.id,
-      personality_json: understandYourself,
-      emotional_life_story: personality.emotionalLifeStory || {},
-      recurring_words: understandYourself.keywords || personality.recurringWords || [],
-      generated_from_report_ids: [],
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id' });
+    // MERGE, never overwrite. This used to stamp the Understand Yourself output
+    // over the whole stored profile and reset generated_from_report_ids to [],
+    // silently flattening everything the individual analyses had accumulated.
+    await upsertMergedPersonality(admin, user.id, {
+      personality: understandYourself,
+      emotionalLifeStory: personality.emotionalLifeStory || {},
+      words: understandYourself.keywords || personality.recurringWords || [],
+    });
 
     await admin.from('ai_usage_logs').insert({
       user_id: user.id,

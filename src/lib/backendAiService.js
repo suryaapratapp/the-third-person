@@ -17,10 +17,24 @@ async function normalizeFunctionError(error, fallbackMessage) {
   return normalized;
 }
 
+// The prepared conversation carries two large fields the backend never reads:
+// parsedMessages (the backend uses firstMessages/lastMessages/chunks instead)
+// and, for chunked routes, cleanedText (only sent as raw text for short chats).
+// On a 2-year export these were 1.5MB of a 2.2MB request — slow to upload, and
+// they were also persisted into relationship_reports.prepared_conversation.
+function trimPreparedForBackend(prepared) {
+  if (!prepared || typeof prepared !== 'object') return prepared;
+  const isShortChat = (prepared.analysisPipeline?.route || 'single_compressed') === 'single_compressed';
+  const { parsedMessages: _parsedMessages, cleanedText, ...rest } = prepared;
+  return isShortChat ? { ...rest, cleanedText } : rest;
+}
+
 export async function generateRelationshipReportViaSupabase(payload) {
   if (!isSupabaseConfigured || !supabase) return null;
   const { data, error } = await supabase.functions.invoke('generate-relationship-report', {
-    body: payload,
+    body: payload?.preparedConversation
+      ? { ...payload, preparedConversation: trimPreparedForBackend(payload.preparedConversation) }
+      : payload,
   });
   if (error) {
     const normalized = await normalizeFunctionError(error, 'Relationship intelligence could not be generated.');

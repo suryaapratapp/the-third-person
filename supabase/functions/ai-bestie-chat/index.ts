@@ -11,13 +11,12 @@ function parseBestieText(text: string) {
   try {
     const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
     const parsed = JSON.parse(cleaned);
+    // Older replies may still carry the retired fields; keep reading them so
+    // previously stored answers render, but new replies are just these three.
     return [
-      parsed.quickTake && `Quick take: ${parsed.quickTake}`,
-      parsed.answer,
-      parsed.whatThisMayMean && `What this may mean: ${parsed.whatThisMayMean}`,
+      parsed.answer || parsed.quickTake,
       parsed.whatToDoNext && `What to do next: ${parsed.whatToDoNext}`,
       parsed.whatNotToIgnore && `Do not ignore: ${parsed.whatNotToIgnore}`,
-      parsed.gentleRealityCheck && `Gentle reality check: ${parsed.gentleRealityCheck}`,
     ].filter(Boolean).join('\n\n') || text;
   } catch {
     return text;
@@ -84,6 +83,16 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const { chainId, userMessage, analysisChainContext } = body;
     if (!chainId || !userMessage) return jsonResponse({ error: 'Please ask a relationship question.' }, 400, cors);
+    // Enforced server-side: the UI cap is a convenience, but without this a
+    // pasted essay would silently inflate input tokens on every coach reply.
+    const MAX_QUESTION_CHARS = 600;
+    const question = String(userMessage).trim();
+    if (question.length > MAX_QUESTION_CHARS) {
+      return jsonResponse({
+        code: 'QUESTION_TOO_LONG',
+        error: `Please keep your question under ${MAX_QUESTION_CHARS} characters so your coach can answer clearly. Ask one thing at a time.`,
+      }, 400, cors);
+    }
 
     const admin = createAdminClient();
     const reservation = await reserveCredit(admin, user.id, 'bestie_message');
@@ -97,7 +106,7 @@ Deno.serve(async (req: Request) => {
 
     let text: string;
     try {
-      text = await openAiBestieReply(userMessage, analysisChainContext || {}, body);
+      text = await openAiBestieReply(question, analysisChainContext || {}, body);
     } catch (openAiError) {
       await refundCredit(admin, reservation.creditId);
       await admin.from('ai_usage_logs').insert({
@@ -125,7 +134,7 @@ Deno.serve(async (req: Request) => {
       user_id: user.id,
       chain_id: chainId,
       role: 'user',
-      content: userMessage,
+      content: question,
       metadata: { source: 'bestie_chat' },
     }).select('*').single();
     if (userMessageError) {

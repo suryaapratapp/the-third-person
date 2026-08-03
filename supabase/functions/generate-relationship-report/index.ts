@@ -1,6 +1,7 @@
 import { buildCorsHeaders, jsonResponse } from '../_shared/cors.ts';
 import { buildRelationshipAnalysisPrompt, messagesForChatCompletions } from '../_shared/promptBuilder.ts';
 import { createAdminClient, getAuthenticatedUser, refundCredit, reserveCredit } from '../_shared/usage.ts';
+import { upsertMergedPersonality } from '../_shared/personalityMerge.ts';
 
 function chainIdFor(personName = 'relationship', relationshipType = 'relationship', platform = 'chat') {
   return `${personName}-${relationshipType}-${platform}`
@@ -37,29 +38,53 @@ async function fetchOpenAiText({
   model,
   messages,
   temperature = 0.55,
+  deadlineAt = 0,
 }: {
   apiKey: string;
   model: string;
   messages: Array<{ role: string; content: string }>;
   temperature?: number;
+  deadlineAt?: number;
 }) {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      response_format: { type: 'json_object' },
-      ...(supportsCustomTemperature(model) ? { temperature } : {}),
-      // gpt-5 reasoning models: medium effort is needed to fill the large
-      // combined schema completely — low effort measurably under-fills it
-      // (missing timeline/scores/flags). Latency ~40-50s is acceptable; the
-      // frontend shows staged progress and the edge wall-clock allows it.
-      ...(model.startsWith('gpt-5') ? { reasoning_effort: 'medium' } : {}),
+  // Bound by the SHARED deadline, not a fixed per-call value: each part may
+  // make up to three calls (JSON-repair retry, then model fallback), so a
+  // per-call cap of 60s still allowed 180s and blew the 150s edge limit.
+  const remainingMs = deadlineAt ? deadlineAt - Date.now() : 60_000;
+  if (remainingMs <= 2_000) throw new Error('OPENAI_DEADLINE_EXCEEDED');
+  const timeoutMs = Math.min(60_000, remainingMs);
+  // Hard per-call bound. Model latency varies enormously (the same request has
+  // taken 25s and 150s), and an unbounded call runs past Supabase's 150s limit,
+  // which returns 504/503 to the user AFTER their credit was spent.
+  //
+  // NOTE: AbortSignal alone was not enough — this runtime did not abort the
+  // in-flight fetch, so the function ran to the platform kill. Racing against a
+  // timer guarantees we stop waiting even if the socket stays open.
+  let timeoutHandle: number | undefined;
+  const timeoutPromise = new Promise<never>((_resolve, reject) => {
+    timeoutHandle = setTimeout(() => reject(new Error('OPENAI_CALL_TIMEOUT')), timeoutMs);
+  });
+  const response = await Promise.race([
+    fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      signal: AbortSignal.timeout(timeoutMs),
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        response_format: { type: 'json_object' },
+        ...(supportsCustomTemperature(model) ? { temperature } : {}),
+        // gpt-5 reasoning models. 'low' under-filled the old single mega-schema,
+        // but the schema is now split into smaller parallel calls, so low fills
+        // each part — and medium's latency variance was breaching the 150s limit.
+        ...(model.startsWith('gpt-5') ? { reasoning_effort: 'low' } : {}),
+      }),
     }),
+    timeoutPromise,
+  ]).finally(() => {
+    if (timeoutHandle !== undefined) clearTimeout(timeoutHandle);
   });
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
@@ -76,6 +101,7 @@ async function callOpenAiJson(options: {
   model: string;
   messages: Array<{ role: string; content: string }>;
   temperature?: number;
+  deadlineAt?: number;
 }) {
   const text = await fetchOpenAiText(options);
   try {
@@ -108,15 +134,35 @@ function chunkSummarySchema() {
   };
 }
 
+// A chunk can hold 240 messages; sending them all made each summary call slow
+// enough that long chats blew the edge timeout. Sample evenly across the chunk
+// instead — this keeps the period's arc (start, middle, end) at a fraction of
+// the prompt size. Emotionally tagged messages are kept preferentially.
+const MAX_CHUNK_MESSAGES_FOR_AI = 60;
+
 function chunkMessagesForAi(chunk: Record<string, any>) {
-  return (chunk.representativeMessages || []).map((message: Record<string, any>) => ({
+  const all = (chunk.representativeMessages || []) as Array<Record<string, any>>;
+  let selected = all;
+  if (all.length > MAX_CHUNK_MESSAGES_FOR_AI) {
+    const tagged = all.filter((message) => (message.emotionalTags || []).length > 0);
+    const budget = MAX_CHUNK_MESSAGES_FOR_AI;
+    const keepTagged = tagged.slice(0, Math.floor(budget / 2));
+    const keepIds = new Set(keepTagged.map((message) => message.id));
+    const remaining = budget - keepTagged.length;
+    const others = all.filter((message) => !keepIds.has(message.id));
+    const step = Math.max(1, Math.ceil(others.length / Math.max(1, remaining)));
+    const sampled = others.filter((_, index) => index % step === 0).slice(0, remaining);
+    // Restore chronological order so the model reads the period as a sequence.
+    selected = [...keepTagged, ...sampled].sort((a, b) => all.indexOf(a) - all.indexOf(b));
+  }
+  return selected.map((message: Record<string, any>) => ({
     date: message.date,
     period: message.period,
     sender: message.sender,
     dayPeriod: message.dayPeriod,
     languageGuess: message.languageGuess,
     emotionalTags: message.emotionalTags,
-    message: String(message.message || '').slice(0, 420),
+    message: String(message.message || '').slice(0, 300),
   }));
 }
 
@@ -127,6 +173,7 @@ async function summarizeChunk({
   chunk,
   body,
   prepared,
+  deadlineAt,
 }: {
   apiKey: string;
   model: string;
@@ -134,6 +181,7 @@ async function summarizeChunk({
   chunk: Record<string, any>;
   body: Record<string, any>;
   prepared: Record<string, any>;
+  deadlineAt?: number;
 }) {
   const userContent = JSON.stringify({
     task: 'Summarise this chronological conversation period for later final relationship synthesis. Do not produce the final report yet.',
@@ -157,6 +205,7 @@ async function summarizeChunk({
   return callOpenAiJson({
     apiKey,
     model,
+    deadlineAt,
     temperature: 0.35,
     messages: [
       { role: 'system', content: `${system}\n\nReturn valid JSON only. Never claim certainty. Do not log or reveal private implementation details.` },
@@ -171,20 +220,72 @@ async function summarizeChunksForLongChat({
   system,
   body,
   prepared,
+  deadlineAt,
 }: {
   apiKey: string;
   model: string;
   system: string;
   body: Record<string, any>;
   prepared: Record<string, any>;
+  deadlineAt?: number;
 }) {
-  const chunks = prepared.analysisPipeline?.chunks || [];
-  const summaries = [];
-  for (const chunk of chunks) {
-    if (!chunk?.messageCount) continue;
-    summaries.push(await summarizeChunk({ apiKey, model, system, chunk, body, prepared }));
+  const allChunks = (prepared.analysisPipeline?.chunks || []).filter((chunk: Record<string, any>) => chunk?.messageCount);
+  if (!allChunks.length) return [];
+
+  // The finished timeline is only 3-6 phases, so summarising all 24-40 chunks
+  // is far more work than the output needs — and it was the main reason long
+  // chats exceeded the edge timeout. Sample chunks evenly across the whole
+  // history (always keeping the first and last) so the arc stays intact while
+  // the number of AI calls, and the size of the final synthesis prompt, drop.
+  const MAX_SUMMARY_CHUNKS = 10;
+  let chunks = allChunks;
+  if (allChunks.length > MAX_SUMMARY_CHUNKS) {
+    const step = (allChunks.length - 1) / (MAX_SUMMARY_CHUNKS - 1);
+    const picked = new Map<number, Record<string, any>>();
+    for (let i = 0; i < MAX_SUMMARY_CHUNKS; i += 1) {
+      picked.set(Math.round(i * step), allChunks[Math.round(i * step)]);
+    }
+    chunks = [...picked.entries()].sort((a, b) => a[0] - b[0]).map(([, chunk]) => chunk);
   }
-  return summaries;
+
+  // Long chats previously summarised chunks one-by-one. With up to 40 chunks
+  // that is minutes of wall time and always blew Supabase's 150s edge limit,
+  // so EVERY long export (a normal multi-year WhatsApp history) failed.
+  // Now: bounded concurrency, plus a wall-clock budget so we degrade to a
+  // slightly less detailed report instead of timing out and burning a credit.
+  // Budget + per-call timeout are sized so the two phases together stay inside
+  // the 150s edge limit: ~45s of chunk summaries, then ~60s max of synthesis.
+  const CONCURRENCY = 10;
+  const BUDGET_MS = 45_000;
+  const startedAt = Date.now();
+  const summaries: Array<Record<string, any>> = new Array(chunks.length);
+  let cursor = 0;
+  let skipped = 0;
+
+  async function worker() {
+    while (true) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= chunks.length) return;
+      if (Date.now() - startedAt > BUDGET_MS) {
+        skipped += 1;
+        continue;
+      }
+      try {
+        summaries[index] = await summarizeChunk({ apiKey, model, system, chunk: chunks[index], body, prepared, deadlineAt });
+      } catch {
+        // One bad chunk must not fail the whole report; the synthesis step
+        // works from whatever periods did summarise successfully.
+        skipped += 1;
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, chunks.length) }, worker));
+  if (skipped) {
+    console.warn(`CHUNK_SUMMARY_PARTIAL skipped=${skipped} of=${chunks.length} elapsedMs=${Date.now() - startedAt}`);
+  }
+  return summaries.filter(Boolean);
 }
 
 // The model occasionally wraps its answer in the schema key or returns the
@@ -198,6 +299,66 @@ const REPORT_LEVEL_KEYS = [
   'attachmentVibe', 'friendsWouldNotice', 'communicationStyleSignals', 'energyMatchScore',
   'simpleSummaryForYoungAudience',
 ];
+
+// The model sometimes emits the flag arrays twice: a rich copy (with
+// evidenceQuote/confidence) misplaced inside a sibling object such as `scores`,
+// and a stripped copy at the correct key. Pick whichever copy actually carries
+// evidence, otherwise Task 4's receipts silently vanish from the report.
+function countEvidence(items: unknown): number {
+  if (!Array.isArray(items)) return -1;
+  return items.filter((item) => item && typeof item === 'object' && String((item as Record<string, any>).evidenceQuote || '').trim()).length;
+}
+
+function isEmptyish(value: unknown): boolean {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'string') return !value.trim();
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === 'object') return Object.keys(value as Record<string, unknown>).length === 0;
+  return false;
+}
+
+// Merge the report halves so an EMPTY value never clobbers a populated one.
+// Each half is told to produce only its own keys, but the model still emits
+// empty placeholders for the others — a plain spread let the core call's
+// `redFlags: []` erase the real, evidence-backed flags from the signals call.
+function mergeReportParts(base: Record<string, any>, override: Record<string, any>): Record<string, any> {
+  const merged = { ...base };
+  for (const [key, value] of Object.entries(override || {})) {
+    if (isEmptyish(value) && !isEmptyish(merged[key])) continue;
+    merged[key] = value;
+  }
+  return merged;
+}
+
+function reconcileFlagArrays(report: Record<string, any>): Record<string, any> {
+  if (!report || typeof report !== 'object') return report;
+  const next = { ...report };
+  for (const key of ['redFlags', 'greenFlags']) {
+    let best = Array.isArray(next[key]) ? next[key] : [];
+    let bestScore = countEvidence(best);
+    for (const value of Object.values(next)) {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
+      const candidate = (value as Record<string, any>)[key];
+      const score = countEvidence(candidate);
+      if (score > bestScore) {
+        best = candidate;
+        bestScore = score;
+      }
+    }
+    if (best.length) next[key] = best;
+  }
+  // Scores must stay numeric: stray nested arrays/objects would be persisted
+  // and are meaningless to the score cards.
+  if (next.scores && typeof next.scores === 'object' && !Array.isArray(next.scores)) {
+    const cleanScores: Record<string, number> = {};
+    for (const [key, value] of Object.entries(next.scores as Record<string, unknown>)) {
+      const parsed = typeof value === 'string' ? Number.parseFloat(value) : Number(value);
+      if (Number.isFinite(parsed)) cleanScores[key] = Math.max(0, Math.min(100, Math.round(parsed)));
+    }
+    next.scores = cleanScores;
+  }
+  return next;
+}
 
 function normalizeAiShape(raw: Record<string, any>): Record<string, any> {
   let ai = raw && typeof raw === 'object' ? raw : {};
@@ -220,14 +381,29 @@ function normalizeAiShape(raw: Record<string, any>): Record<string, any> {
   return ai;
 }
 
+// Spreading a non-object (the model sometimes returns advice as a string or an
+// array) would explode into index→character keys, e.g. {"0":"K","1":"e",...},
+// bloating the stored JSON with garbage. Only merge real objects.
+function asPlainObject(value: unknown): Record<string, any> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as Record<string, any>;
+}
+
 function compactReportForExistingUi(ai: Record<string, any>, draft: Record<string, any>) {
   if (!ai.relationshipReport) return ai;
   const report = ai.relationshipReport || {};
   const relationshipCard = ai.relationshipPersonalityCard || {};
   const card = ai.personalityCardUpdate || relationshipCard || {};
   const signals = ai.mainUserPersonalitySignals || {};
-  const reportScores = report.scores || {};
-  const reportAdvice = report.advice || {};
+  const reportScores = asPlainObject(report.scores);
+  // Keep a string/array advice as the actionable next step rather than dropping it.
+  const adviceProse = typeof report.advice === 'string'
+    ? report.advice
+    : Array.isArray(report.advice) ? report.advice.filter(Boolean).join(' ') : '';
+  const reportAdvice = {
+    ...asPlainObject(report.advice),
+    ...(adviceProse ? { nextBestStep: adviceProse } : {}),
+  };
   const summaryParagraph = report.summaryParagraph || report.summary || '';
   const screenshotSummary = report.screenshotWorthySummary || report.vibeLabel || summaryParagraph;
   return {
@@ -344,25 +520,55 @@ async function openAiAnalysis(body: Record<string, any>) {
   // final synthesis the user actually reads. Both are env-overridable.
   const summaryModel = Deno.env.get('OPENAI_SUMMARY_MODEL') || 'gpt-5-nano';
   const reportModel = Deno.env.get('OPENAI_REPORT_MODEL') || 'gpt-5-mini';
+  // Shared wall-clock deadline for every AI call this request makes. Supabase
+  // kills the request at 150s; reserve ~25s for DB writes and the response so
+  // the user gets a real report (or a clean refunded error) instead of a 504.
+  const deadlineAt = Date.now() + 125_000;
   const prepared = body.preparedConversation || {};
   // Prefer the operator-managed system prompt secret; fall back to the built-in
   // prompt only if the secret is unset so the function never breaks.
   const system = Deno.env.get('THIRDPERSON_REPORT_SYSTEM_PROMPT') || CODEBASE_REPORT_SYSTEM_PROMPT;
-  const requiredOutputSchema = {
+  // The schema is split in two so the halves can be generated CONCURRENTLY.
+  // As one combined call it exceeded Supabase's 150s edge timeout: the function
+  // still finished and saved server-side, but the client saw a 504 and the
+  // credit was already spent. Two smaller parallel calls also fill their
+  // schemas more reliably.
+  const reportOutputSchema = {
       relationshipReport: {
         summaryParagraph: '',
         overallDynamic: '',
         vibeLabel: '',
         emotionalTone: '',
         effortBalance: '',
-        communicationPattern: '',
-        communicationPatterns: {
-          userStyle: '',
-          otherPersonStyle: '',
-          conflictStyle: '',
-          repairAttempts: '',
-          avoidancePatterns: '',
-        },
+        timeline: [
+          {
+            period: '',
+            title: '',
+            emotionalTone: '',
+            initiator: '',
+            effortBalance: 0,
+            sentiment: '',
+            compatibility: 0,
+            whatHappened: '',
+            whatWentRight: '',
+            whatWentWrong: '',
+            youMightNotHaveNoticed: '',
+            turningPoint: '',
+            quote: '',
+            affectedNextPhase: '',
+            confidence: 'Early Signal | Repeated Pattern | Strong Pattern | Not Enough Evidence',
+          },
+        ],
+        timelineArc: '',
+      },
+    };
+
+  // Second half of the report: the signal cards. Kept separate from the core
+  // narrative+timeline so each call has a small schema it can fill completely —
+  // one oversized report schema made the model silently drop whole sections
+  // (flags vanished when it spent its budget on the timeline).
+  const reportSignalsSchema = {
+      relationshipReport: {
         redFlags: [
           {
             label: '',
@@ -384,33 +590,7 @@ async function openAiAnalysis(body: Record<string, any>) {
             howToBuildOnIt: '',
           },
         ],
-        mixedSignals: [],
-        energyBalance: '',
-        dayNightDynamics: {},
-        wordCloud: [],
-        stickyNotes: [],
         nextBestMove: '',
-        dashboardCards: [],
-        timeline: [
-          {
-            period: '',
-            title: '',
-            emotionalTone: '',
-            initiator: '',
-            effortBalance: 0,
-            sentiment: '',
-            compatibility: 0,
-            whatHappened: '',
-            whatWentRight: '',
-            whatWentWrong: '',
-            youMightNotHaveNoticed: '',
-            turningPoint: '',
-            quote: '',
-            affectedNextPhase: '',
-            confidence: 'Early Signal | Repeated Pattern | Strong Pattern | Not Enough Evidence',
-          },
-        ],
-        timelineArc: '',
         scores: {
           compatibility: 0,
           communicationHealth: 0,
@@ -427,37 +607,6 @@ async function openAiAnalysis(body: Record<string, any>) {
           nextBestStep: '',
         },
         screenshotWorthySummary: '',
-        attachmentVibe: {
-          userCommunicationVibe: '',
-          otherCommunicationVibe: '',
-          dynamicCreated: '',
-          howToCommunicateBetter: '',
-        },
-        friendsWouldNotice: {
-          theyWouldNotice: '',
-          theyMightWarnYouAbout: '',
-          theyMightRemindYou: '',
-        },
-        communicationStyleSignals: {
-          user: {
-            traitIntensity: '',
-            attentionStyleSignals: [],
-            emotionalProcessingStyle: '',
-            socialEnergyPattern: '',
-            routineOrConsistencySignals: [],
-            possibleOverwhelmSignals: [],
-            communicationTips: [],
-          },
-          otherPerson: {
-            traitIntensity: '',
-            attentionStyleSignals: [],
-            emotionalProcessingStyle: '',
-            socialEnergyPattern: '',
-            routineOrConsistencySignals: [],
-            possibleOverwhelmSignals: [],
-            communicationTips: [],
-          },
-        },
         energyMatchScore: {
           score: 0,
           userEnergy: '',
@@ -469,6 +618,9 @@ async function openAiAnalysis(body: Record<string, any>) {
         },
         simpleSummaryForYoungAudience: '',
       },
+    };
+
+  const personaOutputSchema = {
       mainUserPersonalitySignals: {
         communicationStyle: '',
         emotionalPattern: '',
@@ -572,7 +724,7 @@ async function openAiAnalysis(body: Record<string, any>) {
   const route = pipeline.route || 'single_compressed';
   const chunkSummaries = route === 'single_compressed'
     ? []
-    : await summarizeChunksForLongChat({ apiKey, model: summaryModel, system, body, prepared });
+    : await summarizeChunksForLongChat({ apiKey, model: summaryModel, system, body, prepared, deadlineAt });
   const protectedConversationText = route === 'single_compressed'
     ? (prepared.cleanedText || prepared.compressedConversation || '')
     : '';
@@ -591,7 +743,9 @@ async function openAiAnalysis(body: Record<string, any>) {
     longChatMode: route !== 'single_compressed',
     sensitiveDataProtectionSummary: body.sensitiveData?.protectionSummary,
   };
-  const promptBundle = buildRelationshipAnalysisPrompt({
+  // Deliberately NOT sending the client-side draft analysis: models anchor on
+  // it and echo its generic phrasing instead of analysing the conversation.
+  const promptFor = (schema: Record<string, unknown>, focusInstruction: string) => buildRelationshipAnalysisPrompt({
     basePromptTemplate: system,
     relationshipType: prepared.metadata?.relationshipType || body.runtimeContext?.selectedRelationshipType,
     otherPersonName: prepared.metadata?.personName || body.runtimeContext?.selectedPersonName,
@@ -604,35 +758,61 @@ async function openAiAnalysis(body: Record<string, any>) {
       recommendedOutputStyle: prepared.languageStyle || body.runtimeContext?.detectedLanguageStyle,
     },
     previousPersonalityCard: body.previousPersonalityMemory?.personality_json || body.runtimeContext?.previousPersonalityCardSummary,
-    // Deliberately NOT sending the client-side draft analysis: models anchor on
-    // it and echo its generic phrasing instead of analysing the conversation.
-    // combinedGenerationSchema is the single output contract.
-    outputSchema: {
-      combinedGenerationSchema: requiredOutputSchema,
-    },
+    focusInstruction,
+    outputSchema: { combinedGenerationSchema: schema },
   });
-  const synthesisMessages = messagesForChatCompletions(promptBundle);
-  let analysis: Record<string, any>;
-  try {
-    analysis = await callOpenAiJson({
-      apiKey,
-      model: reportModel,
-      messages: synthesisMessages,
-      temperature: 0.4,
-    });
-  } catch (primaryError) {
-    // If the stronger synthesis model is unavailable or misconfigured, degrade
-    // once to the cheaper model the chunk summaries already use rather than
-    // failing the whole report. Never loops (only retries when they differ).
-    if (reportModel === summaryModel) throw primaryError;
-    analysis = await callOpenAiJson({
-      apiKey,
-      model: summaryModel,
-      messages: synthesisMessages,
-      temperature: 0.4,
-    });
-  }
-  analysis = normalizeAiShape(analysis);
+
+  const reportCoreMessages = messagesForChatCompletions(promptFor(
+    reportOutputSchema,
+    'THIS REQUEST GENERATES THE REPORT NARRATIVE AND TIMELINE ONLY. Return exactly the relationshipReport keys described in combinedGenerationSchema (summary, dynamic, tone, communication patterns, timeline, timelineArc). The timeline is the priority of this request — do not produce flags, scores, advice, personality card, or coach context here.',
+  ));
+  const reportSignalsMessages = messagesForChatCompletions(promptFor(
+    reportSignalsSchema,
+    'THIS REQUEST GENERATES THE REPORT SIGNAL CARDS ONLY. Return exactly the relationshipReport keys described in combinedGenerationSchema (red flags, green flags, mixed signals, scores, advice, next best move, energy match, attachment vibe, day/night dynamics, word cloud, sticky notes). Evidence-backed red and green flags are the priority of this request — do not produce the timeline, personality card, or coach context here.',
+  ));
+  const personaMessages = messagesForChatCompletions(promptFor(
+    personaOutputSchema,
+    'THIS REQUEST GENERATES THE PERSONALITY LAYER ONLY. Return exactly the keys described in combinedGenerationSchema (personality signals, relationship personality card, personality card update, coach context summary, future-use summary, language style, confidence notes) — do not produce the relationshipReport object in this response.',
+  ));
+
+  // `critical` = the narrative/timeline half. If that fails we throw so the
+  // credit is refunded and the user can retry, rather than saving a hollow
+  // report. The other halves degrade to {} and are backfilled from the draft.
+  const callWithFallback = async (
+    messages: Array<{ role: string; content: string }>,
+    { critical = false }: { critical?: boolean } = {},
+  ) => {
+    try {
+      return await callOpenAiJson({ apiKey, model: reportModel, messages, temperature: 0.4, deadlineAt });
+    } catch (primaryError) {
+      if (reportModel === summaryModel) {
+        if (critical) throw primaryError;
+        console.warn('REPORT_PART_FAILED', String(primaryError).slice(0, 160));
+        return {};
+      }
+      try {
+        // Degrade once to the cheaper model rather than failing outright.
+        return await callOpenAiJson({ apiKey, model: summaryModel, messages, temperature: 0.4, deadlineAt });
+      } catch (fallbackError) {
+        if (critical) throw fallbackError;
+        console.warn('REPORT_PART_FAILED', String(fallbackError).slice(0, 160));
+        return {};
+      }
+    }
+  };
+
+  // Run all three concurrently: wall time is max(A, B, C) rather than the sum,
+  // which keeps generation comfortably inside the 150s edge timeout.
+  const [reportCorePart, reportSignalsPart, personaPart] = await Promise.all([
+    callWithFallback(reportCoreMessages, { critical: true }),
+    callWithFallback(reportSignalsMessages),
+    callWithFallback(personaMessages),
+  ]);
+  const mergedReport = reconcileFlagArrays(mergeReportParts(
+    normalizeAiShape(reportSignalsPart).relationshipReport || {},
+    normalizeAiShape(reportCorePart).relationshipReport || {},
+  ));
+  const analysis = normalizeAiShape({ ...personaPart, relationshipReport: mergedReport });
   return {
     ...analysis,
     analysisPipeline: {
@@ -687,52 +867,6 @@ function shortText(value: unknown, fallback = 'Not enough evidence yet.') {
   const text = toReadableText(value);
   if (!text) return fallback;
   return text.length > 420 ? `${text.slice(0, 417).trim()}...` : text;
-}
-
-// ---- Personality accumulation (Task 5) ------------------------------------
-// user_personality must GROW across analyses, never be wiped by the latest
-// report: new non-empty values win, old values survive where the new run had
-// nothing to say, and arrays union (newest first) instead of replacing.
-
-function isEmptyValue(value: unknown): boolean {
-  if (value === null || value === undefined) return true;
-  if (typeof value === 'string') return !value.trim();
-  if (Array.isArray(value)) return value.length === 0;
-  if (typeof value === 'object') return Object.keys(value as Record<string, unknown>).length === 0;
-  return false;
-}
-
-function mergePersonality(oldValue: any, newValue: any, depth = 0): any {
-  if (depth > 4) return isEmptyValue(newValue) ? oldValue : newValue;
-  if (Array.isArray(newValue) || Array.isArray(oldValue)) {
-    const newArr = Array.isArray(newValue) ? newValue : [];
-    const oldArr = Array.isArray(oldValue) ? oldValue : [];
-    const seen = new Set<string>();
-    const merged: any[] = [];
-    for (const item of [...newArr, ...oldArr]) {
-      const key = typeof item === 'string' ? item.toLowerCase().trim() : JSON.stringify(item);
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      merged.push(item);
-    }
-    return merged.slice(0, 16);
-  }
-  if (newValue && typeof newValue === 'object' && oldValue && typeof oldValue === 'object') {
-    const merged: Record<string, any> = { ...oldValue };
-    for (const key of Object.keys(newValue)) {
-      merged[key] = mergePersonality(oldValue[key], newValue[key], depth + 1);
-    }
-    return merged;
-  }
-  return isEmptyValue(newValue) ? (oldValue ?? newValue) : newValue;
-}
-
-function asWordList(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((item: any) => (typeof item === 'string' ? item : item?.word || item?.label || ''))
-    .map((word) => String(word).trim())
-    .filter(Boolean);
 }
 
 function relationshipWorldLabel(relationshipType = 'Relationship') {
@@ -930,29 +1064,12 @@ Deno.serve(async (req: Request) => {
     if (analysis.personalityCardUpdate || analysis.relationshipPersonalityCard || analysis.mainUserPersonalitySignals) {
       // Accumulate, never overwrite: merge this run's signals into the stored
       // profile so stable traits survive and repeated ones strengthen.
-      const { data: existingPersonality } = await admin
-        .from('user_personality')
-        .select('personality_json, emotional_life_story, recurring_words, generated_from_report_ids')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      const newPersonality = analysis.personalityCardUpdate || analysis.relationshipPersonalityCard || {};
-      const newStory = analysis.personalityCardUpdate?.emotionalLifeStory || analysis.relationshipPersonalityCard?.emotionalLifeStory || {};
-      const mergedWords = [...new Set([
-        ...asWordList(analysis.mainUserPersonalitySignals?.topWords),
-        ...asWordList(existingPersonality?.recurring_words),
-      ])].slice(0, 24);
-      const reportIds = [...new Set([
-        ...((existingPersonality?.generated_from_report_ids as string[]) || []),
-        report.id,
-      ])].slice(-50);
-      await admin.from('user_personality').upsert({
-        user_id: user.id,
-        personality_json: mergePersonality(existingPersonality?.personality_json || {}, newPersonality),
-        emotional_life_story: mergePersonality(existingPersonality?.emotional_life_story || {}, newStory),
-        recurring_words: mergedWords,
-        generated_from_report_ids: reportIds,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
+      await upsertMergedPersonality(admin, user.id, {
+        personality: analysis.personalityCardUpdate || analysis.relationshipPersonalityCard || {},
+        emotionalLifeStory: analysis.personalityCardUpdate?.emotionalLifeStory || analysis.relationshipPersonalityCard?.emotionalLifeStory || {},
+        words: analysis.mainUserPersonalitySignals?.topWords,
+        reportIds: [report.id],
+      });
     }
 
     try {
@@ -988,6 +1105,8 @@ Deno.serve(async (req: Request) => {
         analysisRoute: prepared.analysisPipeline?.route || 'single_compressed',
         estimatedTokens: prepared.analysisPipeline?.estimatedTokens || 0,
         chunkCount: prepared.analysisPipeline?.chunks?.length || 0,
+        // Surfaces partial summarisation (budget hit / chunk failures) in prod.
+        chunkSummaryCount: analysis.analysisPipeline?.chunkSummaryCount ?? null,
         participantsCount: (prepared.participants || prepared.participantNames || []).length,
         detectedLanguages: prepared.detectedLanguages || prepared.languageProfile?.languagesUsed || [],
       },
