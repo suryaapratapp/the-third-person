@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { emptyProfile, getInitials, getUserProfile, saveUserProfile } from '../lib/profileStore.js';
-import { fetchRemoteProfile, remoteProfileToLocal, upsertRemoteProfile } from '../lib/supabaseDataService.js';
+import { deleteAllMyAnalysisData, fetchRemoteProfile, remoteProfileToLocal, upsertRemoteProfile } from '../lib/supabaseDataService.js';
 import { getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { supportedAnalysisLanguages } from '../lib/languages.js';
@@ -30,6 +30,9 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(() => ({ ...emptyProfile, ...getUserProfile() }));
   const [message, setMessage] = useState('');
+  const [confirmWipe, setConfirmWipe] = useState(false);
+  const [wiping, setWiping] = useState(false);
+  const [wipeResult, setWipeResult] = useState('');
   const zodiac = useMemo(() => getZodiacSign(profile.dateOfBirth), [profile.dateOfBirth]);
 
   useEffect(() => {
@@ -77,6 +80,31 @@ export default function ProfilePage() {
       setMessage('Profile saved securely.');
     } catch {
       setMessage('Profile saved on this device. We could not sync it right now.');
+    }
+  }
+
+  async function wipeData() {
+    setWiping(true);
+    setWipeResult('');
+    try {
+      const counts = await deleteAllMyAnalysisData();
+      const removed = [
+        [counts.reports, 'report'],
+        [counts.personalityCards, 'personality card'],
+        [counts.coachMessages, 'coach message'],
+      ]
+        .filter(([count]) => Number(count) > 0)
+        .map(([count, label]) => `${count} ${label}${Number(count) === 1 ? '' : 's'}`);
+      setConfirmWipe(false);
+      setWipeResult(
+        removed.length
+          ? `Deleted ${removed.join(', ')}, along with your personality profile and evolution history. Your paid credits are untouched.`
+          : 'There was no analysis data left to delete. Your account is already clear.',
+      );
+    } catch (error) {
+      setWipeResult(error.message || 'We could not delete your data right now. Please try again.');
+    } finally {
+      setWiping(false);
     }
   }
 
@@ -161,6 +189,57 @@ export default function ProfilePage() {
             <button onClick={save} className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">Save profile</button>
             {message && <p className="text-sm text-smoke">{message}</p>}
           </div>
+        </div>
+
+        <div className="thin-panel mt-6 p-6 sm:p-8">
+          <p className="tech-label text-rose-100">Your data</p>
+          <h2 className="serif-title mt-3 text-4xl leading-tight">Delete your analysis data.</h2>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-smoke">
+            This permanently removes every Relationship Report, the personality cards and profile built from them,
+            your evolution history, and all AI Relationship Coach messages. It cannot be undone.
+          </p>
+          <div className="mt-5 grid gap-2 rounded-[24px] border border-white/10 bg-white/[0.035] p-4 text-sm leading-7 text-smoke">
+            <p><span className="text-bone">Kept:</span> any unused paid credits, so a cleanup never burns what you bought.</p>
+            <p><span className="text-bone">Kept:</span> payment receipts, which we retain as financial records.</p>
+            <p><span className="text-bone">Kept:</span> your profile details above — edit or clear those directly if you want them changed.</p>
+          </div>
+
+          {wipeResult ? (
+            <p className="mt-5 rounded-2xl border border-emerald-200/25 bg-emerald-300/[0.06] p-4 text-sm leading-7 text-smoke">{wipeResult}</p>
+          ) : confirmWipe ? (
+            <div className="mt-5 rounded-[24px] border border-rose-200/30 bg-rose-300/[0.07] p-5">
+              <p className="text-sm leading-7 text-bone">
+                Delete all analysis data permanently? Your reports, personality profile, and coach history will be gone for good.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  onClick={wipeData}
+                  disabled={wiping}
+                  className="rounded-full border border-rose-200/40 bg-rose-300/15 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-rose-100 transition hover:border-rose-200/80 disabled:opacity-60"
+                >
+                  {wiping ? 'Deleting…' : 'Yes, delete everything'}
+                </button>
+                <button
+                  onClick={() => setConfirmWipe(false)}
+                  disabled={wiping}
+                  className="rounded-full border border-white/14 bg-white/[0.05] px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-smoke transition hover:border-white/35 disabled:opacity-60"
+                >
+                  Keep my data
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmWipe(true)}
+              className="mt-5 rounded-full border border-rose-200/30 bg-rose-300/[0.08] px-5 py-4 font-mono text-xs uppercase tracking-[0.14em] text-rose-100 transition hover:border-rose-200/60"
+            >
+              Delete all my analysis data
+            </button>
+          )}
+
+          <p className="mt-5 text-xs leading-6 text-ash">
+            To close your account entirely, contact support@thethirdperson.ai and we will remove the account itself.
+          </p>
         </div>
       </div>
     </section>

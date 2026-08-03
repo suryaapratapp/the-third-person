@@ -69,9 +69,17 @@ const PAGE_SEO = {
 function metaFor(path) {
   if (PAGE_SEO[path]) return PAGE_SEO[path];
   if (path.startsWith('/reports/')) {
+    // Coach lives at /reports/:chainId/coach (or /broski, /bestie); any other
+    // /reports/:id is a saved Relationship Report.
+    if (/\/(coach|broski|bestie)$/.test(path)) {
+      return {
+        title: `AI Relationship Coach — ${SITE_NAME}`,
+        description: 'Talk through a specific relationship with your AI Relationship Coach.',
+      };
+    }
     return {
-      title: `AI Relationship Coach — ${SITE_NAME}`,
-      description: 'Talk through a specific relationship with your AI Relationship Coach.',
+      title: `Relationship Report — ${SITE_NAME}`,
+      description: 'Your private relationship intelligence report: timeline phases, evidence-backed signals, and a clear next step.',
     };
   }
   if (path.startsWith('/blog/')) {

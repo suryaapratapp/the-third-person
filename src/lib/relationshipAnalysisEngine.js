@@ -15,77 +15,129 @@ function wordCount(words, list) {
   return words.reduce((sum, item) => sum + (list.includes(item.word) ? item.count : 0), 0);
 }
 
-function makeTimeline(prepared, baseScores) {
-  const moments = prepared.importantMoments.length ? prepared.importantMoments : [
-    { period: 'Phase 1', text: 'Conversation begins with neutral exchange.', speaker: 'You' },
-    { period: 'Phase 2', text: 'A recurring emotional question appears.', speaker: prepared.metadata.personName },
-    { period: 'Phase 3', text: 'Both sides look for more clarity.', speaker: 'You' },
-  ];
+function toneLabel(sentiment) {
+  if (sentiment === 'warm') return 'Warm and engaged';
+  if (sentiment === 'tense') return 'Tense and uncertain';
+  return 'Mixed and still forming';
+}
 
-  return Array.from({ length: 10 }, (_, index) => {
-    const source = moments[index % moments.length];
-    const scoreShift = (index - 4) * 2 + (source.emotionalWeight || 1);
-    const sentiment = scoreShift > 7 ? 'warm' : scoreShift < -1 ? 'tense' : 'mixed';
+// Build phases from the parser's real chronological data rather than a fixed
+// count of templated titles. Prefers monthly breakdown (true periods), then
+// important moments, and degrades to a small honest set when data is thin.
+function makeTimeline(prepared, baseScores) {
+  const monthly = (prepared.monthlyBreakdown || []).filter((month) => month.messageCount);
+  const moments = prepared.importantMoments || [];
+  const periods = monthly.length
+    ? monthly.slice(0, 6)
+    : moments.length
+      ? moments.slice(0, 4).map((moment, index) => ({ period: moment.period || `Phase ${index + 1}`, messageCount: 1, emotionalHits: moment.emotionalWeight || 1 }))
+      : [{ period: 'Phase 1', messageCount: 1, emotionalHits: 0 }, { period: 'Phase 2', messageCount: 1, emotionalHits: 0 }];
+  const mid = Math.floor(periods.length / 2);
+
+  return periods.map((entry, index) => {
+    const density = entry.messageCount || 1;
+    const intensity = entry.emotionalHits || 0;
+    const sentiment = intensity > density * 0.6 ? 'tense' : intensity > 0 ? 'warm' : 'mixed';
+    const moment = moments.find((item) => item.period === entry.period) || moments[index % Math.max(1, moments.length)] || {};
+    const compatibility = clamp(baseScores.compatibility + (index - mid) * 3, 12, 94);
     return {
-      period: source.period || `Phase ${index + 1}`,
-      title: ['Signal Emerges', 'Context Builds', 'Emotional Shift', 'Repair Attempt', 'Clarity Gap'][index % 5],
+      period: entry.period || `Phase ${index + 1}`,
+      title: `Phase ${index + 1} · ${entry.period || 'This period'}`,
+      emotionalTone: toneLabel(sentiment),
+      initiator: 'Balanced',
+      effortBalance: baseScores.effortBalance || 50,
       sentiment,
-      compatibility: clamp(baseScores.compatibility + scoreShift - 8, 12, 94),
-      quote: source.text?.slice(0, 140) || 'Representative quote unavailable.',
-      happened: `The conversation appears to surface a ${sentiment} relational signal around ${source.speaker || 'one participant'}.`,
-      why: 'This matters because repeated emotional signals often reveal where clarity, reassurance, or boundaries may be needed.',
+      compatibility,
+      whatHappened: moment.text
+        ? `Around this period, a moment that stood out: “${String(moment.text).slice(0, 120)}”.`
+        : `The conversation continued with a ${sentiment} tone during ${entry.period || 'this phase'}.`,
+      whatWentRight: sentiment === 'warm' ? 'There were warmer, more connected exchanges in this phase.' : 'There were still attempts to stay in contact.',
+      whatWentWrong: sentiment === 'tense' ? 'Tension or unclear replies showed up more in this period.' : 'Some clarity may have been missing here.',
+      youMightNotHaveNoticed: 'Notice who was carrying more of the conversation during this phase.',
+      turningPoint: '',
+      quote: moment.text ? String(moment.text).slice(0, 140) : '',
+      affectedNextPhase: 'This phase helped set the emotional tone going into the next one.',
+      confidence: (prepared.messageCount || 0) > 60 ? 'Repeated Pattern' : 'Early Signal',
+      // Legacy fields kept so any older readers still resolve.
+      happened: `A ${sentiment} relational signal appears around ${entry.period || 'this phase'}.`,
+      why: 'Repeated emotional signals often reveal where clarity, reassurance, or boundaries may be needed.',
     };
   });
 }
 
-function buildFlags(tension, positiveCount, personName) {
+function buildFlags(tension, positiveCount, personName, importantMoments = []) {
+  // Pull real quotes from the parsed conversation so even the local draft
+  // grounds each flag in actual evidence. Prefers preprocessor emotional tags,
+  // falls back to keyword matching, and when no quote exists the flag is
+  // honestly labelled "Not Enough Evidence" instead of pretending certainty.
+  const momentText = (item) => String(item.text || item.message || '');
+  const quoteWithTag = (tag, keywords = []) => {
+    const tagged = importantMoments.find((item) => (item.emotionalTags || []).includes(tag));
+    if (tagged) return momentText(tagged).slice(0, 160);
+    const byKeyword = importantMoments.find((item) => {
+      const lower = momentText(item).toLowerCase();
+      return keywords.some((word) => lower.includes(word));
+    });
+    return byKeyword ? momentText(byKeyword).slice(0, 160) : '';
+  };
+  const withEvidence = (flag, quote) => ({
+    ...flag,
+    evidenceQuote: quote,
+    confidence: quote ? 'Early Signal' : 'Not Enough Evidence',
+  });
+
+  const tensionQuote = quoteWithTag('tension', tense);
+  const uncertaintyQuote = quoteWithTag('uncertainty', ['confused', 'not sure', 'drained', 'ignored', 'distant', 'tired', 'overwhelmed']);
+  const warmthQuote = quoteWithTag('warmth', positive);
+  const repairQuote = quoteWithTag('repair', ['sorry', 'promise', 'explain', 'trying', 'please']);
+
   const redFlags = [
-    {
+    withEvidence({
       label: 'Recurring uncertainty',
       severity: tension > 8 ? 'High' : 'Medium',
       explanation: 'Repeated words around confusion, distance, or unresolved tension may suggest an unstable communication loop.',
       whyItMatters: 'This may be worth paying attention to because uncertainty can make small issues feel much heavier over time.',
       reflectionQuestion: 'What part of the conversation needs a clearer answer instead of another guess?',
-    },
-    {
+    }, uncertaintyQuote || tensionQuote),
+    withEvidence({
       label: 'Avoidance pattern',
       severity: tension > 5 ? 'Medium' : 'Low',
       explanation: 'Some exchanges appear to move away from direct repair instead of naming the issue clearly.',
       whyItMatters: 'Avoidance does not prove intent, but it may show where both people are struggling to be direct.',
       reflectionQuestion: 'What would feel safe to ask directly, without blame?',
-    },
+    }, uncertaintyQuote),
   ];
 
   const greenFlags = [
-    {
+    withEvidence({
       label: 'Care is still visible',
       explanation: `The conversation includes signals that may suggest ${personName} or the user still values emotional connection.`,
       whyItMatters: 'A possible positive sign is that care language can create room for repair when both people are willing.',
       howToBuildOnIt: 'Name the care you notice, then ask for one small, specific next step.',
-    },
-    {
+    }, warmthQuote),
+    withEvidence({
       label: 'Repair language exists',
       explanation: 'Words like sorry, please, honest, or explain can indicate willingness to clarify rather than fully withdraw.',
       whyItMatters: 'Repair language can help turn emotional tension into a calmer conversation.',
       howToBuildOnIt: 'Build on repair attempts by keeping the next conversation short, clear, and kind.',
-    },
+    }, repairQuote),
   ];
 
   if (positiveCount > tension) {
-    greenFlags.unshift({
+    greenFlags.unshift(withEvidence({
       label: 'Warmth outweighs tension',
       explanation: 'Supportive language appears more often than high-conflict language in this sample.',
       whyItMatters: 'This could suggest there is still emotional goodwill to work with.',
       howToBuildOnIt: 'Use that warmth to ask for clarity instead of escalating the same loop.',
-    });
+    }, warmthQuote));
   } else {
-    redFlags.unshift({
+    redFlags.unshift(withEvidence({
       label: 'Tension outweighs reassurance',
       severity: 'Medium',
       explanation: 'Conflict-oriented language appears more strongly than repair-oriented language.',
       whyItMatters: 'This does not prove intent, but it may show a pattern where reassurance arrives too late or too softly.',
       reflectionQuestion: 'What kind of reassurance would actually help, and has it been asked for clearly?',
-    });
+    }, tensionQuote));
   }
 
   return { redFlags: redFlags.slice(0, 4), greenFlags: greenFlags.slice(0, 4) };
@@ -148,7 +200,7 @@ export function generateRelationshipAnalysis(input = {}) {
   const selectedOtherPerson = meta.selectedOtherPerson || personName;
   const participants = prepared.participants || prepared.participantNames || [];
   const pattern = tensionCount > positiveCount ? 'an unresolved tension-and-reassurance cycle' : 'a careful search for clarity with visible warmth';
-  const { redFlags, greenFlags } = buildFlags(tensionCount, positiveCount, personName);
+  const { redFlags, greenFlags } = buildFlags(tensionCount, positiveCount, personName, prepared.importantMoments || []);
   const timeline = makeTimeline(prepared, scores);
   const words = topWords.length ? topWords : [
     { word: 'talk', count: 6 }, { word: 'care', count: 5 }, { word: 'feel', count: 4 }, { word: 'time', count: 3 },
@@ -169,6 +221,9 @@ export function generateRelationshipAnalysis(input = {}) {
     },
     scores,
     timeline,
+    timelineArc: tensionCount > positiveCount
+      ? 'The relationship arc moves from early warmth into recurring tension and unclear repair attempts.'
+      : 'The relationship arc moves through cautious warmth, small uncertainties, and repeated attempts to find clarity.',
     sentimentStoryboard: timeline.slice(0, 7).map((item, index) => ({
       period: item.period,
       emotion: ['Curious', 'Guarded', 'Tender', 'Tense', 'Reflective', 'Hopeful', 'Unclear'][index],

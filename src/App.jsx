@@ -55,6 +55,10 @@ function RouteSwitch() {
     const chainId = decodeURIComponent(path.replace('/reports/', '').replace('/coach', '').replace('/broski', '').replace('/bestie', ''));
     return <ProtectedRoute><BestieBotPage chainId={chainId} /></ProtectedRoute>;
   }
+  if (path.startsWith('/reports/')) {
+    const reportId = decodeURIComponent(path.replace('/reports/', '').replace(/\/$/, ''));
+    return <ProtectedRoute><ResultPage reportId={reportId} /></ProtectedRoute>;
+  }
   if (path === '/faqs') return <FaqsPage />;
   if (path === '/pricing') return <PricingPage />;
   if (path === '/blog') return <BlogIndexPage />;

@@ -4,7 +4,7 @@ import RotatingQuote from '../components/RotatingQuote.jsx';
 import { groupReports } from '../lib/reportsStore.js';
 import { useRouter } from '../state/RouterContext.jsx';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
-import { fetchRelationshipReports } from '../lib/supabaseDataService.js';
+import { deleteRelationshipReport, fetchRelationshipReports } from '../lib/supabaseDataService.js';
 
 export default function ReportsPage() {
   const { navigate } = useRouter();
@@ -17,6 +17,9 @@ export default function ReportsPage() {
   const [openChain, setOpenChain] = useState('');
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDeleteId, setConfirmDeleteId] = useState('');
+  const [deletingId, setDeletingId] = useState('');
+  const [notice, setNotice] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -51,7 +54,22 @@ export default function ReportsPage() {
       personName: report.personName,
       reportSource: report.analysisId,
     });
-    navigate('/analysis/result');
+    navigate(report.analysisId ? `/reports/${encodeURIComponent(report.analysisId)}` : '/analysis/result');
+  }
+
+  async function removeReport(report) {
+    setDeletingId(report.analysisId);
+    setNotice('');
+    try {
+      await deleteRelationshipReport(report.analysisId);
+      setReports((current) => current.filter((item) => item.analysisId !== report.analysisId));
+      setConfirmDeleteId('');
+      setNotice(`Report for ${report.personName} was deleted, along with the personality card it created.`);
+    } catch (error) {
+      setNotice(error.message || 'We could not delete this report. Please try again.');
+    } finally {
+      setDeletingId('');
+    }
   }
 
   return (
@@ -91,6 +109,10 @@ export default function ReportsPage() {
             <option value="oldest">Oldest first</option>
           </select>
         </div>
+
+        {notice && (
+          <p className="mt-4 rounded-2xl border border-purple-200/20 bg-purple-300/[0.06] p-4 text-sm leading-7 text-smoke">{notice}</p>
+        )}
 
         {loading ? (
           <div className="mt-8 thin-panel p-8 text-center">
@@ -143,13 +165,42 @@ export default function ReportsPage() {
                   {open && (
                     <div className="mt-5 grid gap-3">
                       {chain.reports.map((report) => (
-                        <button key={report.analysisId} onClick={() => openReport(report)} className="border border-white/10 bg-black/35 p-4 text-left transition hover:border-purple-200/50">
-                          <div className="flex flex-wrap justify-between gap-3">
-                            <span className="text-bone">{new Date(report.dateAnalysed).toLocaleString()}</span>
-                            <span className="font-mono text-xs uppercase tracking-[0.13em] text-ash">{report.dateRange}</span>
+                        <div key={report.analysisId} className="border border-white/10 bg-black/35 p-4 transition hover:border-purple-200/50">
+                          <button onClick={() => openReport(report)} className="w-full text-left">
+                            <div className="flex flex-wrap justify-between gap-3">
+                              <span className="text-bone">{new Date(report.dateAnalysed).toLocaleString()}</span>
+                              <span className="font-mono text-xs uppercase tracking-[0.13em] text-ash">{report.dateRange}</span>
+                            </div>
+                            <p className="mt-3 text-sm leading-7 text-smoke">{report.mainDynamic}</p>
+                          </button>
+                          <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-3">
+                            {confirmDeleteId === report.analysisId ? (
+                              <>
+                                <span className="mr-auto text-xs leading-5 text-smoke">Delete this report permanently? This cannot be undone.</span>
+                                <button
+                                  onClick={() => removeReport(report)}
+                                  disabled={deletingId === report.analysisId}
+                                  className="rounded-full border border-rose-200/35 bg-rose-300/12 px-4 py-2 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-rose-100 transition hover:border-rose-200/70 disabled:opacity-60"
+                                >
+                                  {deletingId === report.analysisId ? 'Deleting…' : 'Yes, delete'}
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDeleteId('')}
+                                  className="rounded-full border border-white/12 bg-white/[0.04] px-4 py-2 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-smoke transition hover:border-white/30"
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => setConfirmDeleteId(report.analysisId)}
+                                className="rounded-full border border-white/12 bg-white/[0.04] px-4 py-2 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-smoke transition hover:border-rose-200/45 hover:text-rose-100"
+                              >
+                                Delete report
+                              </button>
+                            )}
                           </div>
-                          <p className="mt-3 text-sm leading-7 text-smoke">{report.mainDynamic}</p>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   )}

@@ -6,6 +6,7 @@ import { fetchCreditBalances } from '../lib/creditsService.js';
 import { exportElementAsImage } from '../lib/exportElementAsImage.js';
 import { getInitials, getUserProfile } from '../lib/profileStore.js';
 import {
+  fetchPersonalityHistory,
   fetchRelationshipPersonalityCards,
   fetchUnderstandYourselfProfile,
   saveLocalUnderstandYourselfProfile,
@@ -102,9 +103,12 @@ function asList(value) {
 }
 
 function safe(value, fallback = emptyText) {
-  if (Array.isArray(value)) return value.length ? value.join(' • ') : fallback;
-  const text = String(value || '').trim();
-  return text || fallback;
+  if (Array.isArray(value)) {
+    const parts = value.map(readable).filter((item) => item && !item.includes('[object Object]'));
+    return parts.length ? parts.join(' • ') : fallback;
+  }
+  const text = readable(value);
+  return text && !text.includes('[object Object]') ? text : fallback;
 }
 
 function compact(value, fallback = emptyText, limit = 190) {
@@ -122,10 +126,14 @@ function cardMatchesSlot(card, slot) {
 
 function buildPeopleMap(cards) {
   return worldSlots.map((slot) => {
-    const card = cards.find((item) => cardMatchesSlot(item, slot));
+    // Cards arrive newest-first, so the first match is the latest card for
+    // this world; the count shows how many analyses have refined it.
+    const matches = cards.filter((item) => cardMatchesSlot(item, slot));
+    const card = matches[0];
     return {
       ...slot,
       card,
+      analysedCount: matches.length,
       summary: card?.shortSummary || slot.fallback,
       confidence: card?.confidenceLevel || 'Not Enough Evidence',
       keywords: keywordsFrom(card).length ? keywordsFrom(card) : slot.keywords,
@@ -135,8 +143,25 @@ function buildPeopleMap(cards) {
   });
 }
 
+function readable(item) {
+  if (typeof item === 'string') return item.trim();
+  if (typeof item === 'number' || typeof item === 'boolean') return String(item);
+  if (item && typeof item === 'object') {
+    for (const key of ['label', 'title', 'text', 'name', 'summary', 'explanation', 'value', 'note', 'trait', 'flag']) {
+      if (typeof item[key] === 'string' && item[key].trim()) return item[key].trim();
+    }
+    const firstString = Object.values(item).find((entry) => typeof entry === 'string' && entry.trim());
+    return firstString ? firstString.trim() : '';
+  }
+  return '';
+}
+
 function listText(value, fallback = emptyText) {
-  const items = asList(value).map((item) => (typeof item === 'string' ? item : item.label || item.title || item.text)).filter(Boolean);
+  // Older cards stored "[object Object]" text before flags became typed;
+  // filter those out rather than showing them to the user.
+  const items = asList(value)
+    .map(readable)
+    .filter((item) => item && !item.includes('[object Object]'));
   return items.length ? items : [fallback];
 }
 
@@ -164,7 +189,14 @@ function PeopleMapCard({ item, onSelect }) {
       <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accentClass} opacity-95 transition duration-300 group-hover:opacity-100`} />
       <div className="relative flex items-start justify-between">
         <span className={`flex h-11 w-11 items-center justify-center rounded-2xl border px-2 py-2 text-2xl leading-none ${item.iconClass}`}>{item.icon}</span>
-        <span className="rounded-full border border-white/12 bg-white/[0.06] px-2.5 py-1 font-mono text-[0.65rem] font-semibold tracking-[0.12em] text-smoke">{item.number}</span>
+        <span className="flex items-center gap-2">
+          {item.analysedCount > 1 && (
+            <span className="rounded-full border border-purple-200/25 bg-purple-300/12 px-2.5 py-1 font-mono text-[0.6rem] uppercase tracking-[0.1em] text-purple-100">
+              {item.analysedCount} chats
+            </span>
+          )}
+          <span className="rounded-full border border-white/12 bg-white/[0.06] px-2.5 py-1 font-mono text-[0.65rem] font-semibold tracking-[0.12em] text-smoke">{item.number}</span>
+        </span>
       </div>
       <h3 className="relative mt-6 text-2xl font-semibold tracking-tight text-bone">{item.label}</h3>
       <div className="relative mt-3 h-px w-16 bg-gradient-to-r from-white/70 to-white/0" />
@@ -289,6 +321,7 @@ export default function PersonalityCardPage() {
   const profile = useMemo(() => getUserProfile(), []);
   const [relationshipCards, setRelationshipCards] = useState([]);
   const [understandYourself, setUnderstandYourself] = useState(null);
+  const [personalityHistory, setPersonalityHistory] = useState([]);
   const [credits, setCredits] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -305,15 +338,17 @@ export default function PersonalityCardPage() {
   useEffect(() => {
     let mounted = true;
     async function load() {
-      const [cards, profileRow, balance] = await Promise.all([
+      const [cards, profileRow, balance, history] = await Promise.all([
         fetchRelationshipPersonalityCards(),
         fetchUnderstandYourselfProfile(),
         fetchCreditBalances(),
+        fetchPersonalityHistory(),
       ]);
       if (!mounted) return;
       setRelationshipCards(cards || []);
       setUnderstandYourself(profileRow?.overallProfileJson || null);
       setCredits(balance);
+      setPersonalityHistory(history || []);
       setLoading(false);
     }
     load();
@@ -455,6 +490,39 @@ export default function PersonalityCardPage() {
             <p className="rounded-full border border-white/12 bg-white/[0.04] px-5 py-3 text-bone">Keep growing, keep glowing</p>
           </div>
         </section>
+
+        {personalityHistory.length > 0 && (
+          <section className="accent-panel relative mb-7 overflow-hidden p-5 sm:p-8">
+            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-emerald-300/10 blur-3xl" />
+            <div className="relative">
+              <p className="tech-label text-emerald-100">Profile evolution</p>
+              <h2 className="serif-title mt-3 text-4xl leading-tight text-bone sm:text-5xl">How your profile is evolving</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-smoke">
+                Every new analysis refines your personality map instead of replacing it. These are the latest updates from your conversations.
+              </p>
+              <div className="mt-6 grid gap-3">
+                {personalityHistory.slice(0, 6).map((entry) => (
+                  <div key={entry.id} className="rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
+                    <div className="flex flex-wrap items-center gap-2 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-ash">
+                      <span className="rounded-full border border-purple-200/25 bg-purple-300/10 px-2.5 py-1 text-purple-100">{entry.relationshipWorld}</span>
+                      <span>{new Date(entry.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                      <span className="rounded-full border border-white/12 bg-white/[0.05] px-2.5 py-1">{entry.confidenceLevel}</span>
+                    </div>
+                    {entry.personalityDelta.length ? (
+                      <ul className="mt-3 space-y-1.5 text-sm leading-6 text-smoke">
+                        {entry.personalityDelta.slice(0, 4).map((delta, index) => (
+                          <li key={index}>• {typeof delta === 'string' ? delta : delta?.note || delta?.label || ''}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 text-sm leading-6 text-smoke">{entry.cardSummary || 'Profile signals recorded from this analysis.'}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         <OverallReport profile={profile} overall={fallbackOverall} />
 

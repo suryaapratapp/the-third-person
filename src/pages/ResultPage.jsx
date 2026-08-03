@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -19,6 +19,7 @@ import {
 import CardActions from '../components/CardActions.jsx';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { exportElementAsImage, shareCardSummary } from '../lib/exportElementAsImage.js';
+import { fetchRelationshipReportById } from '../lib/supabaseDataService.js';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
@@ -162,15 +163,127 @@ function EmptyHint({ children = 'More chats can make this clearer.' }) {
   return <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-smoke">{children}</p>;
 }
 
-export default function ResultPage() {
+function EffortBar({ value, personName = 'Them' }) {
+  const userShare = Math.max(0, Math.min(100, Number(value) || 0));
+  return (
+    <div>
+      <div className="flex justify-between font-mono text-[0.6rem] uppercase tracking-[0.1em] text-ash">
+        <span>You {userShare}%</span>
+        <span>{personName} {100 - userShare}%</span>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+        <div className="h-full rounded-full bg-gradient-to-r from-violet-300 to-pink-300" style={{ width: `${userShare}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function TimelinePhaseDetail({ phase = {}, personName }) {
+  const hasEffort = phase.effortBalance !== undefined && phase.effortBalance !== null && phase.effortBalance !== '';
+  return (
+    <div className="mt-6 grid gap-5 rounded-[26px] border border-white/10 bg-white/[0.045] p-5 lg:grid-cols-[1.1fr_.9fr]">
+      <div className="grid content-start gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <h3 className="serif-title text-3xl leading-tight">{safe(phase.title, 'This phase')}</h3>
+          {phase.confidence && <Badge tone="blue">{phase.confidence}</Badge>}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {phase.emotionalTone && <Badge tone="pink">{safe(phase.emotionalTone)}</Badge>}
+          {phase.initiator && <Badge tone="purple">Led by {safe(phase.initiator)}</Badge>}
+        </div>
+        {hasEffort && <EffortBar value={phase.effortBalance} personName={personName} />}
+        <div>
+          <p className="tech-label text-ash">What happened</p>
+          <p className="mt-2 text-sm leading-7 text-smoke">{safe(phase.whatHappened || phase.happened || phase.whatChanged, 'More chats can make this phase clearer.')}</p>
+        </div>
+        {(phase.turningPoint || phase.quote) && (
+          <div className="sticky-glass rotate-[-1deg] p-4">
+            <p className="tech-label text-orange-100">Turning point</p>
+            {phase.turningPoint && <p className="mt-2 text-sm leading-7 text-bone">{safe(phase.turningPoint)}</p>}
+            {phase.quote && <p className="mt-2 font-mono text-sm leading-6 text-smoke">“{String(phase.quote).slice(0, 200)}”</p>}
+          </div>
+        )}
+      </div>
+      <div className="grid content-start gap-3">
+        {[
+          ['What went right', phase.whatWentRight],
+          ['What went wrong', phase.whatWentWrong],
+          ['What you might not have noticed', phase.youMightNotHaveNoticed],
+          ['How it shaped what came next', phase.affectedNextPhase || phase.why || phase.whyItMatters],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-2xl border border-white/10 bg-black/15 p-4">
+            <p className="tech-label text-ash">{label}</p>
+            <p className="mt-2 text-sm leading-7 text-smoke">{safe(value, 'Not enough evidence for this yet.')}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function ResultPage({ reportId = '' }) {
   const { flow } = useAnalysis();
   const { navigate } = useRouter();
   const [selectedTimeline, setSelectedTimeline] = useState(0);
   const [toast, setToast] = useState('');
-  const analysis = useMemo(() => flow.analysisResult, [flow.analysisResult]);
-  const prepared = flow.preparedConversation || {};
+  const [fetchedReport, setFetchedReport] = useState(null);
+  const [fetchState, setFetchState] = useState('idle');
+
+  // Prefer the in-memory flow when it already holds the report being viewed
+  // (a fresh generation, or a saved report opened from history). Otherwise —
+  // a hard refresh, a new tab, or a shared /reports/:id link — fetch it by id
+  // so a report is never lost just because React state was reset.
+  const contextMatches = Boolean(flow.analysisResult) && (!reportId || flow.reportSource === reportId);
+
+  useEffect(() => {
+    if (contextMatches || !reportId) return undefined;
+    let mounted = true;
+    setFetchState('loading');
+    setFetchedReport(null);
+    fetchRelationshipReportById(reportId)
+      .then((report) => {
+        if (!mounted) return;
+        if (!report || !report.analysisJson || !Object.keys(report.analysisJson).length) {
+          setFetchState('notfound');
+          return;
+        }
+        setFetchedReport(report);
+        setFetchState('ready');
+      })
+      .catch(() => {
+        if (mounted) setFetchState('error');
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [reportId, contextMatches]);
+
+  const source = contextMatches
+    ? {
+      analysisResult: flow.analysisResult,
+      preparedConversation: flow.preparedConversation || {},
+      personName: flow.personName,
+      relationshipType: flow.relationshipType,
+      platform: flow.platform,
+      analysisError: flow.analysisError,
+      cacheNotice: flow.cacheNotice,
+    }
+    : fetchedReport
+      ? {
+        analysisResult: fetchedReport.analysisJson,
+        preparedConversation: fetchedReport.preparedConversation || {},
+        personName: fetchedReport.personName,
+        relationshipType: fetchedReport.relationshipType,
+        platform: fetchedReport.platform,
+        analysisError: '',
+        cacheNotice: '',
+      }
+      : null;
+
+  const analysis = source?.analysisResult || null;
+  const prepared = source?.preparedConversation || {};
   const meta = prepared.metadata || analysis?.conversationRecap || {};
-  const personName = meta.personName || flow.personName || analysis?.participants?.selectedOtherPerson || 'Their';
+  const personName = meta.personName || source?.personName || analysis?.participants?.selectedOtherPerson || 'Their';
 
   const relationshipReport = analysis?.relationshipReport || {};
   const summary = {
@@ -192,6 +305,7 @@ export default function ResultPage() {
     sentiment: 'mixed',
     compatibility: scores.compatibility || 50,
   }));
+  const timelineArc = analysis?.timelineArc || relationshipReport.timelineArc || '';
   const storyboard = list(analysis?.sentimentStoryboard);
   const flags = {
     red: list(relationshipReport.redFlags || analysis?.improvedRedFlags || analysis?.redFlags),
@@ -200,6 +314,35 @@ export default function ResultPage() {
   const senderStats = list(prepared.senderStats || analysis?.participants?.messageCountByParticipant);
   const volumeByPeriod = list(dayNight.volumeByPeriod || prepared.dailyNightBreakdown);
   const reportDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  // Honest evidence framing: the parser already computes warningFlags and a
+  // parse confidence, but nothing surfaced them — so a 6-message chat used to
+  // read exactly as confidently as a 600-message one.
+  const evidenceStrength = (() => {
+    const notes = list(prepared.warningFlags).map((flag) => (typeof flag === 'string' ? flag : stringifyUnexpectedValue(flag))).filter(Boolean);
+    const messageCount = Number(prepared.messageCount) || 0;
+    const parseConfidence = prepared.parseConfidence || '';
+    const thin = messageCount > 0 && (messageCount < 10 || parseConfidence === 'low');
+    const moderate = !thin && (messageCount < 40 || parseConfidence === 'medium' || notes.length > 0);
+    if (thin) {
+      return {
+        icon: '🌱',
+        title: 'Directional read — small sample',
+        description: `This report is based on ${messageCount} message${messageCount === 1 ? '' : 's'}. Treat everything below as a first impression worth checking, not a conclusion about this relationship.`,
+        notes,
+        className: 'border-orange-200/25 bg-orange-300/[0.07]',
+      };
+    }
+    if (moderate) {
+      return {
+        icon: '🔎',
+        title: 'Moderate evidence',
+        description: `Based on ${messageCount.toLocaleString()} messages. The strongest patterns are the repeated ones — single moments may just be one bad day.`,
+        notes,
+        className: 'border-white/12 bg-white/[0.05]',
+      };
+    }
+    return null;
+  })();
   const detectedLanguage = prepared.languageStyle || analysis?.detectedLanguageStyle?.recommendedOutputStyle || analysis?.reportSummaryForFutureUse?.languageStyle || 'Language style inferred from the chat';
 
   async function exportFullReport() {
@@ -221,19 +364,37 @@ export default function ResultPage() {
   }
 
   if (!analysis) {
+    const isLoading = fetchState === 'loading' || (reportId && !contextMatches && fetchState === 'idle');
+    const notFound = fetchState === 'notfound' || fetchState === 'error';
     return (
       <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
         <ParticleBackground className="opacity-70" />
         <div className="relative mx-auto max-w-5xl">
           <div className="accent-panel corner-frame p-8 text-center sm:p-14">
-            <p className="tech-label text-smoke">Relationship Intelligence Report</p>
-            <h1 className="serif-title mx-auto mt-5 max-w-3xl text-5xl leading-tight sm:text-7xl">Your report will appear here.</h1>
-            <p className="mx-auto mt-6 max-w-2xl text-sm leading-8 text-smoke">
-              Run an analysis to unlock emotional timelines, score cards, sticky notes, receipts, word clouds, and a clear next move.
-            </p>
-            <button onClick={() => navigate('/analysis/new')} className="glass-button mt-8 rounded-full px-6 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
-              Start a conversation analysis
-            </button>
+            {isLoading ? (
+              <>
+                <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-purple-200 border-t-transparent" />
+                <p className="mt-6 font-mono text-xs uppercase tracking-[0.14em] text-smoke">Loading your report…</p>
+              </>
+            ) : (
+              <>
+                <p className="tech-label text-smoke">Relationship Intelligence Report</p>
+                <h1 className="serif-title mx-auto mt-5 max-w-3xl text-5xl leading-tight sm:text-7xl">
+                  {notFound ? 'We couldn’t find that report.' : 'Your report will appear here.'}
+                </h1>
+                <p className="mx-auto mt-6 max-w-2xl text-sm leading-8 text-smoke">
+                  {notFound
+                    ? 'It may have been deleted, or the link is incorrect. Your saved reports are always available in your history.'
+                    : 'Run an analysis to unlock emotional timelines, score cards, sticky notes, receipts, word clouds, and a clear next move.'}
+                </p>
+                <button
+                  onClick={() => navigate(notFound ? '/reports' : '/analysis/new')}
+                  className="glass-button mt-8 rounded-full px-6 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone"
+                >
+                  {notFound ? 'Go to your reports' : 'Start a conversation analysis'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -330,8 +491,8 @@ export default function ResultPage() {
                 This is your private emotional map of what the conversation appears to show: warm signals, clarity gaps, energy balance, key moments, and the next best move.
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
-                <Badge tone="purple">{meta.relationshipType || flow.relationshipType || 'Relationship'}</Badge>
-                <Badge tone="blue">{meta.platform || flow.platform || 'Chat'}</Badge>
+                <Badge tone="purple">{meta.relationshipType || source?.relationshipType || 'Relationship'}</Badge>
+                <Badge tone="blue">{meta.platform || source?.platform || 'Chat'}</Badge>
                 <Badge tone="pink">{prepared.estimatedDateRange || 'Period unclear'}</Badge>
                 <Badge tone="orange">{(prepared.messageCount || 0).toLocaleString()} messages</Badge>
               </div>
@@ -353,9 +514,23 @@ export default function ResultPage() {
               </button>
             </div>
           </div>
-          {(flow.analysisError || flow.cacheNotice || toast) && (
+          {evidenceStrength && (
+            <div className={`relative mt-5 rounded-[24px] border p-4 ${evidenceStrength.className}`}>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xl">{evidenceStrength.icon}</span>
+                <p className="tech-label text-bone">{evidenceStrength.title}</p>
+              </div>
+              <p className="mt-3 text-sm leading-7 text-smoke">{evidenceStrength.description}</p>
+              {evidenceStrength.notes.length > 0 && (
+                <ul className="mt-3 space-y-1.5 text-sm leading-6 text-smoke">
+                  {evidenceStrength.notes.map((note) => <li key={note}>• {note}</li>)}
+                </ul>
+              )}
+            </div>
+          )}
+          {(source?.analysisError || source?.cacheNotice || toast) && (
             <p data-export-ignore className="relative mt-5 rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-sm leading-7 text-smoke">
-              {toast || flow.cacheNotice || flow.analysisError}
+              {toast || source?.cacheNotice || source?.analysisError}
             </p>
           )}
         </header>
@@ -393,38 +568,68 @@ export default function ResultPage() {
             </div>
           </section>
 
-          <CardShell id="emotional-timeline" title="Emotional Timeline" emoji="✨" summary="Timeline of emotional phases." accent="blue">
-            <div className="overflow-x-auto pb-3">
-              <div className="relative flex min-w-[920px] items-start gap-5 px-2">
-                <div className="absolute left-12 right-12 top-[4.1rem] h-1 rounded-full bg-gradient-to-r from-orange-300 via-purple-300 to-pink-300 opacity-70" />
-                {(timeline.length ? timeline : Array.from({ length: 5 })).map((item = {}, index) => (
-                  <button
-                    key={`${item.period}-${index}`}
-                    onClick={() => setSelectedTimeline(index)}
-                    className="group relative w-40 shrink-0 text-left"
-                  >
-                    <p className="h-12 font-mono text-[0.67rem] uppercase tracking-[0.13em] text-ash">{compactPeriod(item.period, index)}</p>
-                    <span className={`relative z-10 block h-7 w-7 rounded-full border ${selectedTimeline === index ? 'border-violet-100 bg-violet-200 shadow-[0_0_34px_rgba(167,139,250,0.55)]' : 'border-white/35 bg-white/10'} transition group-hover:border-pink-200`} />
-                    <div className="mt-5 rounded-2xl border border-white/12 bg-white/[0.05] p-4 backdrop-blur">
-                      <p className="text-sm font-semibold text-bone">{item.title || ['Soft beginning', 'Flirty rise', 'Confusion phase', 'Distance phase', 'Clarity moment'][index % 5]}</p>
-                      <p className="mt-2 text-xs leading-5 text-smoke">{item.sentiment || 'mixed'} • {item.compatibility || scores.compatibility || 50}/100</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="mt-5 grid gap-4 rounded-[26px] border border-white/10 bg-white/[0.045] p-5 md:grid-cols-3">
-              {[
-                ['What changed', timeline[selectedTimeline]?.happened || timeline[selectedTimeline]?.whatChanged],
-                ['Why it matters', timeline[selectedTimeline]?.why || timeline[selectedTimeline]?.whyItMatters],
-                ['Receipt', timeline[selectedTimeline]?.quote],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <p className="tech-label text-ash">{label}</p>
-                  <p className="mt-3 text-sm leading-7 text-smoke">{safe(value, 'More chats can make this phase clearer.')}</p>
+          <CardShell id="emotional-timeline" title="Relationship Timeline" emoji="🗺️" summary={timelineArc || 'Timeline of relationship phases.'} accent="blue">
+            {timelineArc && <p className="mb-5 max-w-3xl text-base leading-8 text-smoke">{safe(timelineArc)}</p>}
+            {timeline.length ? (
+              <>
+                {/* Phones: vertical rail. The horizontal version needed a ~680px
+                    sideways drag, which was the weakest mobile surface in the report. */}
+                <div className="relative grid gap-3 sm:hidden">
+                  <div className="absolute bottom-5 left-[0.72rem] top-5 w-1 rounded-full bg-gradient-to-b from-orange-300 via-purple-300 to-pink-300 opacity-60" />
+                  {timeline.map((item = {}, index) => {
+                    const active = selectedTimeline === index;
+                    const phaseSentiment = item.sentiment || item.emotionalTone || 'mixed';
+                    return (
+                      <button
+                        key={`${item.period}-${index}-m`}
+                        onClick={() => setSelectedTimeline(index)}
+                        aria-pressed={active}
+                        className="relative flex items-start gap-4 text-left"
+                      >
+                        <span className={`relative z-10 mt-4 block h-6 w-6 shrink-0 rounded-full border ${active ? 'border-violet-100 bg-violet-200 shadow-[0_0_28px_rgba(167,139,250,0.5)]' : 'border-white/35 bg-white/10'} transition`} />
+                        <span className={`min-w-0 flex-1 rounded-2xl border p-4 transition ${active ? 'border-violet-200/45 bg-white/[0.08]' : 'border-white/12 bg-white/[0.05]'}`}>
+                          <span className="block font-mono text-[0.63rem] uppercase tracking-[0.12em] text-ash">{compactPeriod(item.period, index)}</span>
+                          <span className="mt-1.5 block text-sm font-semibold text-bone">{safe(item.title, `Phase ${index + 1}`)}</span>
+                          <span className="mt-1.5 block text-xs leading-5 text-smoke">{phaseSentiment} • {item.compatibility || scores.compatibility || 50}/100</span>
+                          {item.confidence && <span className="mt-2 block font-mono text-[0.58rem] uppercase tracking-[0.1em] text-ash">{item.confidence}</span>}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+
+                <div className="hidden overflow-x-auto pb-3 sm:block">
+                  <div className="relative flex min-w-[680px] items-start gap-5 px-2 sm:min-w-[880px]">
+                    <div className="absolute left-12 right-12 top-[4.1rem] h-1 rounded-full bg-gradient-to-r from-orange-300 via-purple-300 to-pink-300 opacity-70" />
+                    {timeline.map((item = {}, index) => {
+                      const active = selectedTimeline === index;
+                      const phaseSentiment = item.sentiment || item.emotionalTone || 'mixed';
+                      return (
+                        <button
+                          key={`${item.period}-${index}`}
+                          onClick={() => setSelectedTimeline(index)}
+                          aria-pressed={active}
+                          className="group relative w-44 shrink-0 text-left"
+                        >
+                          <p className="h-12 font-mono text-[0.67rem] uppercase tracking-[0.13em] text-ash">{compactPeriod(item.period, index)}</p>
+                          <span className={`relative z-10 block h-7 w-7 rounded-full border ${active ? 'border-violet-100 bg-violet-200 shadow-[0_0_34px_rgba(167,139,250,0.55)]' : 'border-white/35 bg-white/10'} transition group-hover:border-pink-200`} />
+                          <div className={`mt-5 rounded-2xl border p-4 backdrop-blur transition ${active ? 'border-violet-200/45 bg-white/[0.08]' : 'border-white/12 bg-white/[0.05]'}`}>
+                            <p className="text-sm font-semibold text-bone">{safe(item.title, `Phase ${index + 1}`)}</p>
+                            <p className="mt-2 text-xs leading-5 text-smoke">{phaseSentiment} • {item.compatibility || scores.compatibility || 50}/100</p>
+                            {item.confidence && <p className="mt-2 font-mono text-[0.58rem] uppercase tracking-[0.1em] text-ash">{item.confidence}</p>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <TimelinePhaseDetail phase={timeline[selectedTimeline] || timeline[0] || {}} personName={personName} />
+              </>
+            ) : (
+              <EmptyHint>
+                This conversation did not have enough dated messages to build a phase-by-phase timeline yet. A longer export with timestamps will unlock the full relationship timeline.
+              </EmptyHint>
+            )}
           </CardShell>
 
           <CardShell id="sentiment-storyboard" title="Sentiment Storyboard" emoji="🎬" summary="Relationship story scenes from this chat." accent="purple">
@@ -532,9 +737,20 @@ export default function ResultPage() {
                   <div key={`${flag.label}-${index}`} className="rounded-[24px] border border-pink-200/16 bg-pink-300/[0.055] p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <h3 className="text-xl text-bone">{safe(flag.label || flag.title, 'Pattern worth noticing')}</h3>
-                      <Badge tone="pink">{flag.severity || 'soft signal'}</Badge>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge tone="pink">{flag.severity || 'soft signal'}</Badge>
+                        {flag.confidence && <Badge tone="blue">{flag.confidence}</Badge>}
+                      </div>
                     </div>
                     <p className="mt-3 text-sm leading-7 text-smoke">{safe(flag.explanation, 'This may be worth noticing based on the conversation.')}</p>
+                    {flag.evidenceQuote ? (
+                      <blockquote className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <p className="tech-label text-pink-100">Receipt</p>
+                        <p className="mt-2 font-mono text-sm leading-6 text-bone">“{String(flag.evidenceQuote).slice(0, 220)}”</p>
+                      </blockquote>
+                    ) : (
+                      <p className="mt-3 rounded-2xl border border-white/10 bg-black/15 p-3 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-ash">No direct quote from this chat — treat as a limited-evidence signal</p>
+                    )}
                     <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-pink-100">Why it matters:</span> {safe(flag.whyItMatters, 'This could affect clarity or emotional safety over time.')}</p>
                     <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-pink-100">Reflection:</span> {safe(flag.reflectionQuestion, 'What would you need to ask clearly instead of guessing?')}</p>
                   </div>
@@ -546,8 +762,19 @@ export default function ResultPage() {
               <div className="grid gap-4">
                 {flags.green.length ? flags.green.map((flag, index) => (
                   <div key={`${flag.label}-${index}`} className="rounded-[24px] border border-emerald-200/16 bg-emerald-300/[0.045] p-4">
-                    <h3 className="text-xl text-bone">{safe(flag.label || flag.title, 'Promising signal')}</h3>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <h3 className="text-xl text-bone">{safe(flag.label || flag.title, 'Promising signal')}</h3>
+                      {flag.confidence && <Badge tone="green">{flag.confidence}</Badge>}
+                    </div>
                     <p className="mt-3 text-sm leading-7 text-smoke">{safe(flag.explanation, 'A possible positive sign appears in this chat.')}</p>
+                    {flag.evidenceQuote ? (
+                      <blockquote className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <p className="tech-label text-emerald-100">Receipt</p>
+                        <p className="mt-2 font-mono text-sm leading-6 text-bone">“{String(flag.evidenceQuote).slice(0, 220)}”</p>
+                      </blockquote>
+                    ) : (
+                      <p className="mt-3 rounded-2xl border border-white/10 bg-black/15 p-3 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-ash">No direct quote from this chat — treat as a limited-evidence signal</p>
+                    )}
                     <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-emerald-100">Why it matters:</span> {safe(flag.whyItMatters, 'Healthy signals can create room for calmer repair.')}</p>
                     <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-emerald-100">Build on it:</span> {safe(flag.howToBuildOnIt, 'Name the good signal and ask for one clear next step.')}</p>
                   </div>
@@ -669,6 +896,28 @@ export default function ResultPage() {
               ))}
             </div>
           </CardShell>
+
+          {list(analysis.reportSummaryForFutureUse?.personalityDelta).length > 0 && (
+            <CardShell id="personality-update" title="Personality Update" emoji="🧬" summary="How this analysis refined your personality profile." accent="green">
+              <p className="max-w-3xl text-sm leading-7 text-smoke">
+                Each analysis teaches ThirdPerson AI a little more about you. This conversation updated your evolving profile in these ways:
+              </p>
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                {list(analysis.reportSummaryForFutureUse.personalityDelta).slice(0, 6).map((delta, index) => {
+                  const text = typeof delta === 'string' ? delta : stringifyUnexpectedValue(delta);
+                  const tone = /^new:/i.test(text) ? 'purple' : /^softened:/i.test(text) ? 'orange' : 'green';
+                  const kind = /^new:/i.test(text) ? 'New' : /^softened:/i.test(text) ? 'Softened' : 'Reinforced';
+                  return (
+                    <div key={`${text}-${index}`} className="rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
+                      <Badge tone={tone}>{kind}</Badge>
+                      <p className="mt-3 text-sm leading-7 text-bone">{text.replace(/^(new|reinforced|softened):\s*/i, '')}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-4 text-xs leading-6 text-ash">See the full picture in Understand Yourself, where every analysis builds on the last.</p>
+            </CardShell>
+          )}
 
           <CardShell id="ai-sticky-notes" title="AI Sticky Notes" emoji="💭" summary="Small reflections from this report." accent="orange">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

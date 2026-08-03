@@ -1,10 +1,12 @@
 import {
   buildRelationshipPersonalityCard,
+  clearLocalReportsAndCards,
   getReports,
   getRelationshipPersonalityCards,
   saveAnalysisReport,
   saveRelationshipPersonalityCardLocal,
 } from './reportsStore.js';
+import { clearAnalysisCache } from './conversationFingerprint.js';
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
 const UNDERSTAND_YOURSELF_KEY = 'thirdperson_understand_yourself_profile_v1';
@@ -304,6 +306,63 @@ export function remoteProfileToLocal(row) {
     preferredAnalysisLanguages: row.preferred_analysis_languages || [],
     profileImage: row.avatar_url || '',
   };
+}
+
+// Deletes one report plus the personality card and history entry derived from
+// it (server-side RPC, scoped to the signed-in user).
+export async function deleteRelationshipReport(reportId) {
+  if (!reportId) throw new Error('This report could not be identified.');
+  if (!isSupabaseConfigured || !supabase) throw new Error('Please configure Supabase to manage your data.');
+  const { data, error } = await supabase.rpc('delete_my_report', { p_report_id: reportId });
+  if (error) throw new Error(error.message || 'We could not delete this report.');
+  if (!data?.deleted) throw new Error('This report was not found in your account.');
+  return data;
+}
+
+// Wipes every analysis artefact for the signed-in user, server-side and on this
+// device. Paid credits and payment records are intentionally preserved (see the
+// migration comments for the full list).
+export async function deleteAllMyAnalysisData() {
+  if (!isSupabaseConfigured || !supabase) throw new Error('Please configure Supabase to manage your data.');
+  const { data, error } = await supabase.rpc('delete_my_analysis_data');
+  if (error) throw new Error(error.message || 'We could not delete your data right now.');
+  clearLocalAnalysisData();
+  return data || {};
+}
+
+// Removes on-device copies of analysis data: locally saved reports/cards, the
+// cached Understand Yourself profile, and the fingerprint→report cache.
+export function clearLocalAnalysisData() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(UNDERSTAND_YOURSELF_KEY);
+  clearLocalReportsAndCards();
+  clearAnalysisCache();
+}
+
+export function rowToPersonalityHistoryEntry(row) {
+  return {
+    id: row.id,
+    reportId: row.report_id,
+    relationshipType: row.relationship_type || 'Relationship',
+    relationshipWorld: row.relationship_world || 'Relationship',
+    personName: row.person_name || '',
+    personalityDelta: Array.isArray(row.personality_delta) ? row.personality_delta.filter(Boolean) : [],
+    cardSummary: row.card_summary || '',
+    confidenceLevel: row.confidence_level || 'Early Signal',
+    createdAt: row.created_at,
+  };
+}
+
+// Append-only trail of how each analysis changed the personality profile.
+export async function fetchPersonalityHistory(limit = 12) {
+  if (!isSupabaseConfigured || !supabase) return [];
+  const { data, error } = await supabase
+    .from('personality_history')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return (data || []).map(rowToPersonalityHistoryEntry);
 }
 
 export async function fetchRemotePersonality() {

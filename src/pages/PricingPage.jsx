@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import ParticleBackground from '../components/ParticleBackground.jsx';
-import { fetchCreditBalances } from '../lib/creditsService.js';
+import { claimPayAsYouGoPack, fetchCreditBalances } from '../lib/creditsService.js';
+import { createRazorpayOrder, loadRazorpayCheckout, verifyRazorpayPayment } from '../lib/paymentsService.js';
+import { useAuth } from '../state/AuthContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
 const PRICE_PER_REPORT = 199;
@@ -20,10 +22,12 @@ function clampReports(value) {
 
 export default function PricingPage() {
   const { navigate } = useRouter();
+  const { user } = useAuth();
   const [reportCount, setReportCount] = useState(1);
   const [message, setMessage] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
+  const [paying, setPaying] = useState(false);
   const [balances, setBalances] = useState(null);
+  const [claiming, setClaiming] = useState(false);
   const reason = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('reason') : '';
   const guideChats = reportCount * CHATS_PER_REPORT;
   const totalPrice = reportCount * PRICE_PER_REPORT;
@@ -45,9 +49,73 @@ export default function PricingPage() {
     setReportCount(clampReports(value));
   }
 
-  function handleCheckout() {
+  async function handleCheckout() {
     setMessage('');
-    setModalOpen(true);
+    if (!user) {
+      navigate('/auth?next=/pricing');
+      return;
+    }
+    setPaying(true);
+    try {
+      const RazorpayCtor = await loadRazorpayCheckout();
+      const order = await createRazorpayOrder({ reportCount });
+      if (!order?.orderId || !order?.keyId) throw new Error('Could not start checkout. Please try again.');
+      const checkout = new RazorpayCtor({
+        key: order.keyId,
+        order_id: order.orderId,
+        amount: order.amount,
+        currency: order.currency || 'INR',
+        name: 'ThirdPerson AI',
+        description: `${order.reportCount} Relationship Report${order.reportCount > 1 ? 's' : ''} + ${order.bestieCount} Coach Chats`,
+        prefill: { email: user.email || '' },
+        theme: { color: '#a78bfa' },
+        handler: async (response) => {
+          try {
+            const result = await verifyRazorpayPayment(response);
+            if (!result?.success) throw new Error('Payment could not be verified.');
+            const next = await fetchCreditBalances();
+            setBalances(next);
+            setMessage(
+              result.alreadySettled
+                ? 'This payment was already processed — your credits are up to date.'
+                : 'Payment successful. Your credits have been added.',
+            );
+          } catch (verifyError) {
+            setMessage(verifyError.message || 'Payment verification failed. If you were charged, please contact support.');
+          } finally {
+            setPaying(false);
+          }
+        },
+        modal: { ondismiss: () => setPaying(false) },
+      });
+      checkout.on('payment.failed', (resp) => {
+        setPaying(false);
+        setMessage(resp?.error?.description || 'Payment failed. Please try again.');
+      });
+      checkout.open();
+    } catch (error) {
+      setPaying(false);
+      setMessage(error.message || 'Could not start checkout. Please try again.');
+    }
+  }
+
+  async function claimFreeReport() {
+    setMessage('');
+    if (!user) {
+      navigate('/auth?next=/pricing');
+      return;
+    }
+    setClaiming(true);
+    try {
+      await claimPayAsYouGoPack('free_starter');
+      const next = await fetchCreditBalances();
+      setBalances(next);
+      setMessage('Your free Relationship Report is ready. Start a new analysis to use it.');
+    } catch (error) {
+      setMessage(error.message || 'We could not add your free report right now.');
+    } finally {
+      setClaiming(false);
+    }
   }
 
   return (
@@ -76,6 +144,34 @@ export default function PricingPage() {
             ))}
           </div>
         </div>
+
+        {balances && !balances.hasClaimedFreeReport && (
+          <div className="mt-6 overflow-hidden rounded-[28px] border border-emerald-200/25 bg-emerald-300/[0.06] p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="tech-label text-emerald-100">New here?</p>
+                <h2 className="serif-title mt-2 text-3xl leading-tight">Claim your free Relationship Report</h2>
+                <p className="mt-2 max-w-xl text-sm leading-7 text-smoke">
+                  One free Relationship Report per account. The AI Relationship Coach and Understand Yourself are paid features.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={claimFreeReport}
+                disabled={claiming}
+                className="btn btn-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {claiming ? 'Claiming…' : 'Claim free report'}
+              </button>
+            </div>
+          </div>
+        )}
+        {balances?.hasClaimedFreeReport && balances.freeReportsLeft > 0 && (
+          <div className="mt-6 rounded-[28px] border border-emerald-200/20 bg-emerald-300/[0.04] p-5">
+            <p className="tech-label text-emerald-100">Free report ready</p>
+            <p className="mt-2 text-sm leading-7 text-smoke">You have 1 free Relationship Report to use. Start a new analysis to spend it.</p>
+          </div>
+        )}
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="relative overflow-hidden rounded-[30px] border border-purple-200/20 bg-gradient-to-br from-purple-300/[0.12] via-white/[0.045] to-violet-300/[0.05] p-5 shadow-[0_18px_80px_rgba(168,85,247,0.08)]">
@@ -189,9 +285,10 @@ export default function PricingPage() {
             <button
               type="button"
               onClick={handleCheckout}
-              className="btn btn-primary relative mt-8 w-full"
+              disabled={paying}
+              className="btn btn-primary relative mt-8 w-full disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Continue with ₹{formatInr(totalPrice)}
+              {paying ? 'Processing…' : `Pay ₹${formatInr(totalPrice)}`}
             </button>
             <p className="relative mt-4 text-center text-sm leading-7 text-smoke">
               Pay only for what you need. Top up anytime when your reports or Coach Chats run out.
@@ -242,29 +339,6 @@ export default function PricingPage() {
 
         {message && <p className="mt-5 rounded-2xl border border-purple-200/20 bg-purple-300/[0.06] p-4 text-sm text-smoke">{message}</p>}
       </div>
-
-      {modalOpen && (
-        <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 px-4 backdrop-blur"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="checkout-modal-heading"
-          onKeyDown={(event) => { if (event.key === 'Escape') setModalOpen(false); }}
-        >
-          <div className="accent-panel max-w-lg rounded-[34px] p-7 text-center">
-            <p className="tech-label text-purple-100">Top up selected</p>
-            <h3 id="checkout-modal-heading" className="serif-title mt-4 text-4xl leading-tight">Checkout connection is being prepared.</h3>
-            <p className="mt-5 text-sm leading-7 text-smoke">
-              Your selected clarity pack is ready: {reportCount} Relationship Reports and {guideChats} Coach Chats for ₹{formatInr(totalPrice)}.
-            </p>
-            <div className="mt-6 grid gap-3">
-              <button type="button" onClick={() => setModalOpen(false)} className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-smoke">
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

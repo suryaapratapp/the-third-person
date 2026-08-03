@@ -25,15 +25,42 @@ function writeRelationshipPersonalityCards(cards) {
   window.localStorage.setItem(RELATIONSHIP_PERSONALITY_CARDS_KEY, JSON.stringify(cards));
 }
 
+// Used by the "delete my analysis data" control so a privacy wipe also clears
+// the on-device copies, not just the server rows.
+export function clearLocalReportsAndCards() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(REPORTS_KEY);
+  window.localStorage.removeItem(RELATIONSHIP_PERSONALITY_CARDS_KEY);
+}
+
 function asList(value) {
   if (!value) return [];
   if (Array.isArray(value)) return value.filter(Boolean);
   return [value].filter(Boolean);
 }
 
+// Flags/traits may be typed objects ({ label, explanation, ... }) or strings.
+// Reduce to readable text so summaries never persist "[object Object]".
+function toReadableText(value) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return value.map(toReadableText).filter(Boolean).join(' • ');
+  if (typeof value === 'object') {
+    for (const key of ['label', 'title', 'text', 'name', 'summary', 'explanation', 'value', 'note', 'trait', 'flag']) {
+      if (typeof value[key] === 'string' && value[key].trim()) return value[key].trim();
+    }
+    const firstString = Object.values(value).find((item) => typeof item === 'string' && item.trim());
+    return firstString ? firstString.trim() : '';
+  }
+  return '';
+}
+
 function shortText(value, fallback = 'Not enough evidence yet.') {
-  if (Array.isArray(value)) return value.filter(Boolean).slice(0, 4).join(' • ') || fallback;
-  const text = String(value || '').trim();
+  if (Array.isArray(value)) {
+    return value.map(toReadableText).filter(Boolean).slice(0, 4).join(' • ') || fallback;
+  }
+  const text = toReadableText(value);
   if (!text) return fallback;
   return text.length > 420 ? `${text.slice(0, 417).trim()}...` : text;
 }

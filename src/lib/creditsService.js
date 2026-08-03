@@ -5,9 +5,9 @@ export const EMPTY_CREDIT_BALANCE = {
   bestieChatsLeft: 0,
   paidRelationshipReportsLeft: 0,
   paidBestieChatsLeft: 0,
+  freeReportsLeft: 0,
+  hasClaimedFreeReport: false,
   hasPaidPack: false,
-  freeAnalysesUsed: 0,
-  freeAnalysesRemaining: 0,
   loading: false,
   available: false,
 };
@@ -24,44 +24,28 @@ export async function fetchCreditBalances() {
   const balances = (data || []).reduce(
     (acc, row) => {
       const remaining = Math.max((row.credits_granted || 0) - (row.credits_used || 0), 0);
-      const isPaid = row.source && row.source !== 'free';
+      const isFree = row.source === 'free';
+      const isPaid = row.source && !isFree;
       if (isPaid) acc.hasPaidPack = true;
+      if (isFree) acc.hasClaimedFreeReport = true;
       if (row.credit_type === 'relationship_report') acc.relationshipReportsLeft += remaining;
       if (row.credit_type === 'bestie_message') acc.bestieChatsLeft += remaining;
       if (isPaid && row.credit_type === 'relationship_report') acc.paidRelationshipReportsLeft += remaining;
       if (isPaid && row.credit_type === 'bestie_message') acc.paidBestieChatsLeft += remaining;
+      if (isFree && row.credit_type === 'relationship_report') acc.freeReportsLeft += remaining;
       return acc;
     },
-    { relationshipReportsLeft: 0, bestieChatsLeft: 0, paidRelationshipReportsLeft: 0, paidBestieChatsLeft: 0, hasPaidPack: false },
+    { relationshipReportsLeft: 0, bestieChatsLeft: 0, paidRelationshipReportsLeft: 0, paidBestieChatsLeft: 0, freeReportsLeft: 0, hasPaidPack: false, hasClaimedFreeReport: false },
   );
 
   return { ...balances, loading: false, available: true };
 }
 
+// Relationship analyses now run exclusively through the paid OpenAI edge
+// function (the free client-side tier was removed). Entitlements are simply
+// the paid credit balances.
 export async function fetchUsageEntitlements() {
-  const balances = await fetchCreditBalances();
-  if (!isSupabaseConfigured || !supabase) {
-    return { ...balances, freeAnalysesUsed: 0, freeAnalysesRemaining: 0 };
-  }
-
-  const { data, error } = await supabase
-    .from('relationship_reports')
-    .select('id, analysis_json');
-
-  if (error) {
-    return { ...balances, freeAnalysesUsed: 0, freeAnalysesRemaining: 0 };
-  }
-
-  const freeAnalysesUsed = (data || []).filter((row) => {
-    const mode = row.analysis_json?.providerMode || row.analysis_json?.generationTier;
-    return mode === 'free' || mode === 'free_relationship_analysis';
-  }).length;
-
-  return {
-    ...balances,
-    freeAnalysesUsed,
-    freeAnalysesRemaining: Math.max(2 - freeAnalysesUsed, 0),
-  };
+  return fetchCreditBalances();
 }
 
 export async function claimPayAsYouGoPack(packId) {

@@ -11,16 +11,12 @@ import { fetchUsageEntitlements } from '../lib/creditsService.js';
 import RotatingQuote from './RotatingQuote.jsx';
 import UsageWarningModal from './UsageWarningModal.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
-import { generateFreeRelationshipAnalysisViaPuter } from '../lib/puterFreeAiService.js';
 import {
   fetchRelationshipReportById,
   fetchRemotePersonality,
   rowToReport,
   saveRelationshipPersonalityCardToSupabase,
-  saveRelationshipReportToSupabase,
-  upsertPersonalityMemoryFromAnalysis,
 } from '../lib/supabaseDataService.js';
-import { ensurePuterReady, ensurePuterSignedInFromUserGesture } from '../lib/puterAuthService.js';
 
 function mergeAnalysisFallback(fallback, candidate) {
   if (!candidate || typeof candidate !== 'object') return fallback;
@@ -74,8 +70,6 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
   const [processingStage, setProcessingStage] = useState('');
   const [creditBlock, setCreditBlock] = useState(null);
   const [entitlements, setEntitlements] = useState(null);
-  const [pendingFreeAnalysis, setPendingFreeAnalysis] = useState(null);
-  const [secureSignInMessage, setSecureSignInMessage] = useState('');
   const reviewPrep = useMemo(() => {
     if (!flow.chatText.trim()) return null;
     const sensitive = filterSensitiveData(flow.chatText);
@@ -117,11 +111,6 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!entitlements || entitlements.hasPaidPack || entitlements.freeAnalysesRemaining <= 0) return;
-    ensurePuterReady();
-  }, [entitlements]);
-
   function finishSuccessfulAnalysis({
     fallbackAnalysis,
     aiAnalysis,
@@ -133,7 +122,8 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
     analysisError = '',
   }) {
     const analysisResult = mergeAnalysisFallback(fallbackAnalysis, aiAnalysis);
-    saveCachedAnalysis(fingerprintData, { reportId: reportRecord?.analysisId });
+    const reportId = reportRecord?.analysisId || null;
+    saveCachedAnalysis(fingerprintData, { reportId });
     updateFlow({
       promptScan: scan,
       preparedConversation,
@@ -141,71 +131,19 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       analysisError,
       sensitiveData,
       cacheNotice: '',
+      reportSource: reportId,
     });
     setIsGenerating(false);
     setProcessingStage('');
-    setPendingFreeAnalysis(null);
-    setSecureSignInMessage('');
-    onStart('/analysis/result');
+    // Deep-link to the persisted report so a refresh or shared link re-fetches
+    // it. Fall back to the in-memory route only when no id exists (local/offline
+    // save with no Supabase row).
+    onStart(reportId ? `/reports/${encodeURIComponent(reportId)}` : '/analysis/result');
   }
 
-  async function continueSecureFreeAnalysis() {
-    if (!pendingFreeAnalysis) return;
+  async function startAnalysis() {
     setIsGenerating(true);
     setAnalysisError('');
-    setSecureSignInMessage('');
-    setProcessingStage('Opening secure analysis sign-in…');
-
-    const ready = await ensurePuterSignedInFromUserGesture();
-    if (!ready.ok) {
-      setIsGenerating(false);
-      setProcessingStage('');
-      setSecureSignInMessage('Safari may block sign-in windows unless they are opened directly from a tap. Tap Open Sign-In below to continue securely. If nothing opens, check Safari pop-up settings and try again.');
-      setAnalysisError(ready.error || 'Secure analysis sign-in could not open. Please try again.');
-      return;
-    }
-
-    try {
-      setProcessingStage('Creating your free relationship analysis…');
-      const freeAnalysis = await generateFreeRelationshipAnalysisViaPuter({
-        preparedConversation: pendingFreeAnalysis.preparedConversation,
-        promptScan: pendingFreeAnalysis.scan,
-        sensitiveData: pendingFreeAnalysis.sensitiveData,
-        userProfile: aiUserProfile,
-        analysisDraft: pendingFreeAnalysis.fallbackAnalysis,
-        runtimeContext: pendingFreeAnalysis.runtimeContext,
-      });
-      const markedFreeAnalysis = {
-        ...freeAnalysis,
-        providerMode: 'free',
-        generationTier: 'free_relationship_analysis',
-        freeAnalysisNotice: '',
-      };
-      const savedReport = await saveRelationshipReportToSupabase({
-        analysis: markedFreeAnalysis,
-        preparedConversation: pendingFreeAnalysis.preparedConversation,
-      });
-      await upsertPersonalityMemoryFromAnalysis({
-        analysis: markedFreeAnalysis,
-        reportId: savedReport?.analysisId,
-      });
-      finishSuccessfulAnalysis({
-        ...pendingFreeAnalysis,
-        aiAnalysis: markedFreeAnalysis,
-        reportRecord: savedReport,
-      });
-    } catch (error) {
-      setIsGenerating(false);
-      setProcessingStage('');
-      setAnalysisError(error.message || 'Secure analysis could not complete. Please try again.');
-      setSecureSignInMessage('We could not complete the secure analysis. Please try again from the button below so the sign-in window can open from your tap.');
-    }
-  }
-
-  async function startAnalysis({ skipUsageCheck = false } = {}) {
-    setIsGenerating(true);
-    setAnalysisError('');
-    setProcessingStage(skipUsageCheck ? 'Preparing private relationship intelligence…' : 'Checking secure analysis access…');
     setProcessingStage('Preparing private relationship intelligence…');
     const sensitiveData = filterSensitiveData(flow.chatText);
     const scan = detectPromptInjection(sensitiveData.protectedText);
@@ -257,10 +195,11 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
             sensitiveData,
             cacheNotice: 'We found an existing report for this conversation and opened it instantly.',
             analysisError: '',
+            reportSource: cached.reportId,
           });
           setIsGenerating(false);
           setProcessingStage('');
-          onStart('/analysis/result');
+          onStart(`/reports/${encodeURIComponent(cached.reportId)}`);
           return;
         }
         removeCachedAnalysis(cached.fingerprint);
@@ -280,13 +219,11 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       selectedPersonName: flow.personName,
       mainUserProfileDetails: aiUserProfile,
       selectedProfileLanguages: aiUserProfile.preferredAnalysisLanguages || [],
-      userStatus: latestEntitlements.hasPaidPack ? 'paid' : 'free',
+      userStatus: 'paid',
       paidCredits: {
         relationshipReportsLeft: latestEntitlements.paidRelationshipReportsLeft,
         bestieChatsLeft: latestEntitlements.paidBestieChatsLeft,
       },
-      freeAnalysesUsed: latestEntitlements.freeAnalysesUsed,
-      freeAnalysesRemaining: latestEntitlements.freeAnalysesRemaining,
       languageProfile: preparedConversation.languageProfile,
       detectedLanguageStyle: preparedConversation.languageStyle || 'Mixed / inferred from chat',
       participants: preparedConversation.participants || preparedConversation.participantNames,
@@ -306,7 +243,10 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
     };
 
     let aiResult = null;
-    if (latestEntitlements.paidRelationshipReportsLeft > 0) {
+    // Reports may be generated with either a paid credit or the one free
+    // welcome credit (relationshipReportsLeft counts both). Understand Yourself
+    // and Coach gate on paid-only balances elsewhere.
+    if (latestEntitlements.relationshipReportsLeft > 0) {
       setProcessingStage(
         preparedConversation.analysisPipeline?.route === 'single_compressed'
           ? 'Creating paid relationship intelligence…'
@@ -348,19 +288,6 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         report: aiResult.reportRecord,
         preparedConversation,
       });
-    } else if (!latestEntitlements.hasPaidPack && latestEntitlements.freeAnalysesRemaining > 0) {
-      setPendingFreeAnalysis({
-        preparedConversation,
-        scan,
-        sensitiveData,
-        fallbackAnalysis,
-        runtimeContext,
-        fingerprintData,
-      });
-      setSecureSignInMessage('');
-      setIsGenerating(false);
-      setProcessingStage('');
-      return;
     } else {
       setCreditBlock('report');
       setAnalysisError('You’re out of Relationship Reports. Top up to generate more relationship intelligence summaries.');
@@ -382,6 +309,16 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
   }
 
   const canStart = flow.platform && flow.relationshipType && flow.personName.trim() && flow.chatText.trim().length > 10;
+  // Warn before a credit is spent, so a thin upload is a choice rather than a
+  // surprise about how hedged the resulting report has to be.
+  const sampleWarning = (() => {
+    if (!reviewPrep) return '';
+    const count = reviewPrep.parsed.messageCount || 0;
+    if (count && count < 10) return `Only ${count} message${count === 1 ? '' : 's'} detected. The report will be a directional first impression rather than a confident analysis — a longer export gives much stronger insight.`;
+    if (reviewPrep.parsed.parseConfidence === 'low') return 'The chat format was hard to read, so participants and dates were estimated. A raw export from the app (.txt or .zip) gives far better results.';
+    if (reviewPrep.parsed.participants.length < 2) return 'Only one participant was detected, so effort and reciprocity patterns may be unreliable. Check that the export includes both sides of the conversation.';
+    return '';
+  })();
 
   return (
     <div className="relative grid gap-6 lg:grid-cols-[1fr_360px]">
@@ -420,46 +357,6 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
           </div>
         </div>
       )}
-      {pendingFreeAnalysis && !isGenerating && (
-        <div
-          className="fixed inset-0 z-[85] flex items-center justify-center bg-black/80 px-4 backdrop-blur"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="secure-signin-heading"
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              setPendingFreeAnalysis(null);
-              setSecureSignInMessage('');
-              setAnalysisError('');
-            }
-          }}
-        >
-          <div className="accent-panel max-w-lg p-7 text-center">
-            <p className="tech-label text-smoke">ThirdPerson AI free analysis</p>
-            <h3 id="secure-signin-heading" className="serif-title mt-5 text-4xl">Open secure analysis sign-in</h3>
-            <p className="mt-5 text-sm leading-7 text-smoke">
-              Safari may block sign-in windows unless they are opened directly from a tap. Tap the button below to continue securely.
-            </p>
-            {secureSignInMessage && <p className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-xs leading-6 text-smoke">{secureSignInMessage}</p>}
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button onClick={continueSecureFreeAnalysis} className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
-                {secureSignInMessage ? 'Open Sign-In' : 'Continue to secure analysis'}
-              </button>
-              <button
-                onClick={() => {
-                  setPendingFreeAnalysis(null);
-                  setSecureSignInMessage('');
-                  setAnalysisError('');
-                }}
-                className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-smoke"
-              >
-                Go back
-              </button>
-            </div>
-            <p className="mt-5 text-xs leading-6 text-ash">If nothing opens, check Safari pop-up settings and try again.</p>
-          </div>
-        </div>
-      )}
       <div className="thin-panel p-5">
         <p className="tech-label text-smoke">Review analysis package</p>
         <div className="mt-6 divide-y divide-white/10">
@@ -482,8 +379,13 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         <p className="mt-4 border border-purple-300/15 bg-purple-300/5 p-3 font-mono text-xs uppercase tracking-[0.12em] text-smoke">
           Preparing secure analysis
         </p>
+        {sampleWarning && (
+          <div className="mt-4 rounded-2xl border border-orange-200/25 bg-orange-300/[0.07] p-3 text-xs leading-6 text-smoke">
+            <span className="font-semibold text-orange-100">Heads up:</span> {sampleWarning}
+          </div>
+        )}
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-xs leading-6 text-smoke">
-          {entitlements ? `${entitlements.paidRelationshipReportsLeft} paid Relationship Reports left • ${entitlements.paidBestieChatsLeft} paid Coach Chats left • ${entitlements.freeAnalysesRemaining} free analyses left` : 'Checking your credit balance…'}
+          {entitlements ? `${entitlements.relationshipReportsLeft} Relationship Reports left • ${entitlements.paidBestieChatsLeft} paid Coach Chats left` : 'Checking your credit balance…'}
         </div>
         <button
           disabled={!canStart || isGenerating}

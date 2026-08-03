@@ -81,10 +81,16 @@ async function recordDailyUsage(admin: ReturnType<typeof createAdminClient>, use
 // each trigger a paid AI call before an after-the-fact check caught them.
 // If the caller's subsequent work fails, call refundCredit(creditId) to give
 // the credit back.
-export async function reserveCredit(admin: ReturnType<typeof createAdminClient>, userId: string, creditType: CreditType) {
+export async function reserveCredit(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  creditType: CreditType,
+  allowFree = false,
+) {
   const { data, error } = await admin.rpc('consume_analysis_credit', {
     p_user_id: userId,
     p_credit_type: creditType,
+    p_allow_free: allowFree,
   });
   if (error) throw error;
 

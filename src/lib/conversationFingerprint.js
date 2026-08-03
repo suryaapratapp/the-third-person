@@ -106,3 +106,10 @@ export function removeCachedAnalysis(fingerprint) {
   const cache = getAnalysisCache().filter((item) => item.fingerprint !== fingerprint);
   localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
 }
+
+// Used by the "delete my analysis data" control: the cache maps conversation
+// fingerprints to report ids, so it must not survive a privacy wipe.
+export function clearAnalysisCache() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(CACHE_KEY);
+}
