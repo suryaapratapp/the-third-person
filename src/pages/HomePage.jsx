@@ -1,4 +1,5 @@
 import HeroSection from '../components/HeroSection.jsx';
+import PrivacyAssurance from '../components/PrivacyAssurance.jsx';
 import SignalDetectionSection from '../components/SignalDetectionSection.jsx';
 import MemoryReconstructionSection from '../components/MemoryReconstructionSection.jsx';
 import ResponsibleIntelligenceSection from '../components/ResponsibleIntelligenceSection.jsx';
@@ -11,6 +12,9 @@ export default function HomePage() {
     <>
       <HeroSection />
       <WhenItHelpsSection />
+      <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-8">
+        <PrivacyAssurance />
+      </div>
       <BestieBotSection />
       <SignalDetectionSection />
       <MemoryReconstructionSection />

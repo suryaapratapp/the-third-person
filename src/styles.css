@@ -104,6 +104,22 @@ select:focus-visible {
   font-size: 0.68rem;
 }
 
+/* Mobile readability floor.
+   The design uses a lot of very small uppercase mono labels (down to 0.5rem),
+   which are legible on a desktop monitor but genuinely hard to read on a phone.
+   Rather than hand-editing dozens of utility classes, raise the minimum on
+   small screens and loosen the tracking so the caps stay readable. */
+@media (max-width: 640px) {
+  .tech-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+  }
+
+  main .font-mono {
+    font-size: max(0.72rem, 1em);
+  }
+}
+
 .thin-panel {
   border: 1px solid var(--glass-border);
   background:

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import JSZip from 'jszip';
 import PrivacyNotice from './PrivacyNotice.jsx';
+import PrivacyAssurance from './PrivacyAssurance.jsx';
 import { parseConversationText } from '../lib/conversationPreprocessor.js';
 import { filterSensitiveData } from '../lib/sensitiveDataFilter.js';
 import { scanUploadedFileContent } from '../lib/fileSafetyScanner.js';
@@ -215,6 +216,7 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
       )}
       <div className="mt-6">
         <PrivacyNotice compact />
+        <PrivacyAssurance compact className="mt-4" />
       </div>
     </div>
   );

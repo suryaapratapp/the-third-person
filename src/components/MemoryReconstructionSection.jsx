@@ -20,20 +20,20 @@ export default function MemoryReconstructionSection() {
             ThirdPerson AI connects fragments across time, understanding how context, emotion, and intent evolve through every conversation.
           </p>
         </div>
-        <div className="relative overflow-x-auto pb-6">
-          <div className="min-w-[960px]">
-            <div className="relative h-64">
-              <div className="absolute left-8 right-8 top-20 h-px bg-white/25" />
-              <svg className="absolute left-8 right-8 top-[70px] h-24 w-[calc(100%-4rem)]" viewBox="0 0 1000 120" preserveAspectRatio="none">
+        <div className="relative pb-6 sm:overflow-x-auto">
+          <div className="sm:min-w-[960px]">
+            <div className="relative sm:h-64">
+              <div className="absolute left-8 right-8 top-20 hidden h-px bg-white/25 sm:block" />
+              <svg className="absolute left-8 right-8 top-[70px] hidden h-24 w-[calc(100%-4rem)] sm:block" viewBox="0 0 1000 120" preserveAspectRatio="none">
                 <path d="M0 70 C 120 10, 170 120, 280 70 S 430 20, 560 80 S 710 130, 820 55 S 930 20, 1000 72" fill="none" stroke="rgba(255,255,255,.56)" strokeDasharray="4 6" />
                 <path d="M0 74 C 160 110, 260 20, 380 60 S 520 95, 650 50 S 760 15, 1000 70" fill="none" stroke="rgba(255,255,255,.2)" />
               </svg>
-              <div className="grid grid-cols-6 gap-6">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-6">
                 {timeline.map(([date, fragment, label, body], index) => (
                   <div key={date} className="relative pt-2 text-center">
                     <p className="font-mono text-xs uppercase tracking-[0.16em] text-smoke">{date}</p>
-                    <div className="mx-auto mt-[50px] h-4 w-4 rounded-full border border-white/70 bg-black ring-4 ring-white/10" />
-                    <div className="mt-7 border border-white/12 bg-black/60 p-4 text-left">
+                    <div className="mx-auto mt-3 h-4 w-4 rounded-full border border-white/70 bg-black ring-4 ring-white/10 sm:mt-[50px]" />
+                    <div className="mt-4 border border-white/12 bg-black/60 p-4 text-left sm:mt-7">
                       <p className="font-mono text-xs leading-5 text-bone">{fragment}</p>
                     </div>
                     <div className={`mt-7 border border-white/12 p-4 text-left ${index === 2 ? 'bg-white/8' : 'bg-black/30'}`}>
