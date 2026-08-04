@@ -247,9 +247,9 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
     };
 
     let aiResult = null;
-    // Reports may be generated with either a paid credit or the one free
-    // welcome credit (relationshipReportsLeft counts both). Understand Yourself
-    // and Coach gate on paid-only balances elsewhere.
+    // relationshipReportsLeft counts paid credits plus any legacy free credit
+    // still held by early users (the free offer has since been withdrawn).
+    // Understand Yourself and Coach gate on paid-only balances elsewhere.
     if (latestEntitlements.relationshipReportsLeft > 0) {
       setProcessingStage(
         preparedConversation.analysisPipeline?.route === 'single_compressed'

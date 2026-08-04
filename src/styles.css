@@ -538,3 +538,20 @@ select:focus-visible {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
 }
+
+
+/* Product tour animations. Reduced-motion users get no auto-advance (handled
+   in JS) and no fade, so the tour becomes a plain click-through. */
+@keyframes tourProgress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes tourFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="tourFade"], [style*="tourProgress"] { animation: none !important; }
+}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import ParticleBackground from '../components/ParticleBackground.jsx';
-import { claimPayAsYouGoPack, fetchCreditBalances } from '../lib/creditsService.js';
+import { fetchCreditBalances } from '../lib/creditsService.js';
 import { runRazorpayCheckout } from '../lib/paymentsService.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
@@ -27,7 +27,6 @@ export default function PricingPage() {
   const [message, setMessage] = useState('');
   const [paying, setPaying] = useState(false);
   const [balances, setBalances] = useState(null);
-  const [claiming, setClaiming] = useState(false);
   const reason = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('reason') : '';
   const guideChats = reportCount * CHATS_PER_REPORT;
   const totalPrice = reportCount * PRICE_PER_REPORT;
@@ -71,25 +70,6 @@ export default function PricingPage() {
     }
   }
 
-  async function claimFreeReport() {
-    setMessage('');
-    if (!user) {
-      navigate('/auth?next=/pricing');
-      return;
-    }
-    setClaiming(true);
-    try {
-      await claimPayAsYouGoPack('free_starter');
-      const next = await fetchCreditBalances();
-      setBalances(next);
-      setMessage('Your free Relationship Report is ready. Start a new analysis to use it.');
-    } catch (error) {
-      setMessage(error.message || 'We could not add your free report right now.');
-    } finally {
-      setClaiming(false);
-    }
-  }
-
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <ParticleBackground className="opacity-45" />
@@ -116,34 +96,6 @@ export default function PricingPage() {
             ))}
           </div>
         </div>
-
-        {balances && !balances.hasClaimedFreeReport && (
-          <div className="mt-6 overflow-hidden rounded-[28px] border border-emerald-200/25 bg-emerald-300/[0.06] p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="tech-label text-emerald-100">New here?</p>
-                <h2 className="serif-title mt-2 text-3xl leading-tight">Claim your free Relationship Report</h2>
-                <p className="mt-2 max-w-xl text-sm leading-7 text-smoke">
-                  One free Relationship Report per account. The AI Relationship Coach and Understand Yourself are paid features.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={claimFreeReport}
-                disabled={claiming}
-                className="btn btn-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {claiming ? 'Claiming…' : 'Claim free report'}
-              </button>
-            </div>
-          </div>
-        )}
-        {balances?.hasClaimedFreeReport && balances.freeReportsLeft > 0 && (
-          <div className="mt-6 rounded-[28px] border border-emerald-200/20 bg-emerald-300/[0.04] p-5">
-            <p className="tech-label text-emerald-100">Free report ready</p>
-            <p className="mt-2 text-sm leading-7 text-smoke">You have 1 free Relationship Report to use. Start a new analysis to spend it.</p>
-          </div>
-        )}
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="relative overflow-hidden rounded-[30px] border border-purple-200/20 bg-gradient-to-br from-purple-300/[0.12] via-white/[0.045] to-violet-300/[0.05] p-5 shadow-[0_18px_80px_rgba(168,85,247,0.08)]">
