@@ -2,6 +2,7 @@ import { buildCorsHeaders, jsonResponse } from '../_shared/cors.ts';
 import { buildRelationshipAnalysisPrompt, messagesForChatCompletions } from '../_shared/promptBuilder.ts';
 import { createAdminClient, getAuthenticatedUser, refundCredit, reserveCredit } from '../_shared/usage.ts';
 import { upsertMergedPersonality } from '../_shared/personalityMerge.ts';
+import { CONFIDENCE, S, responseFormatFor, type JsonSchema } from '../_shared/jsonSchema.ts';
 
 function chainIdFor(personName = 'relationship', relationshipType = 'relationship', platform = 'chat') {
   return `${personName}-${relationshipType}-${platform}`
@@ -39,12 +40,16 @@ async function fetchOpenAiText({
   messages,
   temperature = 0.55,
   deadlineAt = 0,
+  jsonSchema,
+  schemaName = 'thirdperson_response',
 }: {
   apiKey: string;
   model: string;
   messages: Array<{ role: string; content: string }>;
   temperature?: number;
   deadlineAt?: number;
+  jsonSchema?: JsonSchema;
+  schemaName?: string;
 }) {
   // Bound by the SHARED deadline, not a fixed per-call value: each part may
   // make up to three calls (JSON-repair retry, then model fallback), so a
@@ -74,7 +79,11 @@ async function fetchOpenAiText({
       body: JSON.stringify({
         model,
         messages,
-        response_format: { type: 'json_object' },
+        // Strict schema when we have one: the API then GUARANTEES every field
+        // is present and correctly typed, instead of hoping the model complies.
+        response_format: jsonSchema
+          ? responseFormatFor(schemaName, jsonSchema)
+          : { type: 'json_object' },
         ...(supportsCustomTemperature(model) ? { temperature } : {}),
         // gpt-5 reasoning models. 'low' under-filled the old single mega-schema,
         // but the schema is now split into smaller parallel calls, so low fills
@@ -102,6 +111,8 @@ async function callOpenAiJson(options: {
   messages: Array<{ role: string; content: string }>;
   temperature?: number;
   deadlineAt?: number;
+  jsonSchema?: JsonSchema;
+  schemaName?: string;
 }) {
   const text = await fetchOpenAiText(options);
   try {
@@ -118,21 +129,44 @@ async function callOpenAiJson(options: {
   }
 }
 
-function chunkSummarySchema() {
-  return {
-    period: '',
-    messageCount: 0,
-    relationshipSignals: [],
-    personalitySignalsForMainUser: [],
-    redFlags: [{ label: '', quote: '' }],
-    greenFlags: [{ label: '', quote: '' }],
-    turningPoints: [],
-    importantMoments: [],
-    bestieContext: [],
-    usefulQuotes: [],
-    languageStyle: '',
-  };
-}
+// Person-profile extraction. Small models are genuinely good at "pull out
+// facts and cite the line they came from", which is why this is nano work and
+// not something the synthesis pass should be guessing at. Every fact MUST carry
+// a verbatim quote; unquotable facts are dropped rather than kept as vibes.
+const FACT_CATEGORIES = [
+  'work_or_study',
+  'interests_and_hobbies',
+  'routines_and_habits',
+  'places',
+  'people_in_their_life',
+  'plans_and_intentions',
+  'likes',
+  'dislikes',
+  'values_or_priorities',
+  'stressors_or_pressures',
+];
+
+const personFactSchema = S.obj({
+  category: S.enum(FACT_CATEGORIES),
+  fact: S.str('One short factual statement about this person, in plain words'),
+  quote: S.str('The verbatim line from their own messages that shows it'),
+});
+
+const personProfileJsonSchema = S.obj({
+  personFacts: S.arr(personFactSchema, 'Everything the messages actually reveal about this person; omit anything you cannot quote'),
+});
+
+const chunkSummaryJsonSchema = S.obj({
+  period: S.str(),
+  relationshipSignals: S.arr(S.str()),
+  personalitySignalsForMainUser: S.arr(S.str()),
+  redFlags: S.arr(S.obj({ label: S.str(), quote: S.str('Real quote from this chunk, or empty string') })),
+  greenFlags: S.arr(S.obj({ label: S.str(), quote: S.str('Real quote from this chunk, or empty string') })),
+  turningPoints: S.arr(S.str()),
+  usefulQuotes: S.arr(S.str()),
+  languageStyle: S.str(),
+  personFacts: S.arr(personFactSchema, 'Facts about the OTHER person revealed in this period, each with their own words as the quote'),
+});
 
 // A chunk can hold 240 messages; sending them all made each summary call slow
 // enough that long chats blew the edge timeout. Sample evenly across the chunk
@@ -199,13 +233,14 @@ async function summarizeChunk({
       lastMessages: chunk.lastMessages,
       representativeMessages: chunkMessagesForAi(chunk),
     },
-    instruction: 'Extract relationship signals, main-user personality signals, gentle red and green flags, turning points, important moments, useful quotes, and AI Relationship Coach context. Every red and green flag must carry a short REAL quote copied from this chunk\'s messages as evidence — if no real quote supports a flag, drop the flag. Keep it concise. If evidence is weak, say not enough evidence yet.',
-    outputSchema: chunkSummarySchema(),
+    instruction: 'Extract relationship signals, main-user personality signals, gentle red and green flags, turning points, useful quotes, and AI Relationship Coach context. Every red and green flag must carry a short REAL quote copied from this chunk\'s messages as evidence — if no real quote supports a flag, drop the flag. Also fill personFacts: concrete things this period reveals about the OTHER person (their work or study, interests, routines, places, people in their life, plans, likes, dislikes, values, stressors), each with a verbatim quote from THEIR OWN messages. Never infer a fact you cannot quote — omit it instead. Keep it concise. If evidence is weak, say not enough evidence yet.',
   });
   return callOpenAiJson({
     apiKey,
     model,
     deadlineAt,
+    jsonSchema: chunkSummaryJsonSchema,
+    schemaName: 'chunk_summary',
     temperature: 0.35,
     messages: [
       { role: 'system', content: `${system}\n\nReturn valid JSON only. Never claim certainty. Do not log or reveal private implementation details.` },
@@ -307,6 +342,40 @@ const REPORT_LEVEL_KEYS = [
 function countEvidence(items: unknown): number {
   if (!Array.isArray(items)) return -1;
   return items.filter((item) => item && typeof item === 'object' && String((item as Record<string, any>).evidenceQuote || '').trim()).length;
+}
+
+// Merges facts gathered across periods. A fact mentioned in more than one
+// period is treated as Confirmed; a single mention stays Possible. This is why
+// long chats produce a MORE reliable profile rather than a noisier one.
+function mergePersonFacts(groups: Array<Array<Record<string, any>>>): Record<string, any> {
+  const byKey = new Map<string, { category: string; fact: string; quote: string; mentions: number }>();
+  groups.flat().forEach((raw) => {
+    if (!raw || typeof raw !== 'object') return;
+    const fact = String(raw.fact || '').trim();
+    const quote = String(raw.quote || '').trim();
+    // No quote, no entry — this is the whole guarantee of the feature.
+    if (!fact || !quote) return;
+    const key = `${raw.category}|${fact.toLowerCase().replace(/[^a-z0-9 ]/g, '').slice(0, 60)}`;
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.mentions += 1;
+      if (quote.length > existing.quote.length) existing.quote = quote;
+      return;
+    }
+    byKey.set(key, { category: String(raw.category || 'interests_and_hobbies'), fact, quote, mentions: 1 });
+  });
+
+  const items = [...byKey.values()]
+    .map((item) => ({ ...item, confidence: item.mentions > 1 ? 'Confirmed' : 'Possible' }))
+    .sort((a, b) => b.mentions - a.mentions || a.category.localeCompare(b.category))
+    .slice(0, 40);
+
+  const categories: Record<string, Array<Record<string, any>>> = {};
+  items.forEach((item) => {
+    categories[item.category] = categories[item.category] || [];
+    categories[item.category].push(item);
+  });
+  return { items, categories, total: items.length };
 }
 
 function isEmptyish(value: unknown): boolean {
@@ -533,193 +602,154 @@ async function openAiAnalysis(body: Record<string, any>) {
   // still finished and saved server-side, but the client saw a 504 and the
   // credit was already spent. Two smaller parallel calls also fill their
   // schemas more reliably.
-  const reportOutputSchema = {
-      relationshipReport: {
-        summaryParagraph: '',
-        overallDynamic: '',
-        vibeLabel: '',
-        emotionalTone: '',
-        effortBalance: '',
-        timeline: [
-          {
-            period: '',
-            title: '',
-            emotionalTone: '',
-            initiator: '',
-            effortBalance: 0,
-            sentiment: '',
-            compatibility: 0,
-            whatHappened: '',
-            whatWentRight: '',
-            whatWentWrong: '',
-            youMightNotHaveNoticed: '',
-            turningPoint: '',
-            quote: '',
-            affectedNextPhase: '',
-            confidence: 'Early Signal | Repeated Pattern | Strong Pattern | Not Enough Evidence',
-          },
-        ],
-        timelineArc: '',
-      },
-    };
+  // Strict JSON Schemas. The API now ENFORCES these shapes, which is what
+  // finally stops a small model from silently omitting whole sections (the
+  // cause of the empty timelines and vanishing flags seen earlier).
+  const timelinePhase = S.obj({
+    period: S.str('Real date range or period label taken from the data, never invented'),
+    title: S.str('Specific phase name grounded in what happened; never a generic template name'),
+    emotionalTone: S.str(),
+    initiator: S.str('Who drove effort in this phase: the main user, the other person, or Balanced'),
+    effortBalance: S.int('0-100 = the main user share of initiation/effort in this phase'),
+    sentiment: S.enum(['warm', 'mixed', 'tense', 'distant']),
+    compatibility: S.int('0-100 relationship-health feel during this phase'),
+    whatHappened: S.str(),
+    whatWentRight: S.str(),
+    whatWentWrong: S.str(),
+    youMightNotHaveNoticed: S.str('Something the user likely missed at the time'),
+    turningPoint: S.str('One specific shift, or empty string if none'),
+    quote: S.str('A short REAL quote from this phase as evidence, or empty string'),
+    affectedNextPhase: S.str(),
+    confidence: S.enum(CONFIDENCE),
+  });
 
-  // Second half of the report: the signal cards. Kept separate from the core
-  // narrative+timeline so each call has a small schema it can fill completely —
-  // one oversized report schema made the model silently drop whole sections
-  // (flags vanished when it spent its budget on the timeline).
-  const reportSignalsSchema = {
-      relationshipReport: {
-        redFlags: [
-          {
-            label: '',
-            severity: 'soft signal | worth watching | serious',
-            explanation: '',
-            whyItMatters: '',
-            evidenceQuote: '',
-            confidence: 'Early Signal | Repeated Pattern | Strong Pattern | Not Enough Evidence',
-            reflectionQuestion: '',
-          },
-        ],
-        greenFlags: [
-          {
-            label: '',
-            explanation: '',
-            whyItMatters: '',
-            evidenceQuote: '',
-            confidence: 'Early Signal | Repeated Pattern | Strong Pattern | Not Enough Evidence',
-            howToBuildOnIt: '',
-          },
-        ],
-        nextBestMove: '',
-        scores: {
-          compatibility: 0,
-          communicationHealth: 0,
-          emotionalSafety: 0,
-          effortBalance: 0,
-          trustSignal: 0,
-          conflictIntensity: 0,
-          clarity: 0,
-        },
-        advice: {
-          understand: '',
-          ask: '',
-          avoid: '',
-          nextBestStep: '',
-        },
-        screenshotWorthySummary: '',
-        energyMatchScore: {
-          score: 0,
-          userEnergy: '',
-          otherPersonEnergy: '',
-          effortBalance: '',
-          emotionalAvailability: '',
-          consistency: '',
-          explanation: '',
-        },
-        simpleSummaryForYoungAudience: '',
-      },
-    };
+  const reportCoreJsonSchema = S.obj({
+    relationshipReport: S.obj({
+      summaryParagraph: S.str('3-5 sentences: the overall vibe, its health, and one key highlight'),
+      overallDynamic: S.str(),
+      vibeLabel: S.str('Short screenshot-worthy label'),
+      emotionalTone: S.str(),
+      effortBalance: S.str('One line on how reciprocal the effort looks, consistent with measuredFacts'),
+      screenshotWorthySummary: S.str(),
+      simpleSummaryForYoungAudience: S.str(),
+      timelineArc: S.str('One sentence describing the shape of the whole relationship'),
+      timeline: S.arr(timelinePhase, '3-6 phases from real message clusters; fewer when evidence is thin'),
+    }),
+  });
 
-  const personaOutputSchema = {
-      mainUserPersonalitySignals: {
-        communicationStyle: '',
-        emotionalPattern: '',
-        reactionStyle: '',
-        careStyle: '',
-        conflictStyle: '',
-        humourStyle: '',
-        topWords: [],
-        likesVisible: [],
-        dislikesVisible: [],
-        hobbiesVisible: [],
-        strongSignals: [],
-        weakSignals: [],
-        notEnoughEvidence: [],
-      },
-      relationshipPersonalityCard: {
-        relationshipType: '',
-        title: '',
-        summaryParagraph: '',
-        personalityLabel: '',
-        personalityTypeSignal: '',
-        emotionalSignature: '',
-        communicationStyle: '',
-        greenFlags: [],
-        redFlags: [],
-        attractionEnergy: '',
-        whyPeopleStay: '',
-        whyPeopleMisreadYou: '',
-        growthAreas: [],
-        keywords: [],
-        viralOneLiner: '',
-        confidenceLevel: 'Early Signal | Repeated Pattern | Strong Pattern | Not Enough Evidence',
-        conciseSummaryForDatabase: '',
-        personalityScores: {
-          speakingStyle: { score: 0, label: '' },
-          humourScore: 0,
-          calmnessScore: 0,
-          egoScore: 0,
-          empathyScore: 0,
-          expressivenessScore: 0,
-          patienceScore: 0,
-          signatureBehaviours: [],
-        },
-      },
-      personalityCardUpdate: {
-        headline: '',
-        personalityTypeSignal: '',
-        shareableLabel: '',
-        coreTraits: [],
-        greenFlags: [],
-        redFlags: [],
-        emotionalSignature: '',
-        conversationMagnet: '',
-        attractionEnergy: '',
-        magneticEnergy: '',
-        whyPeopleStay: '',
-        whyPeopleMisreadYou: '',
-        communicationStyle: '',
-        loveFriendshipStyle: '',
-        humourStyle: '',
-        howYouFight: '',
-        textingAura: '',
-        toxicTraitUseful: '',
-        matureSide: '',
-        emotionalIntelligence: '',
-        coolFactor: '',
-        viralOneLiner: '',
-        growthAreas: [],
-        confidenceNotes: [],
-        needsMoreChatsFor: [],
-        socialEnergy: '',
-        shareTrigger: '',
-        reactionStyle: '',
-        mainCharacterPattern: '',
-        relationshipPattern: '',
-      },
-      bestieContextSummary: {
-        shortSummary: '',
-        whatBestieShouldKnow: [],
-        repeatedPatterns: [],
-        relationshipWarnings: [],
-        usefulQuotes: [],
-      },
-      reportSummaryForFutureUse: {
-        compressedSummary: '',
-        relationshipTrend: '',
-        importantMoments: [],
-        personalityDelta: ['New:/Reinforced:/Softened: + short trait note'],
-        languageStyle: '',
-      },
-      detectedLanguageStyle: {
-        dominantLanguage: '',
-        languagesUsed: [],
-        recommendedOutputStyle: '',
-        toneNotes: '',
-      },
-      confidenceNotes: [],
-      needsMoreChatsFor: [],
-    };
+  const reportSignalsJsonSchema = S.obj({
+    relationshipReport: S.obj({
+      redFlags: S.arr(S.obj({
+        label: S.str(),
+        severity: S.enum(['soft signal', 'worth watching', 'serious']),
+        explanation: S.str(),
+        whyItMatters: S.str(),
+        evidenceQuote: S.str('Short REAL quote copied from the messages, or empty string if none supports it'),
+        confidence: S.enum(CONFIDENCE),
+        reflectionQuestion: S.str(),
+      }), 'Typically 1-4; prefer fewer, well-evidenced flags'),
+      greenFlags: S.arr(S.obj({
+        label: S.str(),
+        explanation: S.str(),
+        whyItMatters: S.str(),
+        evidenceQuote: S.str('Short REAL quote copied from the messages, or empty string if none supports it'),
+        confidence: S.enum(CONFIDENCE),
+        howToBuildOnIt: S.str(),
+      }), 'Typically 2-4'),
+      scores: S.obj({
+        compatibility: S.int(),
+        communicationHealth: S.int(),
+        emotionalSafety: S.int(),
+        effortBalance: S.int('Must agree with measuredFacts initiation and reply-time numbers'),
+        trustSignal: S.int(),
+        conflictIntensity: S.int(),
+        clarity: S.int(),
+      }, 'All 0-100 integers'),
+      advice: S.obj({
+        understand: S.str(),
+        ask: S.str(),
+        avoid: S.str(),
+        nextBestStep: S.str(),
+      }),
+      nextBestMove: S.str(),
+      energyMatchScore: S.obj({
+        score: S.int('0-100'),
+        userEnergy: S.str(),
+        otherPersonEnergy: S.str(),
+        effortBalance: S.str(),
+        emotionalAvailability: S.str(),
+        consistency: S.str(),
+        explanation: S.str(),
+      }),
+    }),
+  });
+
+  // personalityCardUpdate is deliberately NOT requested: compactReportForExistingUi
+  // already derives it from relationshipPersonalityCard, so asking for it again
+  // would pay twice for the same content.
+  const personaJsonSchema = S.obj({
+    mainUserPersonalitySignals: S.obj({
+      communicationStyle: S.str(),
+      emotionalPattern: S.str(),
+      reactionStyle: S.str(),
+      careStyle: S.str(),
+      conflictStyle: S.str(),
+      humourStyle: S.str(),
+      strongSignals: S.arr(S.str()),
+      weakSignals: S.arr(S.str()),
+      notEnoughEvidence: S.arr(S.str()),
+    }),
+    relationshipPersonalityCard: S.obj({
+      relationshipType: S.str(),
+      title: S.str(),
+      summaryParagraph: S.str(),
+      personalityLabel: S.str(),
+      personalityTypeSignal: S.str(),
+      emotionalSignature: S.str(),
+      communicationStyle: S.str(),
+      greenFlags: S.arr(S.str()),
+      redFlags: S.arr(S.str()),
+      attractionEnergy: S.str(),
+      whyPeopleStay: S.str(),
+      whyPeopleMisreadYou: S.str(),
+      growthAreas: S.arr(S.str()),
+      keywords: S.arr(S.str()),
+      viralOneLiner: S.str(),
+      confidenceLevel: S.enum(CONFIDENCE),
+      conciseSummaryForDatabase: S.str('Compact summary reused later by Understand Yourself'),
+      personalityScores: S.obj({
+        speakingStyle: S.obj({ score: S.int(), label: S.str() }),
+        humourScore: S.int(),
+        calmnessScore: S.int(),
+        egoScore: S.int('Playful ego meter, not a clinical judgement'),
+        empathyScore: S.int(),
+        expressivenessScore: S.int(),
+        patienceScore: S.int(),
+        signatureBehaviours: S.arr(S.str(), '3-5 short first-person-readable observations'),
+      }, 'All 0-100; use ~50 and say so in signatureBehaviours when evidence is thin'),
+    }),
+    bestieContextSummary: S.obj({
+      shortSummary: S.str(),
+      whatBestieShouldKnow: S.arr(S.str()),
+      repeatedPatterns: S.arr(S.str()),
+      relationshipWarnings: S.arr(S.str()),
+      usefulQuotes: S.arr(S.str()),
+    }),
+    reportSummaryForFutureUse: S.obj({
+      compressedSummary: S.str(),
+      relationshipTrend: S.str(),
+      importantMoments: S.arr(S.str()),
+      personalityDelta: S.arr(S.str(), '2-4 entries, each prefixed exactly "New:", "Reinforced:" or "Softened:"'),
+      languageStyle: S.str(),
+    }),
+    detectedLanguageStyle: S.obj({
+      dominantLanguage: S.str(),
+      languagesUsed: S.arr(S.str()),
+      recommendedOutputStyle: S.str(),
+      toneNotes: S.str(),
+    }),
+  });
+
   const pipeline = prepared.analysisPipeline || {};
   const route = pipeline.route || 'single_compressed';
   const chunkSummaries = route === 'single_compressed'
@@ -745,7 +775,7 @@ async function openAiAnalysis(body: Record<string, any>) {
   };
   // Deliberately NOT sending the client-side draft analysis: models anchor on
   // it and echo its generic phrasing instead of analysing the conversation.
-  const promptFor = (schema: Record<string, unknown>, focusInstruction: string) => buildRelationshipAnalysisPrompt({
+  const promptFor = (focusInstruction: string) => buildRelationshipAnalysisPrompt({
     basePromptTemplate: system,
     relationshipType: prepared.metadata?.relationshipType || body.runtimeContext?.selectedRelationshipType,
     otherPersonName: prepared.metadata?.personName || body.runtimeContext?.selectedPersonName,
@@ -759,19 +789,15 @@ async function openAiAnalysis(body: Record<string, any>) {
     },
     previousPersonalityCard: body.previousPersonalityMemory?.personality_json || body.runtimeContext?.previousPersonalityCardSummary,
     focusInstruction,
-    outputSchema: { combinedGenerationSchema: schema },
   });
 
   const reportCoreMessages = messagesForChatCompletions(promptFor(
-    reportOutputSchema,
     'THIS REQUEST GENERATES THE REPORT NARRATIVE AND TIMELINE ONLY. Return exactly the relationshipReport keys described in combinedGenerationSchema (summary, dynamic, tone, communication patterns, timeline, timelineArc). The timeline is the priority of this request — do not produce flags, scores, advice, personality card, or coach context here.',
   ));
   const reportSignalsMessages = messagesForChatCompletions(promptFor(
-    reportSignalsSchema,
     'THIS REQUEST GENERATES THE REPORT SIGNAL CARDS ONLY. Return exactly the relationshipReport keys described in combinedGenerationSchema (red flags, green flags, mixed signals, scores, advice, next best move, energy match, attachment vibe, day/night dynamics, word cloud, sticky notes). Evidence-backed red and green flags are the priority of this request — do not produce the timeline, personality card, or coach context here.',
   ));
   const personaMessages = messagesForChatCompletions(promptFor(
-    personaOutputSchema,
     'THIS REQUEST GENERATES THE PERSONALITY LAYER ONLY. Return exactly the keys described in combinedGenerationSchema (personality signals, relationship personality card, personality card update, coach context summary, future-use summary, language style, confidence notes) — do not produce the relationshipReport object in this response.',
   ));
 
@@ -780,10 +806,12 @@ async function openAiAnalysis(body: Record<string, any>) {
   // report. The other halves degrade to {} and are backfilled from the draft.
   const callWithFallback = async (
     messages: Array<{ role: string; content: string }>,
+    jsonSchema: JsonSchema,
+    schemaName: string,
     { critical = false }: { critical?: boolean } = {},
   ) => {
     try {
-      return await callOpenAiJson({ apiKey, model: reportModel, messages, temperature: 0.4, deadlineAt });
+      return await callOpenAiJson({ apiKey, model: reportModel, messages, temperature: 0.4, deadlineAt, jsonSchema, schemaName });
     } catch (primaryError) {
       if (reportModel === summaryModel) {
         if (critical) throw primaryError;
@@ -792,7 +820,7 @@ async function openAiAnalysis(body: Record<string, any>) {
       }
       try {
         // Degrade once to the cheaper model rather than failing outright.
-        return await callOpenAiJson({ apiKey, model: summaryModel, messages, temperature: 0.4, deadlineAt });
+        return await callOpenAiJson({ apiKey, model: summaryModel, messages, temperature: 0.4, deadlineAt, jsonSchema, schemaName });
       } catch (fallbackError) {
         if (critical) throw fallbackError;
         console.warn('REPORT_PART_FAILED', String(fallbackError).slice(0, 160));
@@ -803,16 +831,32 @@ async function openAiAnalysis(body: Record<string, any>) {
 
   // Run all three concurrently: wall time is max(A, B, C) rather than the sum,
   // which keeps generation comfortably inside the 150s edge timeout.
-  const [reportCorePart, reportSignalsPart, personaPart] = await Promise.all([
-    callWithFallback(reportCoreMessages, { critical: true }),
-    callWithFallback(reportSignalsMessages),
-    callWithFallback(personaMessages),
+  // Long chats already extract person facts inside each chunk summary (free).
+  // Short chats have no chunk pass, so they get one dedicated extraction call —
+  // run alongside the others, so it costs tokens but no extra wall time.
+  const needsDirectPersonPass = chunkSummaries.length === 0;
+  const personMessages = messagesForChatCompletions(promptFor(
+    `THIS REQUEST EXTRACTS FACTS ABOUT ${prepared.metadata?.personName || 'THE OTHER PERSON'} ONLY. Read their messages and list everything they actually reveal about themselves — work or study, interests, routines, places, people in their life, plans, likes, dislikes, values, stressors. Every entry MUST include a verbatim quote from their own messages; if you cannot quote it, leave it out entirely. Do not infer, guess, or describe the relationship here.`,
+  ));
+
+  const [reportCorePart, reportSignalsPart, personaPart, personPart] = await Promise.all([
+    callWithFallback(reportCoreMessages, reportCoreJsonSchema, 'relationship_report_core', { critical: true }),
+    callWithFallback(reportSignalsMessages, reportSignalsJsonSchema, 'relationship_report_signals'),
+    callWithFallback(personaMessages, personaJsonSchema, 'personality_layer'),
+    needsDirectPersonPass
+      ? callWithFallback(personMessages, personProfileJsonSchema, 'person_profile')
+      : Promise.resolve({}),
+  ]);
+
+  const personProfile = mergePersonFacts([
+    asList((personPart as Record<string, any>).personFacts),
+    ...chunkSummaries.map((summary: Record<string, any>) => asList(summary.personFacts)),
   ]);
   const mergedReport = reconcileFlagArrays(mergeReportParts(
     normalizeAiShape(reportSignalsPart).relationshipReport || {},
     normalizeAiShape(reportCorePart).relationshipReport || {},
   ));
-  const analysis = normalizeAiShape({ ...personaPart, relationshipReport: mergedReport });
+  const analysis = normalizeAiShape({ ...personaPart, relationshipReport: mergedReport, personProfile });
   return {
     ...analysis,
     analysisPipeline: {

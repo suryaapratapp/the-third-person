@@ -1,5 +1,6 @@
 import { detectConversationLanguageProfile } from './languageDetection.js';
 import { buildAnalysisPipeline, cleanConversationLine, isConversationNoise } from './analysisPipeline.js';
+import { computeLocalMetrics } from './conversationMetrics.js';
 
 const emotionalKeywords = [
   'love', 'miss', 'sorry', 'hurt', 'angry', 'fine', 'okay', 'alone', 'tired', 'busy',
@@ -396,6 +397,9 @@ export function prepareConversationForAnalysis(rawText = '', options = {}) {
     importantMoments,
     topWords: topWordsFrom(messages),
     parsedMessages: messages,
+    // Counted locally, not by the AI. Emojis are read from the ORIGINAL upload
+    // because cleanConversationLine() strips them before parsing.
+    localMetrics: computeLocalMetrics({ messages, rawText }),
   };
   prepared.analysisPipeline = buildAnalysisPipeline(prepared);
   return prepared;

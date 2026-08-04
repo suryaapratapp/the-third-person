@@ -105,7 +105,6 @@ function parsedConversationSummary(parsed: Record<string, any> = {}) {
     messageCount: parsed.messageCount,
     messageCountByPerson: parsed.senderStats,
     monthlyBreakdown: parsed.monthlyBreakdown,
-    dayNightBreakdown: parsed.dailyNightBreakdown,
     detectedLanguages: parsed.detectedLanguages || parsed.languageProfile?.languagesUsed || [],
     dominantLanguage: parsed.dominantLanguage || parsed.languageProfile?.dominantLanguage,
     languageMix: parsed.languageProfile?.languageMix,
@@ -115,7 +114,19 @@ function parsedConversationSummary(parsed: Record<string, any> = {}) {
     importantMoments: compactMessages(parsed.importantMoments || [], 16),
     firstMessages: compactMessages(parsed.firstMessages || parsed.parsedMessages || [], 10),
     lastMessages: compactMessages(parsed.lastMessages || [], 10),
-    replyGaps: parsed.replyGaps,
+    // Exact counts measured from the messages themselves — initiation split,
+    // median reply times, double-texting, conversation enders, and how those
+    // changed from the start of the chat to now. Supersedes the old raw
+    // replyGaps/dayNight dumps and is far cheaper to send.
+    measuredFacts: parsed.localMetrics ? {
+      conversationsStarted: parsed.localMetrics.effort?.conversations,
+      perPerson: parsed.localMetrics.effort?.people,
+      trend: parsed.localMetrics.effort?.trend,
+      activity: {
+        granularity: parsed.localMetrics.activity?.granularity,
+        buckets: (parsed.localMetrics.activity?.buckets || []).map((bucket: Record<string, any>) => `${bucket.label}:${bucket.count}`),
+      },
+    } : undefined,
     analysisRoute: parsed.analysisPipeline?.route,
     estimatedTokens: parsed.analysisPipeline?.estimatedTokens,
     chunkSummaries: parsed.chunkSummaries || parsed.analysisPipeline?.chunkSummaries || [],
@@ -159,8 +170,7 @@ export function buildRelationshipAnalysisPrompt({
     safetyInstructions(),
     'Do not infer basic structure from raw text when parser metadata is provided. Use parser metadata as the source of truth for participants, counts, dates, language style, and timing patterns.',
     'Make exactly one combined generation from this uploaded conversation. The same JSON response must power both the Relationship Report and the relationship-specific main-user Personality Card.',
-    'Return ONE JSON object whose TOP-LEVEL keys are exactly the keys of the combinedGenerationSchema provided in this request — no more, no fewer. Never wrap the response in any other key, and never move nested fields (such as relationshipReport fields) to the top level.',
-    'POPULATE EVERY FIELD of the schema — relationshipReport.timeline, relationshipReport.scores (0-100 integers for every listed score), redFlags, greenFlags, mixedSignals, dayNightDynamics, wordCloud, stickyNotes, dashboardCards, advice, and nextBestMove are all REQUIRED, not optional. A typical healthy output has 1-4 redFlags AND 2-4 greenFlags — an empty flags array is only acceptable when the conversation truly shows nothing notable in that direction. Only use empty strings/arrays or "Not enough evidence yet." where the conversation genuinely lacks signal for that specific field. Write every field from YOUR OWN analysis of the actual messages — never generic filler.',
+    'Every field of the response schema is required, so fill each one from YOUR OWN analysis of these messages — never generic filler. A typical healthy report has 1-4 red flags and 2-4 green flags. Use an empty string or empty array only where the conversation genuinely lacks signal for that specific field, and say so plainly rather than padding.',
     'relationshipReport must contain one strong summaryParagraph, then short dashboard-safe labels/cards. Keep cards compact and visual.',
     'relationshipReport.summaryParagraph must be a concise 3-5 sentence overview of this specific conversation: the overall relationship vibe, its overall health, and one key highlight worth noticing. Not a single line, and not an extended essay.',
     'relationshipPersonalityCard must describe only how the main user appears inside this selected relationship type. It must include conciseSummaryForDatabase so future Understand Yourself generation can use summaries without raw chats.',
@@ -171,6 +181,7 @@ export function buildRelationshipAnalysisPrompt({
       : []),
     'The AI Relationship Coach context must be a concise memory summary that can answer future questions without sending the full raw chat again.',
     'For personality signals, use Not enough evidence yet when traits are not clearly visible.',
+    'parsedConversationSummary.measuredFacts contains EXACT counts computed directly from the messages (who starts conversations, median reply time per person, double-texting, who lets conversations end, message share, and how these changed over time). Treat these numbers as ground truth: never contradict them, never estimate your own version of them, and use them as the evidence behind effortBalance, energyMatchScore, initiator fields and any claim about who puts in more effort. Quote the actual numbers where it makes the insight concrete.',
     'CALIBRATE TO THE EVIDENCE AVAILABLE. parsedConversationSummary includes messageCount, parseConfidence and warningFlags. When the sample is small (under ~10 messages), parseConfidence is low, or warningFlags are present, you MUST downgrade certainty everywhere: prefer "Early Signal"/"Not Enough Evidence" confidence values, use hedged language ("in this short sample", "this may suggest"), return fewer flags and fewer timeline phases, and say plainly in summaryParagraph that the sample is limited. Never produce a confident, fully-populated report from a handful of messages.',
     'reportSummaryForFutureUse.personalityDelta must contain 2-4 short strings describing how THIS conversation changes the understanding of the main user, each prefixed with exactly one of "New:", "Reinforced:", or "Softened:". When previousPersonalityCard is provided, compare against it (e.g. "Reinforced: seeks clarity through direct questions", "Softened: less conflict-avoidant than earlier chats suggested"). When no previousPersonalityCard exists, use "New:" entries only. Base every delta on actual message evidence, never on the relationship type alone.',
     'relationshipReport.attachmentVibe, relationshipReport.friendsWouldNotice, relationshipReport.communicationStyleSignals, relationshipReport.energyMatchScore, relationshipReport.simpleSummaryForYoungAudience, and relationshipReport.communicationPatterns (userStyle, otherPersonStyle, conflictStyle, repairAttempts, avoidancePatterns) must all be derived specifically from this conversation\'s actual evidence (message patterns, timing, tone, topics). Do not return generic or templated text for these fields — if evidence is thin, say so explicitly rather than inventing detail.',

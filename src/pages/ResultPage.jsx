@@ -1,12 +1,6 @@
 import { useEffect, useState } from 'react';
-import {
-  PolarAngleAxis,
-  PolarGrid,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
-} from 'recharts';
 import CardActions from '../components/CardActions.jsx';
+import { formatDuration } from '../lib/conversationMetrics.js';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { exportElementAsImage, shareCardSummary } from '../lib/exportElementAsImage.js';
 import { fetchRelationshipReportById } from '../lib/supabaseDataService.js';
@@ -14,6 +8,20 @@ import { useAnalysis } from '../state/AnalysisContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
 const emptyText = 'Not enough evidence yet';
+
+// Mirrors FACT_CATEGORIES in supabase/functions/generate-relationship-report.
+const FACT_CATEGORY_LABELS = {
+  work_or_study: 'Work & study',
+  interests_and_hobbies: 'Interests & hobbies',
+  routines_and_habits: 'Routines & habits',
+  places: 'Places',
+  people_in_their_life: 'People in their life',
+  plans_and_intentions: 'Plans & intentions',
+  likes: 'Likes',
+  dislikes: 'Dislikes',
+  values_or_priorities: 'Values & priorities',
+  stressors_or_pressures: 'Stressors & pressures',
+};
 
 function stringifyUnexpectedValue(value) {
   if (typeof value !== 'object' || value === null) return String(value);
@@ -125,6 +133,96 @@ function ScoreBubble({ item }) {
 
 function EmptyHint({ children = 'More chats can make this clearer.' }) {
   return <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-smoke">{children}</p>;
+}
+
+// Hand-rolled so the report no longer pulls in a ~285KB charting library for
+// one shape. Pure SVG: no runtime dependency, no layout thrash.
+function RadarPentagon({ data = [] }) {
+  const size = 240;
+  const center = size / 2;
+  const radius = size / 2 - 34;
+  const points = data.length ? data : [{ subject: '—', value: 0 }];
+  const angleFor = (index) => (Math.PI * 2 * index) / points.length - Math.PI / 2;
+  const coord = (index, ratio) => [
+    center + Math.cos(angleFor(index)) * radius * ratio,
+    center + Math.sin(angleFor(index)) * radius * ratio,
+  ];
+  const shape = points
+    .map((point, index) => coord(index, Math.max(0, Math.min(100, Number(point.value) || 0)) / 100).join(','))
+    .join(' ');
+
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} className="h-auto w-full" role="img" aria-label="Relationship balance chart">
+      {[0.25, 0.5, 0.75, 1].map((ring) => (
+        <polygon
+          key={ring}
+          points={points.map((_, index) => coord(index, ring).join(',')).join(' ')}
+          fill="none"
+          stroke="rgba(255,255,255,.16)"
+          strokeWidth="1"
+        />
+      ))}
+      {points.map((_, index) => {
+        const [x, y] = coord(index, 1);
+        return <line key={index} x1={center} y1={center} x2={x} y2={y} stroke="rgba(255,255,255,.12)" strokeWidth="1" />;
+      })}
+      <polygon points={shape} fill="#a78bfa" fillOpacity="0.32" stroke="#f472b6" strokeWidth="2" />
+      {points.map((point, index) => {
+        const [x, y] = coord(index, 1.2);
+        return (
+          <text
+            key={point.subject}
+            x={x}
+            y={y}
+            fill="#b9b7b1"
+            fontSize="10"
+            textAnchor={x > center + 5 ? 'start' : x < center - 5 ? 'end' : 'middle'}
+            dominantBaseline="middle"
+          >
+            {String(point.subject).slice(0, 12)}
+          </text>
+        );
+      })}
+    </svg>
+  );
+}
+
+// Sized to fit the card without horizontal scrolling: the bucket count is
+// already capped upstream, and bars flex to share the available width.
+function ActivityBars({ activity }) {
+  const buckets = list(activity?.buckets);
+  if (!buckets.length) return <EmptyHint>No dated messages, so activity over time cannot be charted.</EmptyHint>;
+  const unit = { week: 'week', month: 'month', year: 'year' }[activity.granularity] || 'period';
+  const peak = Math.max(1, ...buckets.map((bucket) => bucket.count));
+  return (
+    <div>
+      <p className="text-sm leading-7 text-smoke">
+        Messages per {unit} — {activity.total.toLocaleString()} messages across {buckets.length} {unit}s.
+      </p>
+      <div className="mt-5 flex h-48 w-full items-end gap-[2px] sm:gap-1">
+        {buckets.map((bucket) => (
+          <div key={bucket.key} className="group flex h-full min-w-0 flex-1 flex-col justify-end" title={`${bucket.label}: ${bucket.count}`}>
+            <span className="mb-1 text-center font-mono text-[0.55rem] text-ash opacity-0 transition group-hover:opacity-100">{bucket.count}</span>
+            <div
+              className="w-full rounded-t bg-gradient-to-t from-violet-400/45 to-pink-300/85 transition hover:from-violet-300/60 hover:to-pink-200"
+              style={{ height: `${Math.max(3, (bucket.count / peak) * 100)}%` }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex w-full gap-[2px] sm:gap-1">
+        {buckets.map((bucket, index) => (
+          <span
+            key={bucket.key}
+            className="min-w-0 flex-1 truncate text-center font-mono text-[0.5rem] uppercase tracking-tight text-ash sm:text-[0.58rem]"
+          >
+            {/* Thin the labels on dense charts so they never overlap. */}
+            {buckets.length > 12 && index % 2 ? '' : bucket.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function EffortBar({ value, personName = 'Them' }) {
@@ -392,6 +490,15 @@ export default function ResultPage({ reportId = '' }) {
   const topWords = list(prepared.topWords)
     .filter((item) => item && item.word)
     .slice(0, 5);
+  // Grouped facts about the other person, each backed by a verbatim quote.
+  const personFactGroups = Object.entries(analysis?.personProfile?.categories || {})
+    .filter(([, items]) => Array.isArray(items) && items.length)
+    .sort((a, b) => b[1].length - a[1].length);
+  const metrics = prepared.localMetrics || {};
+  const emojis = list(metrics.emojis);
+  const effort = metrics.effort || null;
+  const effortPeople = list(effort?.people);
+  const trend = effort?.trend || null;
 
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
@@ -549,6 +656,113 @@ export default function ResultPage({ reportId = '' }) {
             )}
           </CardShell>
 
+          {personFactGroups.length > 0 && (
+            <CardShell id="person-profile" title={`About ${personName}`} emoji="🔍" summary={`What ${personName}'s own messages reveal about them.`} accent="purple">
+              <p className="max-w-3xl text-sm leading-7 text-smoke">
+                Everything {personName} revealed about themselves in this chat — each point backed by their own words.
+                Mentioned in more than one period shows as <span className="text-purple-100">Confirmed</span>.
+              </p>
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {personFactGroups.map(([category, items]) => (
+                  <div key={category} className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5">
+                    <p className="tech-label text-purple-100">{FACT_CATEGORY_LABELS[category] || category.replace(/_/g, ' ')}</p>
+                    <ul className="mt-4 space-y-4">
+                      {items.map((item, index) => (
+                        <li key={`${item.fact}-${index}`}>
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <p className="text-sm leading-6 text-bone">{item.fact}</p>
+                            {item.confidence === 'Confirmed' && <Badge tone="green">Confirmed</Badge>}
+                          </div>
+                          <p className="mt-1.5 border-l-2 border-white/12 pl-3 font-mono text-xs leading-5 text-smoke">
+                            “{String(item.quote).slice(0, 160)}”
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </CardShell>
+          )}
+
+          <CardShell id="activity-over-time" title="Messages Over Time" emoji="📊" summary="How much you both talked across the life of this chat." accent="blue">
+            <ActivityBars activity={metrics.activity} />
+          </CardShell>
+
+          {effort && (
+            <CardShell id="effort-balance" title="Effort & Reciprocity" emoji="⚖️" summary="Measured counts: who starts, who replies faster, who lets it end." accent="purple">
+              <p className="max-w-3xl text-sm leading-7 text-smoke">
+                These are exact counts from the messages themselves — not an AI estimate — across {effort.conversations.toLocaleString()} separate conversations.
+              </p>
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {effortPeople.map((person) => (
+                  <div key={person.sender} className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-xl text-bone">{person.sender}</h3>
+                      <Badge tone="purple">{person.messageShare}% of messages</Badge>
+                    </div>
+                    <dl className="mt-4 grid grid-cols-2 gap-4">
+                      {[
+                        ['Starts conversations', `${person.initiationShare}%`, `${person.initiations} of ${effort.conversations}`],
+                        ['Median reply time', formatDuration(person.medianReplyMinutes), null],
+                        ['Double texts', String(person.doubleTexts), 'messages in a row'],
+                        ['Lets chat end', String(person.conversationEnds), 'had the last word'],
+                        ['Asks questions', `${person.questionRate}%`, 'of their messages'],
+                        ['Message length', `${person.averageWordsPerMessage} words`, 'on average'],
+                      ].map(([label, value, hint]) => (
+                        <div key={label}>
+                          <dt className="tech-label text-ash">{label}</dt>
+                          <dd className="mt-1.5 text-lg leading-6 text-bone">{value}</dd>
+                          {hint && <p className="mt-0.5 font-mono text-[0.58rem] uppercase tracking-[0.1em] text-ash">{hint}</p>}
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                ))}
+              </div>
+              {trend && (
+                <div className="mt-4 grid gap-3 rounded-[24px] border border-white/10 bg-black/15 p-5 sm:grid-cols-2">
+                  <div>
+                    <p className="tech-label text-ash">Reply speed, then vs now</p>
+                    <p className="mt-2 text-sm leading-7 text-smoke">
+                      {trend.replyMinutesDelta === null
+                        ? 'Not enough timestamped replies to compare.'
+                        : trend.replyMinutesDelta > 0
+                          ? `Replies now take about ${formatDuration(Math.abs(trend.replyMinutesDelta))} longer than at the start.`
+                          : trend.replyMinutesDelta < 0
+                            ? `Replies now come about ${formatDuration(Math.abs(trend.replyMinutesDelta))} faster than at the start.`
+                            : 'Reply speed has stayed about the same.'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="tech-label text-ash">Message volume, then vs now</p>
+                    <p className="mt-2 text-sm leading-7 text-smoke">
+                      {trend.messageVolumeDelta === 0
+                        ? 'You are exchanging about the same number of messages as when this chat began.'
+                        : trend.messageVolumeDelta > 0
+                          ? `Recent messages are up about ${trend.messageVolumeDelta}% versus the earliest stretch.`
+                          : `Recent messages are down about ${Math.abs(trend.messageVolumeDelta)}% versus the earliest stretch.`}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardShell>
+          )}
+
+          {emojis.length > 0 && (
+            <CardShell id="top-emojis" title="Top Emojis" emoji="😊" summary="The nine emojis used most in this chat." accent="orange">
+              <p className="max-w-2xl text-sm leading-7 text-smoke">Counted directly from the uploaded chat.</p>
+              <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
+                {emojis.map((item) => (
+                  <div key={item.emoji} className="rounded-[20px] border border-white/10 bg-white/[0.05] p-3 text-center">
+                    <p className="text-3xl leading-none">{item.emoji}</p>
+                    <p className="mt-2 font-mono text-xs text-bone">{item.count}×</p>
+                  </div>
+                ))}
+              </div>
+            </CardShell>
+          )}
+
           <CardShell id="word-cloud" title="Top Words" emoji="☁️" summary="The five words used most across this conversation." accent="pink">
             <p className="max-w-2xl text-sm leading-7 text-smoke">
               The five words that came up most across this conversation, counted directly from the messages.
@@ -648,14 +862,8 @@ export default function ResultPage({ reportId = '' }) {
                     </div>
                   ))}
                 </div>
-                <div className="h-72 rounded-[26px] border border-white/10 bg-black/15 p-4">
-                  <ResponsiveContainer>
-                    <RadarChart data={radarData}>
-                      <PolarGrid stroke="rgba(255,255,255,.16)" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#b9b7b1', fontSize: 10 }} />
-                      <Radar dataKey="value" stroke="#f472b6" fill="#a78bfa" fillOpacity={0.32} />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                <div className="rounded-[26px] border border-white/10 bg-black/15 p-4">
+                  <RadarPentagon data={radarData} />
                 </div>
               </div>
             </div>

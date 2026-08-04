@@ -7,7 +7,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor-charts': ['recharts'],
+          // Charts are now hand-rolled SVG, so recharts is gone entirely.
+          // jszip/html-to-image stay split: both are only needed on demand
+          // (zip upload, image export) rather than on first paint.
           'vendor-files': ['jszip', 'html-to-image'],
         },
       },

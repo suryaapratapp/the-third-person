@@ -2,6 +2,15 @@ import { buildCorsHeaders, jsonResponse } from '../_shared/cors.ts';
 import { buildBestiePrompt, messagesForChatCompletions } from '../_shared/promptBuilder.ts';
 import { getPersonaPrompt } from '../_shared/personas.ts';
 import { createAdminClient, getAuthenticatedUser, refundCredit, reserveCredit } from '../_shared/usage.ts';
+import { S, responseFormatFor } from '../_shared/jsonSchema.ts';
+
+// Strict schema keeps replies to the three fields the UI renders — the model
+// cannot pad the answer with extra sections it invents.
+const bestieReplyJsonSchema = S.obj({
+  answer: S.str('The direct answer, 2-4 sentences maximum'),
+  whatToDoNext: S.str('One specific next step, or empty string'),
+  whatNotToIgnore: S.str('One real risk worth naming, or empty string'),
+});
 
 function supportsCustomTemperature(model: string) {
   return !model.startsWith('gpt-5');
@@ -57,7 +66,7 @@ async function openAiBestieReply(message: string, context: Record<string, any>, 
     body: JSON.stringify({
       model,
       messages: messagesForChatCompletions(promptBundle),
-      response_format: { type: 'json_object' },
+      response_format: responseFormatFor('coach_reply', bestieReplyJsonSchema),
       ...(supportsCustomTemperature(model) ? { temperature: 0.7 } : {}),
     }),
   });
