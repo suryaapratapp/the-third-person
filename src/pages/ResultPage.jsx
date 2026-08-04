@@ -887,7 +887,7 @@ export default function ResultPage({ reportId = '' }) {
                   );
                 })}
               </div>
-              <p className="mt-4 text-xs leading-6 text-ash">See the full picture in Understand Yourself, where every analysis builds on the last.</p>
+              <p className="mt-4 text-xs leading-6 text-ash">See the full picture in Know Yourself, where every analysis builds on the last.</p>
             </CardShell>
           )}
 

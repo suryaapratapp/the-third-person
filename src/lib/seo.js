@@ -21,7 +21,7 @@ const PAGE_SEO = {
     description: 'Revisit your relationship intelligence reports and follow how each analysis chain changes over time.',
   },
   '/personality-card': {
-    title: `Understand Yourself — ${SITE_NAME}`,
+    title: `Know Yourself — ${SITE_NAME}`,
     description: 'A deeper personality map built from how you show up across your relationships.',
   },
   '/pricing': {

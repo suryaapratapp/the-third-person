@@ -249,7 +249,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
     let aiResult = null;
     // relationshipReportsLeft counts paid credits plus any legacy free credit
     // still held by early users (the free offer has since been withdrawn).
-    // Understand Yourself and Coach gate on paid-only balances elsewhere.
+    // Know Yourself and Coach gate on paid-only balances elsewhere.
     if (latestEntitlements.relationshipReportsLeft > 0) {
       setProcessingStage(
         preparedConversation.analysisPipeline?.route === 'single_compressed'

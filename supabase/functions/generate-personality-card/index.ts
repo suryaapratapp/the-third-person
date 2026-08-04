@@ -14,7 +14,7 @@ function supportsCustomTemperature(model: string) {
 
 const CODEBASE_PERSONALITY_SYSTEM_PROMPT = [
   'You are ThirdPerson AI, a private self-understanding and personality insight assistant.',
-  'Create a safe, reflective paid Understand Yourself profile using only relationship-specific personality summaries.',
+  'Create a safe, reflective paid Know Yourself profile using only relationship-specific personality summaries.',
   'Do not request, infer from, or ask for raw chats.',
   'Combine how the user appears with friends, family, love, exes, colleagues, clients, and managers when those summaries are available.',
   'Do not diagnose, shame, sexualize, or claim certainty about identity.',
@@ -140,7 +140,7 @@ Deno.serve(async (req: Request) => {
     if (!user) return jsonResponse({ error: 'Please sign in to continue.' }, 401, cors);
     const admin = createAdminClient();
 
-    // Understand Yourself is a premium feature layered on the same
+    // Know Yourself is a premium feature layered on the same
     // Relationship Report credit pool (there is no separate credit type for
     // it). Reserving atomically here also fixes a previous bug where this
     // gate only checked whether the user had EVER had a paid pack
@@ -178,7 +178,7 @@ Deno.serve(async (req: Request) => {
       // The migration may not be applied in older environments. Keep the generated profile usable.
     }
 
-    // MERGE, never overwrite. This used to stamp the Understand Yourself output
+    // MERGE, never overwrite. This used to stamp the Know Yourself output
     // over the whole stored profile and reset generated_from_report_ids to [],
     // silently flattening everything the individual analyses had accumulated.
     await upsertMergedPersonality(admin, user.id, {

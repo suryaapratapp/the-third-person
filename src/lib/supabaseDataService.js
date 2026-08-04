@@ -331,7 +331,7 @@ export async function deleteAllMyAnalysisData() {
 }
 
 // Removes on-device copies of analysis data: locally saved reports/cards, the
-// cached Understand Yourself profile, and the fingerprint→report cache.
+// cached Know Yourself profile, and the fingerprint→report cache.
 export function clearLocalAnalysisData() {
   if (typeof window === 'undefined') return;
   window.localStorage.removeItem(UNDERSTAND_YOURSELF_KEY);

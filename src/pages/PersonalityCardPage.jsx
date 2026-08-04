@@ -254,10 +254,10 @@ function OverallReport({ profile, overall }) {
       <div className="relative grid gap-8 xl:grid-cols-[1.25fr_.75fr]">
         <div className="grid gap-8 lg:grid-cols-[1fr_220px]">
           <div>
-            <p className="tech-label text-purple-100">Understand Yourself</p>
+            <p className="tech-label text-purple-100">Know Yourself</p>
             <h2 className="serif-title mt-6 text-6xl leading-none text-bone sm:text-8xl">{name}</h2>
             <p className="mt-2 font-serif text-3xl italic text-pink-100">{overall.overallPersonalityLabel || overall.shareableLabel || 'Your personality map is forming'}</p>
-            <p className="mt-5 max-w-3xl text-base leading-8 text-smoke">{safe(overall.summaryParagraph, 'Generate Understand Yourself after a few relationship personality cards to see a deeper profile.')}</p>
+            <p className="mt-5 max-w-3xl text-base leading-8 text-smoke">{safe(overall.summaryParagraph, 'Generate Know Yourself after a few relationship personality cards to see a deeper profile.')}</p>
             <div className="mt-6 flex flex-wrap gap-2">
               <span className="rounded-full border border-white/15 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-bone">{overall.personalityTypeSignal || 'Personality signal forming'}</span>
               {zodiac && <span className="rounded-full border border-pink-200/20 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-pink-100">{getZodiacGlyph(zodiac)} {zodiac}</span>}
@@ -329,7 +329,7 @@ export default function PersonalityCardPage() {
   const [selectedItem, setSelectedItem] = useState(null);
 
   const peopleMap = useMemo(() => buildPeopleMap(relationshipCards), [relationshipCards]);
-  // Understand Yourself spends one Relationship Report credit per
+  // Know Yourself spends one Relationship Report credit per
   // generation (there is no separate credit type for it), so gate on actual
   // remaining balance rather than "has ever bought any pack" — otherwise the
   // button reads as unlocked for someone who is fully out of credits.
@@ -360,7 +360,7 @@ export default function PersonalityCardPage() {
   async function exportWholeProfile() {
     try {
       await exportElementAsImage('personality-page-export', `thirdperson-understand-yourself-${new Date().toISOString().slice(0, 10)}.png`);
-      setMessage('Understand Yourself card downloaded.');
+      setMessage('Know Yourself card downloaded.');
     } catch {
       setMessage('We could not export this card on this device. Please try again on desktop.');
     }
@@ -405,19 +405,19 @@ export default function PersonalityCardPage() {
         currentUnderstandYourself: understandYourself,
       });
       const nextProfile = result?.understandYourself || result?.personality;
-      if (!nextProfile) throw new Error('Understand Yourself could not be generated right now.');
+      if (!nextProfile) throw new Error('Know Yourself could not be generated right now.');
       setUnderstandYourself(nextProfile);
       saveLocalUnderstandYourselfProfile({
         sourcePersonalityCardIds: payloadCards.map((card) => card.id),
         overallProfileJson: nextProfile,
       });
-      setMessage('Understand Yourself is ready.');
+      setMessage('Know Yourself is ready.');
     } catch (error) {
       if (error.code === 'OUT_OF_CREDITS' || error.status === 402) {
         navigate('/pricing?reason=understand-yourself');
         return;
       }
-      setMessage(error.message || 'Understand Yourself could not be generated right now.');
+      setMessage(error.message || 'Know Yourself could not be generated right now.');
     } finally {
       setGenerating(false);
     }
@@ -429,7 +429,7 @@ export default function PersonalityCardPage() {
       ? 'Your deeper personality profile is ready to be generated from your saved relationship personality cards. It will combine concise summaries only, not old raw chats.'
       : 'Run your first relationship analysis to start building your people personality map.',
     overallPersonalityLabel: relationshipCards.length ? 'Deeper profile locked' : 'Personality map waiting',
-    personalityTypeSignal: 'Understand Yourself Signal',
+    personalityTypeSignal: 'Know Yourself Signal',
     strongestGreenFlags: relationshipCards.flatMap((card) => card.greenFlagsSummary?.split(' • ') || []).slice(0, 5),
     lovingRedFlags: relationshipCards.flatMap((card) => card.redFlagsSummary?.split(' • ') || []).slice(0, 5),
     bestMatches: ['People who communicate clearly', 'People who respect emotional pace', 'People who show consistent effort'],
@@ -445,10 +445,10 @@ export default function PersonalityCardPage() {
           <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-pink-300/12 blur-3xl" />
           <div className="relative flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-4xl">
-              <p className="tech-label text-pink-100">Understand Yourself</p>
+              <p className="tech-label text-pink-100">Know Yourself</p>
               <h1 className="serif-title mt-4 text-5xl leading-tight text-bone sm:text-7xl">{profileName} People Personality Map</h1>
               <p className="mt-5 max-w-3xl text-base leading-8 text-smoke">
-                Understand Yourself combines how you show up with friends, family, love, exes, colleagues, and more — creating a deeper personality map from your relationship patterns.
+                Know Yourself combines how you show up with friends, family, love, exes, colleagues, and more — creating a deeper personality map from your relationship patterns.
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
                 <span className="rounded-full border border-purple-200/20 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-purple-100">{relationshipCards.length} relationship cards saved</span>
@@ -461,7 +461,7 @@ export default function PersonalityCardPage() {
                 disabled={loading || generating || (!relationshipCards.length)}
                 className="glass-button rounded-full px-6 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {hasPaidAccess ? (generating ? 'Generating...' : 'Generate Understand Yourself') : 'Unlock Understand Yourself'}
+                {hasPaidAccess ? (generating ? 'Generating...' : 'Generate Know Yourself') : 'Unlock Know Yourself'}
               </button>
               <button onClick={exportWholeProfile} className="glass-button rounded-full px-6 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
                 Download Full Card
@@ -534,7 +534,7 @@ export default function PersonalityCardPage() {
 
         <section className="glass-card mt-7 p-5">
           <p className="text-sm leading-7 text-smoke">
-            Relationship-specific cards are generated from each analysis. Understand Yourself uses those concise summaries only, which keeps the deeper profile faster, cheaper, and more private than re-reading old raw chats.
+            Relationship-specific cards are generated from each analysis. Know Yourself uses those concise summaries only, which keeps the deeper profile faster, cheaper, and more private than re-reading old raw chats.
           </p>
         </section>
       </div>

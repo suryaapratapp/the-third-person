@@ -76,7 +76,7 @@ export default function TopNav() {
                 {[
                   ['Start Analysis', '/analysis/new'],
                   ['Relationship Reports', '/reports'],
-                  ['Understand Yourself', '/personality-card'],
+                  ['Know Yourself', '/personality-card'],
                 ].map(([label, href]) => (
                   <button
                     key={label}
@@ -166,7 +166,7 @@ export default function TopNav() {
             <div className="absolute right-0 top-12 w-64 rounded-3xl border border-purple-300/18 bg-[#171523]/95 p-2 shadow-glow backdrop-blur-xl">
               {[
                 ['Profile', '/profile'],
-                ['Understand Yourself', '/personality-card'],
+                ['Know Yourself', '/personality-card'],
                 ['Relationship Reports', '/reports'],
                 ['Vision', '/vision'],
                 ['FAQs', '/faqs'],

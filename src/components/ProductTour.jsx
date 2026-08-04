@@ -117,7 +117,7 @@ const SCENES = [
   },
   {
     key: 'yourself',
-    label: 'Understand Yourself',
+    label: 'Know Yourself',
     title: 'And learn who you are across relationships',
     caption: 'Every analysis quietly builds your personality profile — how you show up with partners, friends, family and colleagues, and how that is changing.',
     render: () => (

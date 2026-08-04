@@ -716,7 +716,7 @@ async function openAiAnalysis(body: Record<string, any>) {
       keywords: S.arr(S.str()),
       viralOneLiner: S.str(),
       confidenceLevel: S.enum(CONFIDENCE),
-      conciseSummaryForDatabase: S.str('Compact summary reused later by Understand Yourself'),
+      conciseSummaryForDatabase: S.str('Compact summary reused later by Know Yourself'),
       personalityScores: S.obj({
         speakingStyle: S.obj({ score: S.int(), label: S.str() }),
         humourScore: S.int(),
@@ -886,7 +886,7 @@ function asList(value: unknown): Array<any> {
 // Flags and traits may arrive as typed objects ({ label, explanation, ... }),
 // plain strings, or a mix. Always reduce to readable text — a naive join()
 // would persist "[object Object]" into the card summaries that later power
-// Understand Yourself.
+// Know Yourself.
 function toReadableText(value: unknown): string {
   if (value === null || value === undefined) return '';
   if (typeof value === 'string') return value.trim();
@@ -988,7 +988,7 @@ Deno.serve(async (req: Request) => {
 
     const admin = createAdminClient();
     // Relationship Reports may spend the one-time free welcome credit (source
-    // 'free'). The AI Relationship Coach and Understand Yourself reserve without
+    // 'free'). The AI Relationship Coach and Know Yourself reserve without
     // allowFree, so they remain paid-only.
     const reservation = await reserveCredit(admin, user.id, 'relationship_report', true);
     if (!reservation.allowed) {

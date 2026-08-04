@@ -1,3 +1,5 @@
+import { lensFor, lensInstructions } from './relationshipLens.ts';
+
 type PromptBuildInput = {
   basePromptTemplate: string;
   relationshipType?: string;
@@ -24,31 +26,7 @@ type PromptBundle = {
 };
 
 function relationshipFocus(relationshipType = '') {
-  const value = relationshipType.toLowerCase();
-  if (/partner|ex|crush|dating|seeing/.test(value)) {
-    return [
-      'affection',
-      'effort',
-      'consistency',
-      'mixed signals',
-      'emotional availability',
-      'attraction',
-      'hesitation',
-      'clarity',
-      'repair',
-      'commitment signals',
-    ];
-  }
-  if (/friend|best friend/.test(value)) {
-    return ['loyalty', 'effort balance', 'support', 'humour', 'check-ins', 'emotional availability', 'one-sided energy', 'trust', 'distance'];
-  }
-  if (/mom|dad|brother|sister|cousin|family/.test(value)) {
-    return ['care', 'expectations', 'pressure', 'respect', 'guilt patterns', 'boundaries', 'responsibility', 'repair'];
-  }
-  if (/colleague|manager|client/.test(value)) {
-    return ['professionalism', 'tone', 'clarity', 'respect', 'pressure', 'collaboration', 'trust', 'response balance', 'boundaries'];
-  }
-  return ['emotional clarity', 'effort balance', 'communication style', 'trust', 'repair', 'boundaries'];
+  return lensFor(relationshipType).focusWords;
 }
 
 function compactMessages(messages: any[] = [], limit = 12) {
@@ -163,9 +141,10 @@ export function buildRelationshipAnalysisPrompt({
   const profileLanguages = (mainUserProfile as Record<string, any>)?.preferredAnalysisLanguages || [];
   const developerInstructions = [
     ...(focusInstruction ? [focusInstruction] : []),
-    `Selected relationship type: ${resolvedRelationship}`,
+    // The lens comes first: the model must establish WHAT this relationship is
+    // before it interprets a single message inside it.
+    lensInstructions(resolvedRelationship),
     `Selected other person: ${otherPersonName || parsedConversation.metadata?.personName || 'Not provided'}`,
-    `Relationship-specific focus: ${relationshipFocus(resolvedRelationship).join(', ')}`,
     buildLanguageToneInstructions(languageProfile, profileLanguages),
     safetyInstructions(),
     'Do not infer basic structure from raw text when parser metadata is provided. Use parser metadata as the source of truth for participants, counts, dates, language style, and timing patterns.',
@@ -173,7 +152,7 @@ export function buildRelationshipAnalysisPrompt({
     'Every field of the response schema is required, so fill each one from YOUR OWN analysis of these messages — never generic filler. A typical healthy report has 1-4 red flags and 2-4 green flags. Use an empty string or empty array only where the conversation genuinely lacks signal for that specific field, and say so plainly rather than padding.',
     'relationshipReport must contain one strong summaryParagraph, then short dashboard-safe labels/cards. Keep cards compact and visual.',
     'relationshipReport.summaryParagraph must be a concise 3-5 sentence overview of this specific conversation: the overall relationship vibe, its overall health, and one key highlight worth noticing. Not a single line, and not an extended essay.',
-    'relationshipPersonalityCard must describe only how the main user appears inside this selected relationship type. It must include conciseSummaryForDatabase so future Understand Yourself generation can use summaries without raw chats.',
+    'relationshipPersonalityCard must describe only how the main user appears inside this selected relationship type. It must include conciseSummaryForDatabase so future Know Yourself generation can use summaries without raw chats.',
     'The Personality Card copy should be compact: one strong paragraph, then short chips/phrases. Do not write long blocks inside card fields.',
     'For long chats, use the provided chronological chunk summaries for final synthesis. Do not ask for or rely on full raw chat text during final synthesis.',
     ...((parsedConversation as Record<string, any>)?.longChatMode || ((parsedConversation as Record<string, any>)?.chunkSummaries || []).length
@@ -234,7 +213,7 @@ export function buildPersonalityCardPrompt({
     `Relationship context for latest signals: ${relationshipType || 'Mixed relationships'}`,
     buildLanguageToneInstructions(languageProfile, []),
     safetyInstructions(),
-    'Generate or update the paid Understand Yourself profile from concise relationship-specific personality summaries only. Do not ask for raw chats.',
+    'Generate or update the paid Know Yourself profile from concise relationship-specific personality summaries only. Do not ask for raw chats.',
     'The output should combine how the user appears across relationship worlds such as friends, family, love, exes, colleagues, clients, and managers when those summaries are available.',
     'Preserve stable traits, strengthen repeated traits, soften weak traits, and add new traits only when evidence is enough.',
     'Make the Personality Card emotional, aesthetic, mature, GenZ-friendly, and shareable. It should feel like a deep self-understanding report, not only an MBTI card.',
@@ -248,7 +227,7 @@ export function buildPersonalityCardPrompt({
     systemPrompt: basePromptTemplate,
     developerInstructions,
     userContent: JSON.stringify({
-      task: 'Generate ThirdPerson AI Understand Yourself profile',
+      task: 'Generate ThirdPerson AI Know Yourself profile',
       previousPersonalityCard,
       newPersonalitySignals,
       languageProfile,
@@ -274,9 +253,8 @@ export function buildBestiePrompt({
 }: PromptBuildInput): PromptBundle {
   const developerInstructions = [
     'You are replying as the user\'s selected AI Relationship Coach persona inside ThirdPerson AI.',
-    `Relationship type: ${relationshipType || 'Relationship'}`,
+    lensInstructions(relationshipType || ''),
     `Other person: ${otherPersonName || 'This person'}`,
-    `Relationship-specific focus: ${relationshipFocus(relationshipType || '').join(', ')}`,
     buildLanguageToneInstructions(languageProfile, []),
     'The persona system prompt above defines your voice, tone, and personality and takes priority over the generic tone note above — use that note only to pick which language/style to reply in (English, Hindi, Hinglish), never to override the persona\'s personality.',
     safetyInstructions(),
