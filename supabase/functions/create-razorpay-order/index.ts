@@ -3,8 +3,15 @@ import { createAdminClient, getAuthenticatedUser } from '../_shared/usage.ts';
 
 // Pricing is defined server-side so the client can never dictate the amount or
 // the number of credits granted. Keep in sync with the PricingPage display.
-const PRICE_PER_REPORT_INR = 199;
-const CHATS_PER_REPORT = 10;
+//
+// Two packs:
+//  clarity      — 1 Relationship Report + 5 Coach Chats, INR 249 (Pricing page)
+//  report_only  — 1 Relationship Report, INR 199 (bought mid-flow when someone
+//                 hits Start Analysis with no credits and just wants the report)
+const PACKS = {
+  clarity: { pricePerUnitInr: 249, chatsPerUnit: 5 },
+  report_only: { pricePerUnitInr: 199, chatsPerUnit: 0 },
+} as const;
 const MAX_REPORTS = 50;
 
 Deno.serve(async (req: Request) => {
@@ -23,10 +30,12 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => ({}));
+    const packId = body.packId === 'report_only' ? 'report_only' : 'clarity';
+    const pack = PACKS[packId];
     const reportCount = Math.max(1, Math.min(MAX_REPORTS, Math.floor(Number(body.reportCount) || 0)));
     if (!reportCount) return jsonResponse({ error: 'Choose at least one Relationship Report.' }, 400, cors);
-    const bestieCount = reportCount * CHATS_PER_REPORT;
-    const amount = reportCount * PRICE_PER_REPORT_INR * 100; // paise
+    const bestieCount = reportCount * pack.chatsPerUnit;
+    const amount = reportCount * pack.pricePerUnitInr * 100; // paise
 
     const authHeader = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
     const receipt = `tp_${user.id.slice(0, 8)}_${Date.now()}`;
@@ -37,7 +46,7 @@ Deno.serve(async (req: Request) => {
         amount,
         currency: 'INR',
         receipt,
-        notes: { userId: user.id, reportCount: String(reportCount), bestieCount: String(bestieCount) },
+        notes: { userId: user.id, packId, reportCount: String(reportCount), bestieCount: String(bestieCount) },
       }),
     });
 
@@ -65,7 +74,7 @@ Deno.serve(async (req: Request) => {
 
     // keyId is the public/publishable Razorpay key — safe to return to the browser.
     return jsonResponse(
-      { orderId: order.id, amount, currency: 'INR', keyId, reportCount, bestieCount },
+      { orderId: order.id, amount, currency: 'INR', keyId, packId, reportCount, bestieCount },
       200,
       cors,
     );

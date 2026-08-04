@@ -10,6 +10,9 @@ const bestieReplyJsonSchema = S.obj({
   answer: S.str('The direct answer, 2-4 sentences maximum'),
   whatToDoNext: S.str('One specific next step, or empty string'),
   whatNotToIgnore: S.str('One real risk worth naming, or empty string'),
+  // Required by the schema so every reply keeps the conversation going — the
+  // model cannot silently drop it the way a prompt-only instruction allows.
+  followUpQuestion: S.str('One short question back to the user, always present, ending in a question mark'),
 });
 
 function supportsCustomTemperature(model: string) {
@@ -26,6 +29,7 @@ function parseBestieText(text: string) {
       parsed.answer || parsed.quickTake,
       parsed.whatToDoNext && `What to do next: ${parsed.whatToDoNext}`,
       parsed.whatNotToIgnore && `Do not ignore: ${parsed.whatNotToIgnore}`,
+      parsed.followUpQuestion,
     ].filter(Boolean).join('\n\n') || text;
   } catch {
     return text;
@@ -47,13 +51,21 @@ async function openAiBestieReply(message: string, context: Record<string, any>, 
       languagesUsed: body.userProfile?.preferredAnalysisLanguages || [],
       recommendedOutputStyle: body.detectedLanguageStyle,
     },
-    analysisChainSummary: context?.analysisChainSummary || context?.latestSummary || context?.reportSummaryForFutureUse?.compressedSummary || '',
+    analysisChainSummary: {
+      relationship: `${context?.relationshipType || 'Relationship'} with ${context?.personName || 'this person'}`,
+      reportsInChain: context?.reportCount,
+      dateRange: context?.dateRange,
+      compatibilityMovement: context?.compatibilityMovement,
+      emotionalTrendAcrossReports: context?.emotionalTrendAcrossReports,
+      repeatedRedFlags: context?.repeatedRedFlags || [],
+      repeatedGreenFlags: context?.repeatedGreenFlags || [],
+    },
     latestReportSummary: {
       summary: context?.latestSummary || '',
+      report: context?.latestReport || {},
+      knownFactsAboutThem: context?.personFacts || [],
       bestieContextSummary: context?.bestieContextSummary || {},
-      relevantRedFlags: context?.repeatedRedFlags || [],
-      relevantGreenFlags: context?.repeatedGreenFlags || [],
-      importantMoments: context?.turningPoints || context?.reportSummaryForFutureUse?.importantMoments || [],
+      compressedSummary: context?.reportSummaryForFutureUse?.compressedSummary || '',
     },
     personalityCardSummary: context?.personalitySnapshot || context?.mainUserPersonalitySignals || {},
   });

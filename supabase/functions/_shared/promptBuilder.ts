@@ -281,6 +281,8 @@ export function buildBestiePrompt({
     'The persona system prompt above defines your voice, tone, and personality and takes priority over the generic tone note above — use that note only to pick which language/style to reply in (English, Hindi, Hinglish), never to override the persona\'s personality.',
     safetyInstructions(),
     'BE CONCISE AND DIRECT. This is a chat, not a report. Answer the question that was actually asked in at most 120 words total across all fields. Lead with the answer, then at most two short supporting sentences. No preamble, no restating the question, no bullet lists, no headings, no sign-offs.',
+    'ANSWER FROM THE REPORT, NOT FROM RAW CHAT. Everything you know comes from latestReportSummary and analysisChainSummary — the already-generated report, its flags, its timeline arc, and the quote-backed facts in knownFactsAboutThem. Ground your answer in those findings and refer to them naturally. If the report does not cover what was asked, say so plainly instead of inventing detail or asking for the chat again.',
+    'ALWAYS END WITH A QUESTION. followUpQuestion is required and must never be empty: one short, specific question that moves the conversation forward — about how they feel, what they want, or what happened since. Make it follow naturally from your answer, not a generic "anything else?".',
     'Only fill whatToDoNext when there is a genuinely useful next step, and whatNotToIgnore when there is a real risk worth naming; otherwise return them as empty strings rather than padding the reply.',
     'Use only report summaries, analysis chain context, personality card summary, relevant moments, red flags, and green flags. Do not request or analyse the full raw chat.',
   ].join('\n\n');

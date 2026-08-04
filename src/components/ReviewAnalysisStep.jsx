@@ -8,6 +8,8 @@ import { getUserProfile } from '../lib/profileStore.js';
 import { buildZodiacCompatibility, getZodiacElement, getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
 import { generateRelationshipReportViaSupabase } from '../lib/backendAiService.js';
 import { fetchUsageEntitlements } from '../lib/creditsService.js';
+import { runRazorpayCheckout } from '../lib/paymentsService.js';
+import { useAuth } from '../state/AuthContext.jsx';
 import RotatingQuote from './RotatingQuote.jsx';
 import UsageWarningModal from './UsageWarningModal.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
@@ -65,10 +67,12 @@ function progressStageForRoute(route) {
 
 export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
   const { navigate } = useRouter();
+  const { user } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
   const [processingStage, setProcessingStage] = useState('');
   const [creditBlock, setCreditBlock] = useState(null);
+  const [isPaying, setIsPaying] = useState(false);
   const [entitlements, setEntitlements] = useState(null);
   const reviewPrep = useMemo(() => {
     if (!flow.chatText.trim()) return null;
@@ -289,10 +293,33 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         preparedConversation,
       });
     } else {
-      setCreditBlock('report');
-      setAnalysisError('You’re out of Relationship Reports. Top up to generate more relationship intelligence summaries.');
+      // No credits: take payment right here instead of bouncing the user to the
+      // pricing page and losing the conversation they just prepared.
       setIsGenerating(false);
       setProcessingStage('');
+      if (!user) {
+        navigate('/auth?next=/analysis/new');
+        return;
+      }
+      setAnalysisError('');
+      setIsPaying(true);
+      try {
+        await runRazorpayCheckout({
+          reportCount: 1,
+          packId: 'report_only',
+          user,
+          description: `Relationship Report for ${flow.personName || 'this conversation'}`,
+        });
+        setIsPaying(false);
+        setEntitlements(await fetchUsageEntitlements());
+        // Payment succeeded — run the analysis they already asked for.
+        await startAnalysis();
+      } catch (paymentError) {
+        setIsPaying(false);
+        if (!paymentError.cancelled) {
+          setAnalysisError(paymentError.message || 'Payment could not be completed. Please try again.');
+        }
+      }
       return;
     }
 
@@ -385,14 +412,18 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
           </div>
         )}
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-xs leading-6 text-smoke">
-          {entitlements ? `${entitlements.relationshipReportsLeft} Relationship Reports left • ${entitlements.paidBestieChatsLeft} paid Coach Chats left` : 'Checking your credit balance…'}
+          {entitlements
+            ? entitlements.relationshipReportsLeft > 0
+              ? `${entitlements.relationshipReportsLeft} Relationship Reports left • ${entitlements.paidBestieChatsLeft} paid Coach Chats left`
+              : 'No Relationship Reports left — Start Analysis will open secure checkout for ₹199 (this report).'
+            : 'Checking your credit balance…'}
         </div>
         <button
-          disabled={!canStart || isGenerating}
+          disabled={!canStart || isGenerating || isPaying}
           onClick={startAnalysis}
           className="glass-button mt-8 w-full px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone disabled:cursor-not-allowed disabled:border-white/10 disabled:text-ash"
         >
-          {isGenerating ? 'Preparing Analysis' : 'Start Analysis'}
+          {isGenerating ? 'Preparing Analysis' : isPaying ? 'Opening secure checkout…' : 'Start Analysis'}
         </button>
         {analysisError && <p className="mt-4 text-xs leading-6 text-smoke">{analysisError}</p>}
         {!canStart && <p className="mt-4 text-xs leading-6 text-ash">Complete every step and add at least a short conversation sample.</p>}

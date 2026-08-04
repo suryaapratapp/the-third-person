@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { claimPayAsYouGoPack, fetchCreditBalances } from '../lib/creditsService.js';
-import { createRazorpayOrder, loadRazorpayCheckout, verifyRazorpayPayment } from '../lib/paymentsService.js';
+import { runRazorpayCheckout } from '../lib/paymentsService.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
-const PRICE_PER_REPORT = 199;
-const CHATS_PER_REPORT = 10;
+const PRICE_PER_REPORT = 249;
+const CHATS_PER_REPORT = 5;
 const MIN_REPORTS = 1;
 const MAX_REPORTS = 50;
 
@@ -57,45 +57,17 @@ export default function PricingPage() {
     }
     setPaying(true);
     try {
-      const RazorpayCtor = await loadRazorpayCheckout();
-      const order = await createRazorpayOrder({ reportCount });
-      if (!order?.orderId || !order?.keyId) throw new Error('Could not start checkout. Please try again.');
-      const checkout = new RazorpayCtor({
-        key: order.keyId,
-        order_id: order.orderId,
-        amount: order.amount,
-        currency: order.currency || 'INR',
-        name: 'ThirdPerson AI',
-        description: `${order.reportCount} Relationship Report${order.reportCount > 1 ? 's' : ''} + ${order.bestieCount} Coach Chats`,
-        prefill: { email: user.email || '' },
-        theme: { color: '#a78bfa' },
-        handler: async (response) => {
-          try {
-            const result = await verifyRazorpayPayment(response);
-            if (!result?.success) throw new Error('Payment could not be verified.');
-            const next = await fetchCreditBalances();
-            setBalances(next);
-            setMessage(
-              result.alreadySettled
-                ? 'This payment was already processed — your credits are up to date.'
-                : 'Payment successful. Your credits have been added.',
-            );
-          } catch (verifyError) {
-            setMessage(verifyError.message || 'Payment verification failed. If you were charged, please contact support.');
-          } finally {
-            setPaying(false);
-          }
-        },
-        modal: { ondismiss: () => setPaying(false) },
-      });
-      checkout.on('payment.failed', (resp) => {
-        setPaying(false);
-        setMessage(resp?.error?.description || 'Payment failed. Please try again.');
-      });
-      checkout.open();
+      const result = await runRazorpayCheckout({ reportCount, packId: 'clarity', user });
+      setBalances(await fetchCreditBalances());
+      setMessage(
+        result.alreadySettled
+          ? 'This payment was already processed — your credits are up to date.'
+          : 'Payment successful. Your credits have been added.',
+      );
     } catch (error) {
+      if (!error.cancelled) setMessage(error.message || 'Could not start checkout. Please try again.');
+    } finally {
       setPaying(false);
-      setMessage(error.message || 'Could not start checkout. Please try again.');
     }
   }
 
@@ -134,7 +106,7 @@ export default function PricingPage() {
           <p className="tech-label text-purple-200">Pricing</p>
           <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Build your clarity pack</h1>
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-8 text-smoke">
-            Choose the number of Relationship Reports you need. Every report adds 10 Coach Chats, so your follow-up guidance grows with your analysis balance.
+            Choose the number of Relationship Reports you need. Every report adds 5 Coach Chats, so your follow-up guidance grows with your analysis balance.
           </p>
           <div className="mx-auto mt-7 flex max-w-3xl flex-wrap justify-center gap-3">
             {['Pay only for what you need', 'Top up anytime', 'Old reports stay free to open'].map((item) => (
@@ -195,11 +167,11 @@ export default function PricingPage() {
                 <p className="tech-label text-purple-100">Smart credit builder</p>
                 <h2 className="serif-title mt-4 text-5xl leading-tight">Shape your top-up.</h2>
                 <p className="mt-3 max-w-xl text-sm leading-7 text-smoke">
-                  1 Relationship Report includes 10 Coach Chats. Pick the amount that matches how much clarity you want right now.
+                  1 Relationship Report includes 5 Coach Chats. Pick the amount that matches how much clarity you want right now.
                 </p>
               </div>
               <div className="rounded-full border border-orange-200/25 bg-orange-300/[0.08] px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-orange-100">
-                ₹199 each
+                ₹249 each
               </div>
             </div>
 
@@ -306,7 +278,7 @@ export default function PricingPage() {
             <div className="mt-6 space-y-4">
               {[
                 ['1', 'Choose the number of reports you want.'],
-                ['2', 'Coach Chats are added automatically in multiples of 10.'],
+                ['2', 'Coach Chats are added automatically in multiples of 5.'],
                 ['3', 'Use reports to analyse conversations.'],
                 ['4', 'Use Coach Chats to ask follow-up questions about your relationship.'],
               ].map(([step, copy]) => (

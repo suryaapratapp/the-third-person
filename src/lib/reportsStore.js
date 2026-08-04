@@ -204,51 +204,57 @@ export function buildAnalysisChainContext(chain) {
   if (!chain?.reports?.length) return null;
   const sorted = [...chain.reports].sort((a, b) => new Date(a.dateAnalysed) - new Date(b.dateAnalysed));
   const latest = sorted[sorted.length - 1];
-  const repeatedRedFlags = [...new Set(sorted.flatMap((report) => (report.analysisJson?.improvedRedFlags || report.analysisJson?.redFlags || []).map((flag) => flag.label)).filter(Boolean))].slice(0, 8);
-  const repeatedGreenFlags = [...new Set(sorted.flatMap((report) => (report.analysisJson?.improvedGreenFlags || report.analysisJson?.greenFlags || []).map((flag) => flag.label)).filter(Boolean))].slice(0, 8);
-  const turningPoints = sorted.flatMap((report) => report.analysisJson?.turningPoints || []).slice(-8);
-  const compat = sorted.map((report) => report.compatibilityScore || report.analysisJson?.scores?.compatibility || 0);
-  const movement = compat.length > 1 ? compat[compat.length - 1] - compat[0] : 0;
+  const analysis = latest.analysisJson || {};
+  const report = analysis.relationshipReport || {};
+
+  const flagLabels = (items) => (Array.isArray(items) ? items : [])
+    .map((flag) => (typeof flag === 'string' ? flag : flag?.label))
+    .filter(Boolean);
+
+  const repeatedRedFlags = [...new Set(sorted.flatMap((item) => flagLabels(
+    item.analysisJson?.relationshipReport?.redFlags || item.analysisJson?.improvedRedFlags || item.analysisJson?.redFlags,
+  )))].slice(0, 8);
+  const repeatedGreenFlags = [...new Set(sorted.flatMap((item) => flagLabels(
+    item.analysisJson?.relationshipReport?.greenFlags || item.analysisJson?.improvedGreenFlags || item.analysisJson?.greenFlags,
+  )))].slice(0, 8);
+  const compat = sorted.map((item) => item.compatibilityScore || 0);
+
+  // Deliberately lean: the coach answers FROM THE REPORT, so it only needs the
+  // latest report's conclusions plus what repeats across the chain. The old
+  // shape resent every report's full summary/advice/flags on every message,
+  // which multiplied input tokens for no extra insight.
   return {
     chainId: chain.chainId,
     personName: chain.personName,
     relationshipType: chain.relationshipType,
-    platform: chain.platform,
     reportCount: sorted.length,
     dateRange: `${sorted[0].dateRange || 'Unknown'} → ${latest.dateRange || 'Unknown'}`,
-    latestSummary: latest.analysisJson?.simpleSummaryForYoungAudience || latest.mainDynamic,
-    compatibilityMovement: movement,
-    emotionalTrendAcrossReports: sorted.map((report) => report.emotionalTrend).filter(Boolean).join(' → ') || latest.emotionalTrend,
+    latestSummary: report.summaryParagraph || analysis.summary?.relationshipOverview || latest.mainDynamic,
+    latestReport: {
+      overallDynamic: report.overallDynamic || latest.mainDynamic,
+      emotionalTone: report.emotionalTone || latest.emotionalTrend,
+      timelineArc: report.timelineArc || '',
+      nextBestMove: report.nextBestMove || analysis.advice?.nextBestStep || '',
+      compatibility: latest.compatibilityScore,
+      energyMatch: report.energyMatchScore?.score ?? analysis.energyMatchScore?.score,
+      redFlags: (report.redFlags || analysis.redFlags || []).slice(0, 4)
+        .map((flag) => ({ label: flag?.label, whyItMatters: flag?.whyItMatters })),
+      greenFlags: (report.greenFlags || analysis.greenFlags || []).slice(0, 4)
+        .map((flag) => ({ label: flag?.label, whyItMatters: flag?.whyItMatters })),
+    },
+    // Facts the other person revealed about themselves, each already quote-backed.
+    personFacts: (analysis.personProfile?.items || []).slice(0, 12)
+      .map((item) => ({ category: item.category, fact: item.fact })),
     repeatedRedFlags,
     repeatedGreenFlags,
-    turningPoints,
-    dayNightDynamics: latest.analysisJson?.dayNightDynamics,
-    personalitySnapshot: latest.analysisJson?.personalitySnapshot,
-    bestieContextSummary: latest.bestieContextSummary || latest.analysisJson?.bestieContextSummary,
-    reportSummaryForFutureUse: latest.reportSummaryForFutureUse || latest.analysisJson?.reportSummaryForFutureUse,
-    mainUserPersonalitySignals: latest.mainUserPersonalitySignals || latest.analysisJson?.mainUserPersonalitySignals,
-    energyMatch: latest.analysisJson?.energyMatchScore,
-    mixedSignals: latest.analysisJson?.mixedSignalsMap,
-    zodiacCompatibility: latest.analysisJson?.zodiacCompatibility || latest.preparedConversation?.metadata?.zodiacCompatibility,
-    participants: latest.participants,
-    messageCount: sorted.reduce((sum, report) => sum + (report.messageCount || 0), 0),
-    languageProfile: latest.preparedConversation?.languageProfile || latest.analysisJson?.detectedLanguageStyle || null,
+    compatibilityMovement: compat.length > 1 ? compat[compat.length - 1] - compat[0] : 0,
+    emotionalTrendAcrossReports: sorted.map((item) => item.emotionalTrend).filter(Boolean).join(' → ') || latest.emotionalTrend,
+    bestieContextSummary: latest.bestieContextSummary || analysis.bestieContextSummary,
+    reportSummaryForFutureUse: latest.reportSummaryForFutureUse || analysis.reportSummaryForFutureUse,
+    mainUserPersonalitySignals: latest.mainUserPersonalitySignals || analysis.mainUserPersonalitySignals,
+    languageProfile: latest.preparedConversation?.languageProfile || analysis.detectedLanguageStyle || null,
     languageStyle: latest.preparedConversation?.languageProfile?.recommendedOutputStyle
-      || latest.analysisJson?.detectedLanguageStyle?.recommendedOutputStyle
-      || (latest.preparedConversation?.topWords?.some((item) => /hai|nahi|kyu|haan|yaar|mat|kar/i.test(item.word)) ? 'Hinglish / Indian English' : 'English'),
-    compressedReports: sorted.map((report) => ({
-      dateAnalysed: report.dateAnalysed,
-      dateRange: report.dateRange,
-      mainDynamic: report.mainDynamic,
-      emotionalTrend: report.emotionalTrend,
-      compatibilityScore: report.compatibilityScore,
-      summary: report.analysisJson?.summary,
-      advice: report.analysisJson?.advice,
-      bestieBreakdown: report.analysisJson?.bestieBreakdown,
-      bestieContextSummary: report.bestieContextSummary || report.analysisJson?.bestieContextSummary,
-      reportSummaryForFutureUse: report.reportSummaryForFutureUse || report.analysisJson?.reportSummaryForFutureUse,
-      redFlags: (report.analysisJson?.improvedRedFlags || report.analysisJson?.redFlags || []).slice(0, 4),
-      greenFlags: (report.analysisJson?.improvedGreenFlags || report.analysisJson?.greenFlags || []).slice(0, 4),
-    })),
+      || analysis.detectedLanguageStyle?.recommendedOutputStyle
+      || 'English',
   };
 }
