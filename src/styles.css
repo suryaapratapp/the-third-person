@@ -524,6 +524,17 @@ select:focus-visible {
   }
 }
 
+/* Indeterminate bar for the analysis overlay: there is no real per-step
+   progress to report, so it sweeps rather than pretending to fill. */
+@keyframes analysisSweep {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(420%); }
+}
+
+.analysis-progress {
+  animation: analysisSweep 1.6s ease-in-out infinite;
+}
+
 /* Mobile tab bar.
    iOS puts a home indicator across the bottom ~34px of the screen in gesture
    mode; without the safe-area inset the last row of tab labels sits underneath

@@ -1,14 +1,28 @@
 import { useEffect, useState } from 'react';
+import { PiCheck, PiMinus, PiPlus } from 'react-icons/pi';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { fetchCreditBalances } from '../lib/creditsService.js';
 import { runRazorpayCheckout } from '../lib/paymentsService.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
+// Pricing, reduced to the one decision it actually asks for: how many reports.
+//
+// It previously offered three separate controls for that single number — a
+// 1–50 slider, a +/- stepper, and four quick-pick buttons — then showed the
+// resulting total in three places (three stat cards, a "live summary" panel,
+// and the pay button). Around that sat a hero panel, two full-width balance
+// cards, and a sidebar of seven explainer boxes.
+//
+// Deliberately NOT tiered into packs: the price is strictly linear at ₹249 per
+// report, so "1 / 3 / 10" cards would imply a bulk discount that does not
+// exist. A quantity picker is the honest shape for linear pricing.
+
 const PRICE_PER_REPORT = 249;
 const CHATS_PER_REPORT = 5;
 const MIN_REPORTS = 1;
 const MAX_REPORTS = 50;
+const QUICK_PICKS = [1, 3, 5];
 
 function formatInr(value) {
   return new Intl.NumberFormat('en-IN').format(value);
@@ -19,6 +33,12 @@ function clampReports(value) {
   if (!Number.isFinite(next)) return MIN_REPORTS;
   return Math.min(MAX_REPORTS, Math.max(MIN_REPORTS, next));
 }
+
+const FACTS = [
+  ['Credits never expire', 'Buy once and use them whenever. There is no subscription and nothing renews.'],
+  ['Re-reading is always free', 'Opening a report you already own never costs a credit, however many times you open it.'],
+  ['Failures are not charged', 'If a report or a coach reply fails to generate, your balance is left untouched.'],
+];
 
 export default function PricingPage() {
   const { navigate } = useRouter();
@@ -40,9 +60,6 @@ export default function PricingPage() {
       mounted = false;
     };
   }, []);
-
-  const reportBalance = balances?.paidRelationshipReportsLeft ?? '—';
-  const guideBalance = balances?.paidBestieChatsLeft ?? '—';
 
   function updateReports(value) {
     setReportCount(clampReports(value));
@@ -70,198 +87,151 @@ export default function PricingPage() {
     }
   }
 
+  const hasBalance = balances && (balances.paidRelationshipReportsLeft > 0 || balances.paidBestieChatsLeft > 0);
+
   return (
-    <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
+    <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-24 sm:px-8 sm:pt-28">
       <ParticleBackground className="opacity-45" />
-      <div className="relative mx-auto max-w-[1180px]">
+
+      <div className="relative mx-auto max-w-[760px]">
         {reason === 'usage-limit' && (
-          <div className="mb-6 rounded-[28px] border border-orange-200/25 bg-orange-300/[0.055] p-5">
-            <p className="tech-label text-orange-100">Continue your ThirdPerson POV</p>
-            <p className="mt-3 text-sm leading-7 text-smoke">Top up to unlock more Coach Chats, more Relationship Reports, and deeper relationship intelligence.</p>
+          <div className="mb-6 rounded-[24px] border border-orange-200/25 bg-orange-300/[0.055] p-4 sm:p-5">
+            <p className="tech-label text-orange-100">You’re out of credits</p>
+            <p className="mt-2.5 text-sm leading-7 text-smoke">Top up below to keep analysing conversations and asking the coach.</p>
           </div>
         )}
 
-        <div className="corner-frame accent-panel overflow-hidden p-6 text-center sm:p-12">
-          <div className="pointer-events-none absolute left-1/2 top-10 h-64 w-64 -translate-x-1/2 rounded-full bg-purple-300/10 blur-3xl" />
+        <div className="text-center">
           <p className="tech-label text-purple-200">Pricing</p>
-          <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Build your clarity pack</h1>
-          <p className="mx-auto mt-5 max-w-2xl text-sm leading-8 text-smoke">
-            Choose the number of Relationship Reports you need. Every report adds 5 Coach Chats, so your follow-up guidance grows with your analysis balance.
+          <h1 className="serif-title mt-4 text-4xl leading-tight sm:text-6xl">Pay for what you use.</h1>
+          <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-smoke sm:text-base sm:leading-8">
+            No subscription. One price per report, and every report comes with {CHATS_PER_REPORT} coach chats
+            to ask follow-up questions about it.
           </p>
-          <div className="mx-auto mt-7 flex max-w-3xl flex-wrap justify-center gap-3">
-            {['Pay only for what you need', 'Top up anytime', 'Old reports stay free to open'].map((item) => (
-              <span key={item} className="rounded-full border border-white/12 bg-white/[0.045] px-4 py-2 font-mono text-[0.68rem] uppercase tracking-[0.12em] text-smoke">
-                {item}
-              </span>
-            ))}
-          </div>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <div className="relative overflow-hidden rounded-[30px] border border-purple-200/20 bg-gradient-to-br from-purple-300/[0.12] via-white/[0.045] to-violet-300/[0.05] p-5 shadow-[0_18px_80px_rgba(168,85,247,0.08)]">
-            <div className="absolute -right-10 -top-14 h-36 w-36 rounded-full bg-purple-300/20 blur-3xl" />
-            <p className="tech-label text-purple-100">Relationship Reports left</p>
-            <p className="relative mt-4 serif-title text-6xl leading-none text-bone">{reportBalance}</p>
+        {hasBalance && (
+          <p className="mt-7 rounded-full border border-emerald-200/20 bg-emerald-300/[0.06] px-5 py-3 text-center text-sm text-smoke">
+            You have <span className="text-bone">{balances.paidRelationshipReportsLeft}</span> report
+            {balances.paidRelationshipReportsLeft === 1 ? '' : 's'} and{' '}
+            <span className="text-bone">{balances.paidBestieChatsLeft}</span> coach chat
+            {balances.paidBestieChatsLeft === 1 ? '' : 's'} left.
+          </p>
+        )}
+
+        <div className="accent-panel mt-7 p-5 sm:p-8">
+          <div className="flex items-baseline justify-between gap-4">
+            <p className="tech-label text-purple-100">How many reports?</p>
+            <p className="font-mono text-xs text-ash">₹{PRICE_PER_REPORT} each</p>
           </div>
-          <div className="relative overflow-hidden rounded-[30px] border border-pink-200/20 bg-gradient-to-br from-pink-300/[0.10] via-white/[0.045] to-orange-300/[0.055] p-5 shadow-[0_18px_80px_rgba(236,72,153,0.08)]">
-            <div className="absolute -right-10 -top-14 h-36 w-36 rounded-full bg-pink-300/20 blur-3xl" />
-            <p className="tech-label text-pink-100">Coach Chats left</p>
-            <p className="relative mt-4 serif-title text-6xl leading-none text-bone">{guideBalance}</p>
-          </div>
-        </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
-          <article className="relative overflow-hidden rounded-[38px] border border-purple-200/24 bg-gradient-to-br from-white/[0.07] via-purple-300/[0.08] to-pink-300/[0.045] p-6 shadow-[0_28px_120px_rgba(168,85,247,0.12)] sm:p-8">
-            <div className="absolute -left-20 top-10 h-56 w-56 rounded-full bg-purple-300/15 blur-3xl" />
-            <div className="absolute -right-24 -top-20 h-64 w-64 rounded-full bg-pink-300/15 blur-3xl" />
-            <div className="relative flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="tech-label text-purple-100">Smart credit builder</p>
-                <h2 className="serif-title mt-4 text-5xl leading-tight">Shape your top-up.</h2>
-                <p className="mt-3 max-w-xl text-sm leading-7 text-smoke">
-                  1 Relationship Report includes 5 Coach Chats. Pick the amount that matches how much clarity you want right now.
-                </p>
-              </div>
-              <div className="rounded-full border border-orange-200/25 bg-orange-300/[0.08] px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-orange-100">
-                ₹249 each
-              </div>
-            </div>
-
-            <div className="relative mt-8 rounded-[30px] border border-white/12 bg-black/25 p-5">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <p className="tech-label text-smoke">Number of reports</p>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => updateReports(reportCount - 1)}
-                    className="grid h-11 w-11 place-items-center rounded-full border border-white/12 bg-white/[0.045] text-2xl text-bone transition hover:border-purple-200/50"
-                    aria-label="Decrease reports"
-                  >
-                    -
-                  </button>
-                  <input
-                    type="number"
-                    min={MIN_REPORTS}
-                    max={MAX_REPORTS}
-                    value={reportCount}
-                    onChange={(event) => updateReports(event.target.value)}
-                    className="h-12 w-24 rounded-full border border-purple-200/25 bg-black/40 text-center text-lg text-bone outline-none focus:border-purple-100/70"
-                    aria-label="Relationship report count"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => updateReports(reportCount + 1)}
-                    className="grid h-11 w-11 place-items-center rounded-full border border-white/12 bg-white/[0.045] text-2xl text-bone transition hover:border-purple-200/50"
-                    aria-label="Increase reports"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-              <input
-                type="range"
-                min={MIN_REPORTS}
-                max={MAX_REPORTS}
-                value={reportCount}
-                onChange={(event) => updateReports(event.target.value)}
-                className="mt-7 w-full accent-purple-300"
-                aria-label="Relationship report slider"
-              />
-              <div className="mt-4 flex justify-between font-mono text-[0.65rem] uppercase tracking-[0.12em] text-ash">
-                <span>1 report</span>
-                <span>50 reports</span>
-              </div>
-              <div className="mt-5 grid gap-2 sm:grid-cols-4">
-                {[
-                  [1, 'Quick read'],
-                  [3, 'Compare patterns'],
-                  [5, 'Ongoing situation'],
-                  [10, 'Deep archive'],
-                ].map(([count, label]) => (
-                  <button
-                    key={count}
-                    type="button"
-                    onClick={() => updateReports(count)}
-                    className={`rounded-2xl border px-3 py-3 text-left transition ${reportCount === count ? 'border-purple-200/55 bg-purple-300/12 text-bone' : 'border-white/10 bg-white/[0.035] text-smoke hover:border-purple-200/35 hover:text-bone'}`}
-                  >
-                    <span className="block font-mono text-[0.62rem] uppercase tracking-[0.12em]">{label}</span>
-                    <span className="mt-1 block text-xs text-ash">{count} report{count > 1 ? 's' : ''}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-[26px] border border-purple-200/18 bg-black/24 p-5">
-                <p className="serif-title text-5xl leading-none text-bone">{reportCount}</p>
-                <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Relationship Reports</p>
-              </div>
-              <div className="rounded-[26px] border border-pink-200/18 bg-black/24 p-5">
-                <p className="serif-title text-5xl leading-none text-bone">{guideChats}</p>
-                <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Coach Chats</p>
-              </div>
-              <div className="rounded-[26px] border border-orange-200/20 bg-orange-300/[0.055] p-5">
-                <p className="serif-title text-5xl leading-none text-bone">₹{formatInr(totalPrice)}</p>
-                <p className="mt-2 text-xs uppercase tracking-[0.12em] text-smoke">Total</p>
-              </div>
-            </div>
-
+          <div className="mt-5 flex items-center justify-center gap-4">
             <button
               type="button"
-              onClick={handleCheckout}
-              disabled={paying}
-              className="btn btn-primary relative mt-8 w-full disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => updateReports(reportCount - 1)}
+              disabled={reportCount <= MIN_REPORTS}
+              aria-label="Decrease reports"
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-white/14 bg-white/[0.05] text-bone transition hover:border-purple-200/50 disabled:opacity-35"
             >
-              {paying ? 'Processing…' : `Pay ₹${formatInr(totalPrice)}`}
+              <PiMinus />
             </button>
-            <p className="relative mt-4 text-center text-sm leading-7 text-smoke">
-              Pay only for what you need. Top up anytime when your reports or Coach Chats run out.
-            </p>
-            <p className="relative mt-3 text-center text-xs leading-6 text-ash">
-              By continuing you agree to our{' '}
-              <button type="button" onClick={() => navigate('/terms')} className="text-purple-200 underline hover:text-bone">Terms of Service</button>
-              {' '}and{' '}
-              <button type="button" onClick={() => navigate('/refund-policy')} className="text-purple-200 underline hover:text-bone">Refund Policy</button>.
-            </p>
-          </article>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={MIN_REPORTS}
+              max={MAX_REPORTS}
+              value={reportCount}
+              onChange={(event) => updateReports(event.target.value)}
+              aria-label="Number of reports"
+              /* Not `serif-title`: Cormorant's lining "1" is nearly identical
+                 to a capital I at this size, which is a bad look on the field
+                 that decides what someone pays. */
+              className="h-16 w-28 rounded-[20px] border border-purple-200/25 bg-black/40 text-center text-4xl font-light text-bone outline-none focus:border-purple-100/70"
+            />
+            <button
+              type="button"
+              onClick={() => updateReports(reportCount + 1)}
+              disabled={reportCount >= MAX_REPORTS}
+              aria-label="Increase reports"
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-white/14 bg-white/[0.05] text-bone transition hover:border-purple-200/50 disabled:opacity-35"
+            >
+              <PiPlus />
+            </button>
+          </div>
 
-          <aside className="thin-panel rounded-[34px] p-6 sm:p-8">
-            <p className="tech-label text-purple-200">How it works</p>
-            <div className="mt-6 space-y-4">
-              {[
-                ['1', 'Choose the number of reports you want.'],
-                ['2', 'Coach Chats are added automatically in multiples of 5.'],
-                ['3', 'Use reports to analyse conversations.'],
-                ['4', 'Use Coach Chats to ask follow-up questions about your relationship.'],
-              ].map(([step, copy]) => (
-                <div key={step} className="flex gap-4 rounded-[24px] border border-white/10 bg-white/[0.035] p-4">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-purple-200/25 bg-purple-300/10 font-mono text-xs text-bone">{step}</span>
-                  <p className="text-sm leading-7 text-smoke">{copy}</p>
-                </div>
-              ))}
+          <div className="mt-4 flex justify-center gap-2">
+            {QUICK_PICKS.map((count) => (
+              <button
+                key={count}
+                type="button"
+                onClick={() => updateReports(count)}
+                className={`min-h-[44px] rounded-full border px-5 font-mono text-xs uppercase tracking-[0.12em] transition ${
+                  reportCount === count
+                    ? 'border-purple-200/55 bg-purple-300/12 text-bone'
+                    : 'border-white/12 bg-white/[0.035] text-smoke hover:border-purple-200/35'
+                }`}
+              >
+                {count}
+              </button>
+            ))}
+          </div>
+
+          <dl className="mt-7 border-t border-white/10 pt-5 text-sm">
+            <div className="flex items-center justify-between py-2">
+              <dt className="text-smoke">Relationship reports</dt>
+              <dd className="text-bone">{reportCount}</dd>
             </div>
-            <div className="mt-6 rounded-[26px] border border-orange-200/18 bg-orange-300/[0.055] p-5">
-              <p className="tech-label text-orange-100">Live summary</p>
-              <p className="mt-4 text-sm leading-7 text-smoke">
-                {reportCount} Relationship Reports + {guideChats} Coach Chats for ₹{formatInr(totalPrice)}.
-              </p>
+            <div className="flex items-center justify-between py-2">
+              <dt className="text-smoke">Coach chats included</dt>
+              <dd className="text-bone">{guideChats}</dd>
             </div>
-            <div className="mt-5 grid gap-3">
-              {[
-                ['What you get', 'Fresh relationship reports for new conversations, plus coach follow-ups to unpack the confusing parts.'],
-                ['Smart usage', 'Opening old reports does not use credits. Duplicate cached reports do not use credits.'],
-                ['Credit safety', 'Failed report generation or failed coach replies do not reduce your balance.'],
-              ].map(([label, copy]) => (
-                <div key={label} className="rounded-[24px] border border-white/10 bg-black/18 p-4">
-                  <p className="tech-label text-ash">{label}</p>
-                  <p className="mt-3 text-sm leading-7 text-smoke">{copy}</p>
-                </div>
-              ))}
+            <div className="mt-2 flex items-baseline justify-between border-t border-white/10 pt-4">
+              <dt className="text-bone">Total</dt>
+              <dd className="serif-title text-4xl leading-none text-bone">₹{formatInr(totalPrice)}</dd>
             </div>
-          </aside>
+          </dl>
+
+          <button
+            type="button"
+            onClick={handleCheckout}
+            disabled={paying}
+            className="btn btn-primary mt-6 w-full text-sm disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {paying ? 'Processing…' : `Pay ₹${formatInr(totalPrice)}`}
+          </button>
+
+          <p className="mt-4 text-center text-xs leading-6 text-ash">
+            By continuing you agree to our{' '}
+            <button type="button" onClick={() => navigate('/terms')} className="-my-3 py-3 text-purple-200 underline hover:text-bone">Terms of Service</button>
+            {' '}and{' '}
+            <button type="button" onClick={() => navigate('/refund-policy')} className="-my-3 py-3 text-purple-200 underline hover:text-bone">Refund Policy</button>.
+          </p>
         </div>
 
-        {message && <p className="mt-5 rounded-2xl border border-purple-200/20 bg-purple-300/[0.06] p-4 text-sm text-smoke">{message}</p>}
+        {/* The in-flow price differs from this one and never used to be
+            explained anywhere, which reads as inconsistent pricing. */}
+        <p className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-7 text-smoke">
+          Buying mid-analysis costs <span className="text-bone">₹199</span> for that single report on its own.
+          The ₹{PRICE_PER_REPORT} above is the only way to get coach chats with it.
+        </p>
+
+        <div className="mt-8 grid gap-2.5">
+          {FACTS.map(([title, body]) => (
+            <div key={title} className="flex gap-3 rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
+              <PiCheck className="mt-1 shrink-0 text-emerald-200" aria-hidden="true" />
+              <div>
+                <p className="text-sm text-bone">{title}</p>
+                <p className="mt-1 text-sm leading-6 text-smoke">{body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {message && (
+          <p className="mt-5 rounded-[22px] border border-purple-200/20 bg-purple-300/[0.06] p-4 text-sm leading-7 text-smoke">
+            {message}
+          </p>
+        )}
       </div>
     </section>
   );

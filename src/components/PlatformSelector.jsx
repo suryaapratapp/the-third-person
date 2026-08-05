@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { BsThreeDots } from 'react-icons/bs';
 import { SiImessage, SiInstagram, SiMessenger, SiSnapchat, SiTelegram, SiWhatsapp } from 'react-icons/si';
-import { PiArrowRight, PiClockLight, PiFileTextLight, PiShieldCheckLight } from 'react-icons/pi';
+import { PiArrowRight, PiCheck, PiClockLight, PiFileTextLight, PiQuestion, PiShieldCheckLight } from 'react-icons/pi';
 import { EXPORT_GUIDES } from '../lib/exportGuides.js';
 import { useRouter } from '../state/RouterContext.jsx';
 
@@ -153,9 +153,17 @@ function ExportHelpDialog({ platform, onClose }) {
 export default function PlatformSelector({ value, onChange }) {
   const [helpPlatform, setHelpPlatform] = useState('');
 
+  // Every card used to repeat the subtitle "Private chat analysis", which told
+  // the user nothing and made seven cards look like a wall. The export guide —
+  // the genuinely useful thing here, since most people do not know how to get a
+  // chat out of their phone — was a 28px unlabelled "i" in the corner. It is
+  // now a named control on every card.
   return (
     <>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <p className="mb-4 text-sm leading-7 text-smoke">
+        Where is this conversation from? If you have not exported it yet, each card has a guide.
+      </p>
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {platforms.map((platform) => {
           const selected = value === platform;
           const data = platformData[platform];
@@ -163,30 +171,36 @@ export default function PlatformSelector({ value, onChange }) {
           return (
             <div
               key={platform}
-              className={`group relative min-h-28 border bg-gradient-to-br ${data.accent} p-[1px] transition ${selected ? 'border-purple-200/70 shadow-[0_0_34px_rgba(168,85,247,0.22)]' : 'border-white/12 hover:border-purple-200/45'}`}
+              className={`group relative overflow-hidden rounded-[20px] border transition ${
+                selected
+                  ? 'border-purple-200/60 bg-purple-300/[0.10] shadow-[0_0_30px_rgba(168,85,247,0.18)]'
+                  : 'border-white/12 bg-white/[0.04] hover:border-purple-200/40 hover:bg-white/[0.07]'
+              }`}
             >
               <button
                 onClick={() => onChange(platform)}
-                className="h-full w-full bg-black/80 p-5 text-left"
+                aria-pressed={selected}
+                className="flex w-full items-center gap-3.5 p-4 text-left"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.055] text-3xl transition group-hover:-translate-y-0.5 group-hover:bg-white/[0.08] sm:h-16 sm:w-16 sm:text-4xl">
-                    <Icon style={{ color: data.color }} aria-hidden="true" />
-                  </span>
-                  <span className={`h-2 w-2 rounded-full ${selected ? 'bg-purple-200' : 'bg-white/20'}`} />
-                </div>
-                <span className="mt-5 block text-lg text-bone">{platform}</span>
-                <span className="mt-2 block text-xs text-ash">Private chat analysis</span>
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/[0.06] text-2xl transition group-hover:bg-white/[0.10]">
+                  <Icon style={{ color: data.color }} aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1 text-base text-bone">{platform}</span>
+                <span
+                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border transition ${
+                    selected ? 'border-transparent bg-bone text-[#17122a]' : 'border-white/25'
+                  }`}
+                  aria-hidden="true"
+                >
+                  {selected && <PiCheck className="text-[0.7rem]" />}
+                </span>
               </button>
               <button
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setHelpPlatform(platform);
-                }}
-                aria-label={`How to export your chat from ${platform}`}
-                className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-black/70 font-mono text-xs text-smoke transition hover:border-purple-200/60 hover:text-bone"
+                onClick={() => setHelpPlatform(platform)}
+                className="flex min-h-[40px] w-full items-center gap-1.5 border-t border-white/10 px-4 text-left font-mono text-[0.6rem] uppercase tracking-[0.1em] text-ash transition hover:bg-white/[0.05] hover:text-bone"
               >
-                i
+                <PiQuestion className="text-sm" aria-hidden="true" />
+                How to export from {platform}
               </button>
             </div>
           );

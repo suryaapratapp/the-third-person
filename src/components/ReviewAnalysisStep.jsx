@@ -1,3 +1,4 @@
+import { PiWarning } from 'react-icons/pi';
 import { detectPromptInjection } from '../lib/promptInjectionFilter.js';
 import { parseConversationText, prepareConversationForAnalysis } from '../lib/conversationPreprocessor.js';
 import { generateRelationshipAnalysis } from '../lib/relationshipAnalysisEngine.js';
@@ -348,7 +349,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
   })();
 
   return (
-    <div className="relative grid gap-6 lg:grid-cols-[1fr_360px]">
+    <div className="relative grid gap-5 lg:grid-cols-[1fr_380px]">
       {creditBlock && (
         <UsageWarningModal
           feature="report"
@@ -366,67 +367,93 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
           aria-labelledby="analysis-progress-heading"
           aria-live="polite"
         >
-          <div className="accent-panel max-w-lg p-7 text-center">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-purple-200/40 bg-purple-300/10">
-              <div className="h-12 w-12 animate-spin rounded-full border-2 border-purple-200 border-t-transparent" />
+          {/* Only the live `processingStage` is shown. There used to be four
+              more lines under it — "Mapping conversation phases", "Creating
+              clarity notes" and so on — which were static text dressed up as a
+              progress checklist and never changed state. An indeterminate bar
+              is the honest signal when there is no real per-step progress. */}
+          <div className="accent-panel w-full max-w-md p-6 text-center sm:p-7">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-purple-200/40 bg-purple-300/10">
+              <div className="h-9 w-9 animate-spin rounded-full border-2 border-purple-200 border-t-transparent" />
             </div>
-            <h3 id="analysis-progress-heading" className="serif-title mt-6 text-4xl">Preparing your private analysis…</h3>
-            <div className="mt-5 space-y-2 font-mono text-xs uppercase tracking-[0.13em] text-smoke">
-              <p>{processingStage || 'Preparing private relationship intelligence…'}</p>
-              <p>Checking previous reports…</p>
-              <p>Mapping conversation phases</p>
-              <p>Creating clarity notes</p>
-              <p>Building your relationship report</p>
+            <h3 id="analysis-progress-heading" className="serif-title mt-5 text-3xl leading-tight sm:text-4xl">
+              Reading your conversation…
+            </h3>
+            <p className="mt-3 min-h-[3rem] text-sm leading-6 text-smoke">
+              {processingStage || 'Preparing private relationship intelligence…'}
+            </p>
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+              <div className="analysis-progress h-full w-1/3 rounded-full accent-gradient" />
             </div>
-            <div className="mt-6 border-t border-white/10 pt-5">
+            <p className="mt-4 text-xs leading-6 text-ash">
+              This usually takes under two minutes. Keep this tab open.
+            </p>
+            <div className="mt-5 border-t border-white/10 pt-5">
               <RotatingQuote />
             </div>
           </div>
         </div>
       )}
-      <div className="thin-panel p-5">
-        <p className="tech-label text-smoke">Review analysis package</p>
-        <div className="mt-6 divide-y divide-white/10">
+      <div className="thin-panel p-4 sm:p-5">
+        <p className="tech-label text-smoke">What will be analysed</p>
+        <dl className="mt-4 divide-y divide-white/10">
           {rows.map(([label, value]) => (
-            <div key={label} className="flex items-start justify-between gap-4 py-4">
-              <span className="text-sm text-ash">{label}</span>
-              <span className="max-w-[60%] text-right text-sm text-bone">{value}</span>
+            <div key={label} className="flex items-start justify-between gap-4 py-3">
+              <dt className="text-sm text-ash">{label}</dt>
+              <dd className="max-w-[58%] text-right text-sm text-bone">{value}</dd>
             </div>
           ))}
-        </div>
+        </dl>
       </div>
-      <div className="thin-panel p-5">
-        <p className="tech-label text-bone">Before analysis</p>
-        <p className="mt-4 text-sm leading-7 text-smoke">
-          ThirdPerson AI prepares your conversation safely, protects sensitive details, checks conversation structure, and builds careful relationship insights from the chat you provide.
-        </p>
-        <p className="mt-4 rounded-2xl border border-pink-200/15 bg-pink-300/[0.045] p-3 text-sm leading-6 text-smoke">
-          One conversation can generate your Relationship Report and update your Personality Card.
-        </p>
-        <p className="mt-4 border border-purple-300/15 bg-purple-300/5 p-3 font-mono text-xs uppercase tracking-[0.12em] text-smoke">
-          Preparing secure analysis
-        </p>
+
+      <div className="grid gap-4">
         {sampleWarning && (
-          <div className="mt-4 rounded-2xl border border-orange-200/25 bg-orange-300/[0.07] p-3 text-xs leading-6 text-smoke">
-            <span className="font-semibold text-orange-100">Heads up:</span> {sampleWarning}
+          <div className="flex gap-3 rounded-[20px] border border-orange-200/25 bg-orange-300/[0.07] p-4">
+            <PiWarning className="mt-0.5 shrink-0 text-lg text-orange-100" aria-hidden="true" />
+            <p className="text-sm leading-6 text-smoke">{sampleWarning}</p>
           </div>
         )}
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-xs leading-6 text-smoke">
-          {entitlements
-            ? entitlements.relationshipReportsLeft > 0
-              ? `${entitlements.relationshipReportsLeft} Relationship Reports left • ${entitlements.paidBestieChatsLeft} paid Coach Chats left`
-              : 'No Relationship Reports left — Start Analysis will open secure checkout for ₹199 (this report).'
-            : 'Checking your credit balance…'}
+
+        {/* The price, or the balance, stated plainly right above the button that
+            spends it — this used to be one of four small boxes of prose. */}
+        <div className="rounded-[20px] border border-white/12 bg-white/[0.04] p-4">
+          {!entitlements ? (
+            <p className="text-sm leading-6 text-smoke">Checking your balance…</p>
+          ) : entitlements.relationshipReportsLeft > 0 ? (
+            <p className="text-sm leading-6 text-smoke">
+              This uses <span className="text-bone">1 of your {entitlements.relationshipReportsLeft}</span> report
+              credit{entitlements.relationshipReportsLeft === 1 ? '' : 's'}, and leaves{' '}
+              <span className="text-bone">{entitlements.paidBestieChatsLeft}</span> coach chats available.
+            </p>
+          ) : (
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-sm leading-6 text-smoke">Secure checkout opens when you start.</p>
+              <p className="serif-title shrink-0 text-3xl leading-none text-bone">₹199</p>
+            </div>
+          )}
         </div>
+
         <button
           disabled={!canStart || isGenerating || isPaying}
           onClick={startAnalysis}
-          className="glass-button mt-8 w-full px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone disabled:cursor-not-allowed disabled:border-white/10 disabled:text-ash"
+          className="btn btn-primary min-h-[52px] w-full text-sm disabled:cursor-not-allowed disabled:opacity-45"
         >
-          {isGenerating ? 'Preparing Analysis' : isPaying ? 'Opening secure checkout…' : 'Start Analysis'}
+          {isGenerating ? 'Preparing analysis…' : isPaying ? 'Opening checkout…' : 'Start analysis'}
         </button>
-        {analysisError && <p className="mt-4 text-xs leading-6 text-smoke">{analysisError}</p>}
-        {!canStart && <p className="mt-4 text-xs leading-6 text-ash">Complete every step and add at least a short conversation sample.</p>}
+
+        {analysisError && (
+          <p className="rounded-[16px] border border-orange-200/25 bg-orange-300/[0.07] p-3 text-sm leading-6 text-orange-100">
+            {analysisError}
+          </p>
+        )}
+        {!canStart && (
+          <p className="text-center text-xs leading-6 text-ash">
+            Finish every step and add a conversation before starting.
+          </p>
+        )}
+        <p className="text-center text-xs leading-6 text-ash">
+          One conversation produces your report and updates your Know Yourself profile.
+        </p>
       </div>
     </div>
   );

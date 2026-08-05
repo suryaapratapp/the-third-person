@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import JSZip from 'jszip';
-import PrivacyNotice from './PrivacyNotice.jsx';
+import { PiCheckCircle, PiFile, PiUploadSimple } from 'react-icons/pi';
 import PrivacyAssurance from './PrivacyAssurance.jsx';
 import { parseConversationText } from '../lib/conversationPreprocessor.js';
 import { filterSensitiveData } from '../lib/sensitiveDataFilter.js';
@@ -72,6 +72,7 @@ function estimateMessages(text) {
 export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onChange }) {
   const [readError, setReadError] = useState('');
   const [showSensitive, setShowSensitive] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const estimatedMessages = useMemo(() => estimateMessages(text), [text]);
   const prep = useMemo(() => {
     if (!text.trim()) return null;
@@ -80,8 +81,10 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
     return { sensitive, parsed };
   }, [text, mode]);
 
-  function handleFile(event) {
-    const file = event.target.files?.[0];
+  // The drop zone used to be a styled <label> that said "Drop in the
+  // conversation" while only accepting clicks — dragging a file onto it made
+  // the browser navigate away from the wizard and lose the flow state.
+  function ingestFile(file) {
     if (!file) return;
     setReadError('');
     onChange({ sourceMode: 'upload', fileName: file.name, fileSize: file.size });
@@ -106,33 +109,74 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
       });
   }
 
+  function handleFile(event) {
+    ingestFile(event.target.files?.[0]);
+  }
+
+  function handleDrop(event) {
+    event.preventDefault();
+    setDragging(false);
+    ingestFile(event.dataTransfer?.files?.[0]);
+  }
+
   return (
     <div>
-      <div className="mb-5 flex gap-2 border-b border-white/12">
+      <div className="mb-5 grid grid-cols-2 gap-1.5 rounded-full border border-white/12 bg-white/[0.03] p-1.5">
         {['upload', 'paste'].map((tab) => (
           <button
             key={tab}
             onClick={() => onChange({ sourceMode: tab })}
-            className={`px-4 py-3 font-mono text-xs uppercase tracking-[0.16em] ${mode === tab ? 'border-b border-bone text-bone' : 'text-ash'}`}
+            aria-pressed={mode === tab}
+            className={`min-h-[44px] rounded-full font-mono text-[0.62rem] uppercase tracking-[0.12em] transition ${
+              mode === tab ? 'bg-white/[0.10] text-bone' : 'text-ash hover:text-smoke'
+            }`}
           >
-            {tab === 'upload' ? 'Upload chat file' : 'Paste conversation'}
+            {tab === 'upload' ? 'Upload file' : 'Paste text'}
           </button>
         ))}
       </div>
       {mode === 'upload' ? (
-        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-          <label className="flex min-h-72 cursor-pointer flex-col items-center justify-center border border-dashed border-white/24 bg-black/35 p-8 text-center transition hover:border-white/50">
-            <span className="serif-title text-4xl">Drop in the conversation</span>
-            <span className="mt-4 text-sm text-smoke">Accepts .txt, .json, .csv, .zip</span>
+        <div className="grid gap-4">
+          <label
+            onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            className={`flex min-h-52 cursor-pointer flex-col items-center justify-center rounded-[24px] border border-dashed p-6 text-center transition sm:min-h-64 ${
+              dragging
+                ? 'border-purple-200/70 bg-purple-300/[0.10]'
+                : 'border-white/24 bg-black/30 hover:border-purple-200/50 hover:bg-white/[0.04]'
+            }`}
+          >
+            <PiUploadSimple className={`text-3xl transition ${dragging ? 'text-purple-100' : 'text-smoke'}`} aria-hidden="true" />
+            <span className="mt-4 text-lg text-bone sm:text-xl">
+              {dragging ? 'Drop it here' : 'Choose your chat export'}
+            </span>
+            <span className="mt-2 text-sm leading-6 text-smoke">
+              Tap to browse<span className="hidden sm:inline">, or drag the file in</span>
+            </span>
+            <span className="mt-3 font-mono text-[0.6rem] uppercase tracking-[0.1em] text-ash">
+              .txt · .json · .csv · .zip
+            </span>
             <input className="sr-only" type="file" accept=".txt,.json,.csv,.zip,.html,text/plain,application/json,text/csv,application/zip" onChange={handleFile} />
           </label>
-          <div className="thin-panel p-5">
-            <p className="tech-label text-smoke">Selected file</p>
-            <p className="mt-4 break-all text-bone">{fileName || 'No file selected yet'}</p>
-            <p className="mt-3 font-mono text-sm text-ash">{fileSize ? `${(fileSize / 1024).toFixed(1)} KB estimated size` : 'Waiting for upload'}</p>
-            <p className="mt-3 font-mono text-sm text-ash">{text ? `${text.length.toLocaleString()} characters read` : 'File content will be read in-browser where possible'}</p>
-            {readError && <p className="mt-4 text-sm text-bone">{readError}</p>}
-          </div>
+
+          {(fileName || readError) && (
+            <div className="rounded-[20px] border border-white/12 bg-white/[0.04] p-4">
+              <div className="flex items-start gap-3">
+                <PiFile className="mt-0.5 shrink-0 text-lg text-purple-200" aria-hidden="true" />
+                <div className="min-w-0 flex-1">
+                  <p className="break-all text-sm text-bone">{fileName || 'No file selected'}</p>
+                  <p className="mt-1 font-mono text-xs text-ash">
+                    {[
+                      fileSize ? `${(fileSize / 1024).toFixed(1)} KB` : null,
+                      text ? `${text.length.toLocaleString()} characters read` : null,
+                    ].filter(Boolean).join(' · ') || 'Reading…'}
+                  </p>
+                </div>
+              </div>
+              {readError && <p className="mt-3 text-sm leading-6 text-orange-100">{readError}</p>}
+            </div>
+          )}
         </div>
       ) : (
         <div>
@@ -140,84 +184,76 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
             value={text}
             onChange={(event) => onChange({ chatText: event.target.value, sourceMode: 'paste' })}
             placeholder="[12/04/26, 9:21 PM] You: I just want to understand what changed..."
-            className="min-h-80 w-full resize-y border border-white/18 bg-black/45 p-5 font-mono text-sm leading-7 text-bone outline-none placeholder:text-ash focus:border-white/55"
+            className="min-h-64 w-full resize-y rounded-[20px] border border-white/18 bg-black/45 p-4 font-mono text-sm leading-7 text-bone outline-none placeholder:text-ash focus:border-purple-200/70 sm:min-h-80 sm:p-5"
           />
-          <div className="mt-3 flex flex-wrap gap-4 font-mono text-xs uppercase tracking-[0.13em] text-ash">
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs uppercase tracking-[0.12em] text-ash">
             <span>{text.length.toLocaleString()} characters</span>
             <span>{estimatedMessages.toLocaleString()} estimated messages</span>
           </div>
         </div>
       )}
       {prep && (
-        <div className="mt-6 accent-panel p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="tech-label text-purple-200">Preparing your conversation safely</p>
-              <p className="mt-3 text-sm leading-7 text-smoke">
-                Your conversation is being structured and sensitive details are protected before analysis.
-              </p>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-purple-200/35 bg-purple-300/10 text-xl">◈</div>
+        <div className="mt-5 accent-panel p-4 sm:p-5">
+          <div className="flex items-center gap-2.5">
+            <PiCheckCircle className="shrink-0 text-lg text-emerald-200" aria-hidden="true" />
+            <p className="tech-label text-emerald-100">Conversation read</p>
           </div>
-          <div className="mt-5 h-1 bg-white/10">
-            <div className="h-1 w-4/5 rounded-full bg-gradient-to-r from-purple-300 via-pink-300 to-orange-300" />
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+
+          {/* Four facts in a row, replacing five stacked cards and a progress
+              bar that was hard-coded to 80% and never moved. */}
+          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             {[
-              ['Reading chat file', text ? 'Complete' : 'Waiting'],
-              ['Detecting participants', prep.parsed.participants.join(', ') || 'Estimating'],
-              ['Protecting sensitive details', `${prep.sensitive.findings.totalProtectedItems} protected`],
-              ['Structuring messages by date', prep.parsed.dateRange],
-              ['Preparing private analysis', `${prep.parsed.messageCount} messages`],
+              ['Messages', prep.parsed.messageCount.toLocaleString()],
+              ['Between', prep.parsed.participants.join(' & ') || 'Estimating'],
+              ['Date range', prep.parsed.dateRange || 'Unknown'],
+              ['Details hidden', `${prep.sensitive.findings.totalProtectedItems}`],
             ].map(([label, value]) => (
-              <div key={label} className="border border-white/10 bg-black/35 p-3">
-                <p className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-ash">{label}</p>
-                <p className="mt-2 text-sm leading-5 text-bone">{value}</p>
+              <div key={label} className="rounded-[16px] border border-white/10 bg-black/30 p-3">
+                <p className="font-mono text-[0.58rem] uppercase tracking-[0.1em] text-ash">{label}</p>
+                <p className="mt-1.5 break-words text-sm leading-5 text-bone">{value}</p>
               </div>
             ))}
           </div>
-          <div className="mt-5 rounded-3xl border border-pink-200/15 bg-pink-300/[0.045] p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="tech-label text-pink-100">Sensitive details protected</p>
-                <p className="mt-2 text-sm leading-7 text-smoke">
-                  {prep.sensitive.protectionSummary} Please still review your conversation yourself before uploading if it contains anything you would not want analysed.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowSensitive((current) => !current)}
-                className="rounded-full border border-white/10 px-4 py-2 font-mono text-[0.65rem] uppercase tracking-[0.13em] text-smoke transition hover:border-pink-200/50 hover:text-bone"
-              >
-                {showSensitive ? 'Hide details' : 'Show details'}
-              </button>
-            </div>
+
+          <div className="mt-4 rounded-[20px] border border-pink-200/15 bg-pink-300/[0.045] p-4">
+            <p className="tech-label text-pink-100">Sensitive details removed</p>
+            <p className="mt-2 text-sm leading-6 text-smoke">
+              {prep.sensitive.protectionSummary} Still worth a look yourself if the chat holds anything
+              you would rather not have analysed.
+            </p>
+            <button
+              onClick={() => setShowSensitive((current) => !current)}
+              aria-expanded={showSensitive}
+              className="mt-3 min-h-[44px] font-mono text-[0.62rem] uppercase tracking-[0.12em] text-smoke underline decoration-white/25 underline-offset-4 transition hover:text-bone"
+            >
+              {showSensitive ? 'Hide what was removed' : 'Show what was removed'}
+            </button>
             {showSensitive && (
-              <div className="mt-4 max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-black/30 p-3">
+              <div className="mt-2 max-h-64 overflow-y-auto rounded-[16px] border border-white/10 bg-black/30 p-2.5">
                 {prep.sensitive.protectedItems?.length ? (
                   <div className="grid gap-2">
                     {prep.sensitive.protectedItems.slice(0, 40).map((item, index) => (
-                      <div key={`${item.type}-${item.value}-${index}`} className="grid gap-2 border border-white/10 bg-white/[0.035] p-3 text-xs sm:grid-cols-[150px_1fr_190px]">
-                        <span className="font-mono uppercase tracking-[0.12em] text-pink-100">{item.type}</span>
+                      <div key={`${item.type}-${item.value}-${index}`} className="grid gap-1 rounded-[12px] border border-white/10 bg-white/[0.035] p-2.5 text-xs sm:grid-cols-[110px_1fr_150px] sm:gap-2">
+                        <span className="font-mono uppercase tracking-[0.1em] text-pink-100">{item.type}</span>
                         <span className="break-all text-smoke">{item.value}</span>
                         <span className="font-mono text-ash">{item.replacement}</span>
                       </div>
                     ))}
                     {prep.sensitive.protectedItems.length > 40 && (
-                      <p className="text-xs text-ash">Showing the first 40 protected details.</p>
+                      <p className="p-1 text-xs text-ash">Showing the first 40 protected details.</p>
                     )}
                   </div>
                 ) : (
-                  <p className="text-sm text-smoke">No obvious sensitive details needed protection.</p>
+                  <p className="p-1 text-sm text-smoke">No obvious sensitive details needed protection.</p>
                 )}
               </div>
             )}
           </div>
         </div>
       )}
-      <div className="mt-6">
-        <PrivacyNotice compact />
-        <PrivacyAssurance compact className="mt-4" />
-      </div>
+      {/* One privacy block, not two. The old "Privacy reminder" said the same
+          thing in vaguer words directly above these five concrete promises. */}
+      <PrivacyAssurance compact className="mt-5" />
     </div>
   );
 }

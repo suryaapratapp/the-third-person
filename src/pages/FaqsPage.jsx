@@ -1,15 +1,24 @@
 import { useState } from 'react';
+import { PiMinus, PiPlus } from 'react-icons/pi';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 
+// One answer here used to end "...partners, exes, crushes, friends, family
+// members, colleagues, and more" — colleagues stopped being an option when the
+// work relationship types and their prompt lenses were removed. The list now
+// matches what the wizard actually offers.
+//
+// Cost and refunds were missing entirely, which are the two things people
+// search an FAQ for once a product charges money.
 const faqs = [
-  ['What does ThirdPerson AI do?', 'ThirdPerson AI helps you understand conversations by analysing emotional patterns, communication style, effort, tension, clarity, compatibility, and personality signals.'],
-  ['Is ThirdPerson AI judging my relationship?', 'No. ThirdPerson AI provides reflective insights, not final judgments. It helps you notice possible patterns so you can think more clearly.'],
-  ['Can it tell me if someone loves me?', 'It cannot know someone’s heart with certainty. It can only highlight patterns such as warmth, effort, consistency, affection, distance, and mixed signals.'],
-  ['Does it work with Hindi conversations?', 'Yes. ThirdPerson AI is designed to understand English, Hindi or Hinglish conversations.'],
-  ['Is my chat private?', 'Your conversations are treated as sensitive data. The app is designed to protect private details and prepare conversations carefully before analysis.'],
-  ['Can I use it after a breakup?', 'Yes. It can help you understand what changed, what repeated, what hurt, and what you may want to learn before moving forward.'],
-  ['Can it analyse friendships and family chats?', 'Yes. You can analyse partners, exes, crushes, friends, family members, colleagues, and more.'],
-  ['Is this therapy?', 'No. ThirdPerson AI is a reflection and relationship clarity tool. It is not therapy, legal advice, or a final judgment.'],
+  ['What does ThirdPerson AI do?', 'You give it a real conversation and it reads the patterns in it: who puts in the effort, how the tone shifted over time, where conflict repeats, and what the mixed signals look like. Every claim is tied to quotes from your own chat.'],
+  ['What does it cost?', '₹249 for one report including 5 coach chats, or ₹199 for a single report on its own if you buy during an analysis. There is no subscription, credits do not expire, and re-opening a report you already own is always free.'],
+  ['Which relationships can I analyse?', 'Partners, early dating and crushes, exes, friends, and family — parents, siblings and cousins. Work relationships are deliberately not supported: they need a different lens than this product is built for.'],
+  ['Is my chat private?', 'Reports are locked to your account at the database level, so no other user can reach them. Phone numbers, emails, OTPs and ID-like numbers are stripped before analysis, your chats are never used to train AI models, and you can delete everything from your profile at any time.'],
+  ['Can it tell me if someone loves me?', 'No, and it will not pretend to. It can show warmth, effort, consistency, distance and mixed signals as they appear in the messages. What those mean is yours to judge.'],
+  ['Does it work with Hindi or Hinglish?', 'Yes. English, Hindi and Hinglish conversations are all supported, including chats that mix them mid-sentence.'],
+  ['How much chat history do I need?', 'More is better. A few dozen messages produces a directional first impression, and the report will say so. Months of history is where the timeline and effort patterns get genuinely useful.'],
+  ['Can I get a refund?', 'Unused credits can be refunded — see the Refund Policy for the details. If a report or coach reply fails to generate, your balance is not touched in the first place.'],
+  ['Is this therapy?', 'No. It is a reflection tool, not therapy, counselling, or legal advice, and it will never tell you to stay in or leave a relationship.'],
 ];
 
 const faqSchema = {
@@ -27,33 +36,46 @@ const faqSchema = {
 
 export default function FaqsPage() {
   const [open, setOpen] = useState(0);
+
   return (
-    <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
+    <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-24 sm:px-8 sm:pt-28">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <ParticleBackground className="opacity-45" />
-      <div className="relative mx-auto max-w-5xl">
-        <div className="corner-frame accent-panel p-6 text-center sm:p-12">
-          <p className="tech-label text-smoke">FAQs</p>
-          <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Clear answers before you analyse.</h1>
-          <p className="mx-auto mt-5 max-w-2xl text-sm leading-8 text-smoke">
-            Simple, privacy-first answers about what ThirdPerson AI can and cannot do.
-          </p>
+
+      <div className="relative mx-auto max-w-[720px]">
+        <div className="text-center">
+          <p className="tech-label text-purple-200">FAQs</p>
+          <h1 className="serif-title mt-4 text-4xl leading-tight sm:text-6xl">Questions worth asking.</h1>
         </div>
-        <div className="mt-8 space-y-4">
-          {faqs.map(([question, answer], index) => (
-            <div key={question} className="thin-panel overflow-hidden">
-              <button
-                onClick={() => setOpen(open === index ? -1 : index)}
-                className="flex w-full items-center justify-between gap-5 p-5 text-left"
+
+        <div className="mt-8 grid gap-2.5">
+          {faqs.map(([question, answer], index) => {
+            const isOpen = open === index;
+            return (
+              <div
+                key={question}
+                className={`overflow-hidden rounded-[22px] border transition ${
+                  isOpen ? 'border-purple-200/30 bg-purple-300/[0.06]' : 'border-white/12 bg-white/[0.03]'
+                }`}
               >
-                <span className="serif-title text-2xl text-bone">{question}</span>
-                <span className="text-purple-200">{open === index ? '−' : '+'}</span>
-              </button>
-              {open === index && (
-                <p className="border-t border-white/10 px-5 pb-5 pt-4 text-sm leading-8 text-smoke">{answer}</p>
-              )}
-            </div>
-          ))}
+                <button
+                  onClick={() => setOpen(isOpen ? -1 : index)}
+                  aria-expanded={isOpen}
+                  className="flex min-h-[60px] w-full items-center justify-between gap-4 p-4 text-left sm:p-5"
+                >
+                  <span className="text-base leading-6 text-bone sm:text-lg">{question}</span>
+                  <span className="shrink-0 text-purple-200" aria-hidden="true">
+                    {isOpen ? <PiMinus /> : <PiPlus />}
+                  </span>
+                </button>
+                {isOpen && (
+                  <p className="border-t border-white/10 px-4 pb-4 pt-3.5 text-sm leading-7 text-smoke sm:px-5 sm:pb-5">
+                    {answer}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
