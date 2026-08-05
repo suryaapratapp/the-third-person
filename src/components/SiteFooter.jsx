@@ -1,3 +1,4 @@
+import Logo from './Logo.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
 // The site had no footer at all — Terms, Refund Policy and Contact lived only
@@ -45,7 +46,7 @@ export default function SiteFooter() {
       <div className="mx-auto max-w-[1180px]">
         <div className="grid gap-9 sm:grid-cols-2 lg:grid-cols-[1.3fr_repeat(3,1fr)]">
           <div>
-            <p className="font-mono text-[0.72rem] uppercase tracking-[0.26em] text-bone">ThirdPerson AI</p>
+            <Logo size={30} withWordmark />
             <p className="mt-4 max-w-xs text-sm leading-7 text-smoke">
               Understand any relationship from the conversation you already had — and, over time, the person
               you are across all of them.

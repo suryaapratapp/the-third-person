@@ -1,5 +1,5 @@
 import ParticleBackground from '../components/ParticleBackground.jsx';
-import ScreenshotPlaceholder from '../components/ScreenshotPlaceholder.jsx';
+import ExportStepVisual from '../components/ExportStepVisual.jsx';
 import { getBlogContentBySlug } from '../lib/blogContent.js';
 import { getBlogPostMetaBySlug } from '../lib/blogPostsMeta.js';
 import { useRouter } from '../state/RouterContext.jsx';
@@ -26,12 +26,12 @@ function Block({ block }) {
       );
     case 'step':
       return (
-        <div className="mt-5 border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+        <div className="mt-5 rounded-[20px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
           <div className="flex gap-3">
             <span className="font-mono text-purple-200">{String(block.number).padStart(2, '0')}</span>
             <p className="text-sm leading-7 text-smoke sm:text-base">{block.instruction}</p>
           </div>
-          {block.screenshot && <ScreenshotPlaceholder id={block.screenshot.id} alt={block.screenshot.alt} />}
+          {block.visual && <ExportStepVisual spec={block.visual} alt={block.visual.alt} />}
           {block.tip && (
             <p className="mt-2 rounded-xl border border-purple-300/15 bg-purple-300/[0.05] p-3 text-xs leading-6 text-ash">
               Tip: {block.tip}

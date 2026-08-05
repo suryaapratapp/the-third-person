@@ -1,6 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="16" fill="#100e1b"/>
-  <circle cx="20" cy="42" r="7" fill="#ddd6ee" opacity="0.55"/>
-  <circle cx="38" cy="24" r="8.5" fill="#ddd6ee" opacity="0.8"/>
-  <circle cx="46" cy="44" r="10" fill="#fb7ba6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ThirdPerson AI">
+  <title>ThirdPerson AI</title>
+  <defs>
+    <linearGradient id="tp-lens" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#cbb8ff"/>
+      <stop offset="55%" stop-color="#e3b0c8"/>
+      <stop offset="100%" stop-color="#fbc89a"/>
+    </linearGradient>
+    <clipPath id="tp-clip">
+      <circle cx="24" cy="32" r="17"/>
+    </clipPath>
+  </defs>
+
+  <rect width="64" height="64" rx="15" fill="#100e1b"/>
+
+  <!-- Two people in a conversation. -->
+  <circle cx="24" cy="32" r="17" fill="none" stroke="#a78bfa" stroke-width="2.4" opacity="0.85"/>
+  <circle cx="40" cy="32" r="17" fill="none" stroke="#fb7ba6" stroke-width="2.4" opacity="0.85"/>
+
+  <!-- The overlap: what is only visible where both sides meet. -->
+  <g clip-path="url(#tp-clip)">
+    <circle cx="40" cy="32" r="17" fill="url(#tp-lens)"/>
+  </g>
+
+  <!-- The person underneath. -->
+  <circle cx="32" cy="32" r="3.4" fill="#100e1b"/>
 </svg>

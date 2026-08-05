@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { PiArrowRight, PiCaretDown, PiList, PiX } from 'react-icons/pi';
+import Logo from './Logo.jsx';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
@@ -110,11 +111,8 @@ export default function TopNav() {
   return (
     <header className="fixed left-0 right-0 top-0 z-50 px-3 py-3 sm:px-6">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 rounded-[24px] border border-purple-200/15 bg-[#171523]/82 px-4 py-2.5 shadow-[0_18px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:px-6 sm:py-3">
-        <button
-          onClick={() => navigate('/')}
-          className="whitespace-nowrap font-mono text-[0.68rem] uppercase tracking-[0.22em] text-bone sm:text-sm sm:tracking-[0.28em]"
-        >
-          ThirdPerson AI
+        <button onClick={() => navigate('/')} aria-label="ThirdPerson AI — home">
+          <Logo size={26} withWordmark />
         </button>
 
         {/* `whitespace-nowrap` on the items: at exactly 768px — the md

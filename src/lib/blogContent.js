@@ -5,25 +5,31 @@
 //   { type: 'heading', level: 2|3, text }
 //   { type: 'paragraph', text }
 //   { type: 'list', ordered?: boolean, items: [] }
-//   { type: 'step', number, instruction, screenshot: { id, alt }, tip? }
+//   { type: 'step', number, instruction, visual?: { kind, alt, ... }, tip? }
 //   { type: 'callout', tone: 'privacy'|'tip'|'note', text }
+//
+// `visual` drives ExportStepVisual.jsx. These replaced dashed "screenshot
+// placeholder" boxes that were never going to be filled: we cannot ship real
+// captures of these apps (copyrighted UI, trademarked marks) on a commercial
+// page. The illustrations show the menu PATH, which is the part that survives
+// the redesigns these apps ship every few months.
 
 const WHATSAPP_ANDROID_STEPS = [
-  { instruction: 'Open the chat you want to analyse.', screenshot: { id: 'screenshot-whatsapp-android-step-1.png', alt: 'WhatsApp chat opened on an Android phone' } },
-  { instruction: 'Tap the three dots ⋮ in the top-right corner.', screenshot: { id: 'screenshot-whatsapp-android-step-2.png', alt: 'Three-dot menu icon highlighted in WhatsApp on Android' } },
-  { instruction: 'Tap More, then tap Export chat.', screenshot: { id: 'screenshot-whatsapp-android-step-3.png', alt: 'More menu showing the Export chat option' } },
-  { instruction: 'Choose "Without media" — this keeps the file small and fast to upload.', screenshot: { id: 'screenshot-whatsapp-android-step-4.png', alt: 'Dialog asking whether to include media in the export' }, tip: 'Media makes the export file huge and ThirdPerson AI only needs the text.' },
-  { instruction: 'Share or save the .txt file to yourself — email, Google Drive, or your Files app all work.', screenshot: { id: 'screenshot-whatsapp-android-step-5.png', alt: 'Android share sheet showing options to save the exported file' } },
-  { instruction: 'Come back to ThirdPerson AI and upload that .txt file.', screenshot: { id: 'screenshot-whatsapp-android-step-6.png', alt: 'ThirdPerson AI upload screen with a .txt file selected' } },
+  { instruction: 'Open the chat you want to analyse.', visual: { kind: 'chat', name: 'Riya', alt: 'A chat thread open on an Android phone' } },
+  { instruction: 'Tap the three dots ⋮ in the top-right corner.', visual: { kind: 'chat', name: 'Riya', highlight: 'menu', alt: 'The three-dot menu icon in the top-right of the chat header' } },
+  { instruction: 'Tap More, then tap Export chat.', visual: { kind: 'menu', title: 'More', items: ['Report', 'Block', 'Clear chat', 'Export chat', 'Add shortcut'], highlight: 3, alt: 'The More menu with Export chat highlighted' } },
+  { instruction: 'Choose "Without media" — this keeps the file small and fast to upload.', visual: { kind: 'dialog', title: 'Export chat', body: 'Attach media?', actions: ['Without media', 'Include media'], highlight: 0, alt: 'Dialog asking whether to include media, with Without media chosen' }, tip: 'Media makes the export file huge and ThirdPerson AI only needs the text.' },
+  { instruction: 'Share or save the .txt file to yourself — email, Google Drive, or your Files app all work.', visual: { kind: 'share', options: ['Drive', 'Email', 'Files', 'Keep', 'Docs', 'More'], highlight: 2, alt: 'Share sheet with a file destination highlighted' } },
+  { instruction: 'Come back to ThirdPerson AI and upload that .txt file.', visual: { kind: 'app', mode: 'upload', file: 'WhatsApp Chat.txt', alt: 'The ThirdPerson AI upload screen with the exported file ready' } },
 ];
 
 const WHATSAPP_IPHONE_STEPS = [
-  { instruction: 'Open the chat you want to analyse.', screenshot: { id: 'screenshot-whatsapp-iphone-step-1.png', alt: 'WhatsApp chat opened on an iPhone' } },
-  { instruction: 'Tap the contact or group name at the top of the chat.', screenshot: { id: 'screenshot-whatsapp-iphone-step-2.png', alt: 'Contact name at the top of a WhatsApp chat on iPhone' } },
-  { instruction: 'Scroll down and tap Export Chat.', screenshot: { id: 'screenshot-whatsapp-iphone-step-3.png', alt: 'Export Chat option in WhatsApp contact info screen' } },
-  { instruction: 'Choose Without Media.', screenshot: { id: 'screenshot-whatsapp-iphone-step-4.png', alt: 'Prompt asking to attach media or export without media' } },
-  { instruction: 'Tap Save to Files (or AirDrop it to yourself and save it from there).', screenshot: { id: 'screenshot-whatsapp-iphone-step-5.png', alt: 'iOS share sheet with Save to Files highlighted' } },
-  { instruction: 'Open ThirdPerson AI and upload the saved .txt file.', screenshot: { id: 'screenshot-whatsapp-iphone-step-6.png', alt: 'ThirdPerson AI upload screen on iPhone' } },
+  { instruction: 'Open the chat you want to analyse.', visual: { kind: 'chat', name: 'Riya', alt: 'A chat thread open on an iPhone' } },
+  { instruction: 'Tap the contact or group name at the top of the chat.', visual: { kind: 'chat', name: 'Riya', highlight: 'header', alt: 'The contact name at the top of the chat, highlighted' } },
+  { instruction: 'Scroll down and tap Export Chat.', visual: { kind: 'list', title: 'Contact Info', items: ['Media, Links & Docs', 'Starred Messages', 'Mute', 'Wallpaper', 'Export Chat'], highlight: 4, alt: 'Contact info screen with Export Chat highlighted' } },
+  { instruction: 'Choose Without Media.', visual: { kind: 'dialog', title: 'Export Chat', actions: ['Attach Media', 'Without Media'], highlight: 1, alt: 'Prompt to attach media, with Without Media chosen' } },
+  { instruction: 'Tap Save to Files (or AirDrop it to yourself and save it from there).', visual: { kind: 'share', options: ['AirDrop', 'Messages', 'Mail', 'Save to Files', 'Notes', 'More'], highlight: 3, alt: 'iOS share sheet with Save to Files highlighted' } },
+  { instruction: 'Open ThirdPerson AI and upload the saved .txt file.', visual: { kind: 'app', mode: 'upload', file: '_chat.txt', alt: 'The ThirdPerson AI upload screen on a phone' } },
 ];
 
 export const BLOG_CONTENT = {
@@ -41,38 +47,38 @@ export const BLOG_CONTENT = {
   'how-to-export-instagram-messages': [
     { type: 'paragraph', text: 'Instagram doesn\'t let you export a single DM thread directly. Instead, you request your full data download, then pull out just the conversation you need. It sounds like more work than it is — here\'s the exact path.' },
     { type: 'callout', tone: 'note', text: 'Instagram can take anywhere from a few minutes to a few hours to prepare your file. You\'ll get a notification or email when it\'s ready.' },
-    { type: 'step', number: 1, instruction: 'Open Instagram and go to Settings.', screenshot: { id: 'screenshot-instagram-step-1.png', alt: 'Instagram settings menu' } },
-    { type: 'step', number: 2, instruction: 'Tap Accounts Centre.', screenshot: { id: 'screenshot-instagram-step-2.png', alt: 'Accounts Centre option in Instagram settings' } },
-    { type: 'step', number: 3, instruction: 'Tap Your information and permissions.', screenshot: { id: 'screenshot-instagram-step-3.png', alt: 'Your information and permissions menu' } },
-    { type: 'step', number: 4, instruction: 'Tap Download your information.', screenshot: { id: 'screenshot-instagram-step-4.png', alt: 'Download your information option' } },
-    { type: 'step', number: 5, instruction: 'Select your account from the list.', screenshot: { id: 'screenshot-instagram-step-5.png', alt: 'Account selection screen' } },
-    { type: 'step', number: 6, instruction: 'Choose "Some of your information" rather than everything — it\'s faster.', screenshot: { id: 'screenshot-instagram-step-6.png', alt: 'Choice between all information and some information' }, tip: 'Downloading everything can take much longer and gives you a lot you don\'t need.' },
-    { type: 'step', number: 7, instruction: 'Select only Messages from the list of information types.', screenshot: { id: 'screenshot-instagram-step-7.png', alt: 'List of information types with Messages selected' } },
-    { type: 'step', number: 8, instruction: 'Set the format to JSON and pick a date range that covers the conversation.', screenshot: { id: 'screenshot-instagram-step-8.png', alt: 'Format and date range selection screen' } },
-    { type: 'step', number: 9, instruction: 'Submit the request and wait for Instagram\'s notification that it\'s ready.', screenshot: { id: 'screenshot-instagram-step-9.png', alt: 'Confirmation screen after submitting a data download request' } },
-    { type: 'step', number: 10, instruction: 'Download the file, open the messages folder inside it, and upload the relevant conversation file to ThirdPerson AI.', screenshot: { id: 'screenshot-instagram-step-10.png', alt: 'Messages folder inside the downloaded Instagram data' } },
+    { type: 'step', number: 1, instruction: 'Open Instagram and go to Settings.', visual: { kind: 'menu', title: 'Profile menu', items: ['Settings and privacy', 'Your activity', 'Archive', 'QR code'], highlight: 0, alt: 'Profile menu with Settings and privacy highlighted' } },
+    { type: 'step', number: 2, instruction: 'Tap Accounts Centre.', visual: { kind: 'list', title: 'Settings', items: ['Accounts Centre', 'Saved', 'Close Friends', 'Notifications'], highlight: 0, alt: 'Settings list with Accounts Centre highlighted' } },
+    { type: 'step', number: 3, instruction: 'Tap Your information and permissions.', visual: { kind: 'list', title: 'Accounts Centre', items: ['Password and security', 'Personal details', 'Your information and permissions', 'Ad preferences'], highlight: 2, alt: 'Accounts Centre with Your information and permissions highlighted' } },
+    { type: 'step', number: 4, instruction: 'Tap Download your information.', visual: { kind: 'list', title: 'Your information', items: ['Access your information', 'Download your information', 'Transfer a copy', 'Activity off Meta'], highlight: 1, alt: 'Download your information highlighted in the list' } },
+    { type: 'step', number: 5, instruction: 'Select your account from the list.', visual: { kind: 'list', title: 'Select account', items: ['@yourhandle', 'Linked Facebook profile'], highlight: 0, alt: 'Account selection screen' } },
+    { type: 'step', number: 6, instruction: 'Choose "Some of your information" rather than everything — it\'s faster.', visual: { kind: 'list', title: 'What to download', items: ['Some of your information', 'All of your information'], highlight: 0, alt: 'Choice between some and all information' }, tip: 'Downloading everything can take much longer and gives you a lot you don\'t need.' },
+    { type: 'step', number: 7, instruction: 'Select only Messages from the list of information types.', visual: { kind: 'checks', title: 'Information types', items: [['Messages', true], ['Posts', false], ['Stories', false], ['Comments', false]], highlight: 0, alt: 'Information types with only Messages ticked' } },
+    { type: 'step', number: 8, instruction: 'Set the format to JSON and pick a date range that covers the conversation.', visual: { kind: 'checks', title: 'Format and date', items: [['Format: JSON', true], ['Date range: All time', true], ['Media quality: Low', false]], highlight: 0, alt: 'Format set to JSON with a date range covering the conversation' } },
+    { type: 'step', number: 9, instruction: 'Submit the request and wait for Instagram\'s notification that it\'s ready.', visual: { kind: 'status', icon: 'wait', title: 'Request submitted', body: 'Instagram will notify you when the file is ready', alt: 'Confirmation that the download request was submitted' } },
+    { type: 'step', number: 10, instruction: 'Download the file, open the messages folder inside it, and upload the relevant conversation file to ThirdPerson AI.', visual: { kind: 'app', mode: 'upload', file: 'message_1.json', alt: 'The conversation file from the messages folder, ready to upload' } },
     { type: 'callout', tone: 'privacy', text: 'Your chats are analysed securely and never shared.' },
     { type: 'callout', tone: 'tip', text: 'Takes about 5 minutes to request, then a wait for Instagram. Upload the JSON file from the messages folder.' },
   ],
   'how-to-export-telegram-chat-history': [
     { type: 'callout', tone: 'note', text: 'Chat export is only available in Telegram Desktop. It is not available from the Telegram mobile app.' },
-    { type: 'step', number: 1, instruction: 'Open Telegram Desktop on a computer. If you don\'t have it, it\'s a free download from telegram.org.', screenshot: { id: 'screenshot-telegram-step-1.png', alt: 'Telegram Desktop application window' } },
-    { type: 'step', number: 2, instruction: 'Open the chat you want to analyse.', screenshot: { id: 'screenshot-telegram-step-2.png', alt: 'An open chat in Telegram Desktop' } },
-    { type: 'step', number: 3, instruction: 'Click the three dots ⋮ at the top of the chat.', screenshot: { id: 'screenshot-telegram-step-3.png', alt: 'Three-dot menu at the top of a Telegram chat' } },
-    { type: 'step', number: 4, instruction: 'Click Export chat history.', screenshot: { id: 'screenshot-telegram-step-4.png', alt: 'Export chat history option in the menu' } },
-    { type: 'step', number: 5, instruction: 'Untick Photos, Videos, and other media types — you only need the text.', screenshot: { id: 'screenshot-telegram-step-5.png', alt: 'Export settings with media types unticked' }, tip: 'This keeps the file small and avoids uploading anything you don\'t need to.' },
-    { type: 'step', number: 6, instruction: 'Choose JSON as the format. HTML also works if JSON isn\'t available in your version.', screenshot: { id: 'screenshot-telegram-step-6.png', alt: 'Format selection showing JSON and HTML options' } },
-    { type: 'step', number: 7, instruction: 'Click Export and wait for Telegram to save the file to your computer.', screenshot: { id: 'screenshot-telegram-step-7.png', alt: 'Export progress indicator in Telegram Desktop' } },
-    { type: 'step', number: 8, instruction: 'Upload the exported file to ThirdPerson AI.', screenshot: { id: 'screenshot-telegram-step-8.png', alt: 'ThirdPerson AI upload screen with a Telegram export selected' } },
+    { type: 'step', number: 1, instruction: 'Open Telegram Desktop on a computer. If you don\'t have it, it\'s a free download from telegram.org.', visual: { kind: 'desktopChat', frame: 'desktop', frameLabel: 'Telegram Desktop', alt: 'The Telegram Desktop window on a computer' } },
+    { type: 'step', number: 2, instruction: 'Open the chat you want to analyse.', visual: { kind: 'desktopChat', frame: 'desktop', frameLabel: 'Telegram Desktop', name: 'Riya', alt: 'A chat opened in Telegram Desktop' } },
+    { type: 'step', number: 3, instruction: 'Click the three dots ⋮ at the top of the chat.', visual: { kind: 'desktopChat', frame: 'desktop', frameLabel: 'Telegram Desktop', name: 'Riya', highlight: 'menu', alt: 'The three-dot menu at the top of the chat, highlighted' } },
+    { type: 'step', number: 4, instruction: 'Click Export chat history.', visual: { kind: 'menu', frame: 'desktop', frameLabel: 'Telegram Desktop', title: 'Chat menu', items: ['Mute', 'Select messages', 'Clear history', 'Export chat history', 'Delete chat'], highlight: 3, alt: 'Export chat history highlighted in the chat menu' } },
+    { type: 'step', number: 5, instruction: 'Untick Photos, Videos, and other media types — you only need the text.', visual: { kind: 'checks', frame: 'desktop', frameLabel: 'Telegram Desktop', title: 'Export settings', items: [['Photos', false], ['Videos', false], ['Voice messages', false], ['Files', false]], highlight: 0, back: false, note: 'Text only keeps the file small.', alt: 'Export settings with every media type unticked' }, tip: 'This keeps the file small and avoids uploading anything you don\'t need to.' },
+    { type: 'step', number: 6, instruction: 'Choose JSON as the format. HTML also works if JSON isn\'t available in your version.', visual: { kind: 'list', frame: 'desktop', frameLabel: 'Telegram Desktop', title: 'Format', items: ['JSON', 'HTML'], highlight: 0, back: false, alt: 'Format selection with JSON chosen' } },
+    { type: 'step', number: 7, instruction: 'Click Export and wait for Telegram to save the file to your computer.', visual: { kind: 'status', frame: 'desktop', frameLabel: 'Telegram Desktop', icon: 'wait', title: 'Exporting…', body: 'Telegram is writing the file to your computer', alt: 'Export progress in Telegram Desktop' } },
+    { type: 'step', number: 8, instruction: 'Upload the exported file to ThirdPerson AI.', visual: { kind: 'app', mode: 'upload', file: 'result.json', alt: 'The Telegram export ready to upload to ThirdPerson AI' } },
     { type: 'callout', tone: 'privacy', text: 'Your chats are analysed securely and never shared.' },
     { type: 'callout', tone: 'tip', text: 'Takes about 2 minutes on a computer with Telegram Desktop installed.' },
   ],
   'how-to-export-imessage-chats': [
     { type: 'callout', tone: 'note', text: 'Apple does not provide an official way to export a full iMessage conversation as a file, so copy-paste is the most reliable option on a phone.' },
-    { type: 'step', number: 1, instruction: 'Open the conversation in the Messages app.', screenshot: { id: 'screenshot-imessage-step-1.png', alt: 'An open iMessage conversation' } },
-    { type: 'step', number: 2, instruction: 'Tap and hold on a message, then tap More to enter selection mode.', screenshot: { id: 'screenshot-imessage-step-2.png', alt: 'Message selection mode in Messages app' } },
-    { type: 'step', number: 3, instruction: 'Tap each message you want to include, then tap the share icon to copy them.', screenshot: { id: 'screenshot-imessage-step-3.png', alt: 'Multiple messages selected with the share icon visible' } },
-    { type: 'step', number: 4, instruction: 'Open ThirdPerson AI and paste the copied text directly into the paste box instead of uploading a file.', screenshot: { id: 'screenshot-imessage-step-4.png', alt: 'ThirdPerson AI paste box with iMessage text pasted in' } },
+    { type: 'step', number: 1, instruction: 'Open the conversation in the Messages app.', visual: { kind: 'chat', name: 'Avery', alt: 'An open message conversation' } },
+    { type: 'step', number: 2, instruction: 'Tap and hold on a message, then tap More to enter selection mode.', visual: { kind: 'menu', title: 'Message actions', items: ['Copy', 'Translate', 'Reply', 'More'], highlight: 3, alt: 'The message action menu with More highlighted' } },
+    { type: 'step', number: 3, instruction: 'Tap each message you want to include, then tap the share icon to copy them.', visual: { kind: 'checks', title: 'Select messages', items: [['good morning', true], ['just reached', true], ['call me later', true]], highlight: 0, alt: 'Several messages selected ready to copy' } },
+    { type: 'step', number: 4, instruction: 'Open ThirdPerson AI and paste the copied text directly into the paste box instead of uploading a file.', visual: { kind: 'app', mode: 'paste', alt: 'The ThirdPerson AI paste box with the copied text in it' } },
     { type: 'step', number: 5, instruction: 'For a longer conversation, repeat this for each section and paste them in chronological order.', tip: 'Keeping the order intact matters more than getting every single message — a representative stretch of the conversation is enough.' },
     { type: 'paragraph', text: 'If you use a Mac, the Messages app there allows you to select and copy a longer stretch of conversation at once, which can be faster than doing it message-by-message on a phone.' },
     { type: 'callout', tone: 'privacy', text: 'Your chats are analysed securely and never shared.' },
@@ -80,22 +86,22 @@ export const BLOG_CONTENT = {
   ],
   'how-to-export-messenger-chats': [
     { type: 'callout', tone: 'note', text: 'Messenger is part of the same Meta data-download tool as Instagram, so if you\'ve exported an Instagram chat before, this will feel familiar.' },
-    { type: 'step', number: 1, instruction: 'Go to your Facebook or Messenger Accounts Centre information export settings.', screenshot: { id: 'screenshot-messenger-step-1.png', alt: 'Accounts Centre settings menu' } },
-    { type: 'step', number: 2, instruction: 'Request a copy or export of your information.', screenshot: { id: 'screenshot-messenger-step-2.png', alt: 'Download your information option' } },
-    { type: 'step', number: 3, instruction: 'Select Messages from the list of information types.', screenshot: { id: 'screenshot-messenger-step-3.png', alt: 'Information type list with Messages selected' } },
-    { type: 'step', number: 4, instruction: 'Choose your date range and set the format to JSON.', screenshot: { id: 'screenshot-messenger-step-4.png', alt: 'Date range and format selection screen' } },
-    { type: 'step', number: 5, instruction: 'Submit the request and download the file once Meta notifies you it\'s ready.', screenshot: { id: 'screenshot-messenger-step-5.png', alt: 'Confirmation screen after submitting the export request' } },
-    { type: 'step', number: 6, instruction: 'Open the downloaded file and upload the relevant conversation to ThirdPerson AI.', screenshot: { id: 'screenshot-messenger-step-6.png', alt: 'ThirdPerson AI upload screen with a Messenger export selected' } },
+    { type: 'step', number: 1, instruction: 'Go to your Facebook or Messenger Accounts Centre information export settings.', visual: { kind: 'list', title: 'Settings', items: ['Accounts Centre', 'Privacy', 'Notifications'], highlight: 0, alt: 'Settings with Accounts Centre highlighted' } },
+    { type: 'step', number: 2, instruction: 'Request a copy or export of your information.', visual: { kind: 'list', title: 'Your information', items: ['Download your information', 'Transfer a copy', 'Access your information'], highlight: 0, alt: 'Download your information highlighted' } },
+    { type: 'step', number: 3, instruction: 'Select Messages from the list of information types.', visual: { kind: 'checks', title: 'Information types', items: [['Messages', true], ['Posts', false], ['Friends', false]], highlight: 0, alt: 'Information types with only Messages ticked' } },
+    { type: 'step', number: 4, instruction: 'Choose your date range and set the format to JSON.', visual: { kind: 'checks', title: 'Format and date', items: [['Format: JSON', true], ['Date range: All time', true]], highlight: 0, alt: 'Format set to JSON with a date range chosen' } },
+    { type: 'step', number: 5, instruction: 'Submit the request and download the file once Meta notifies you it\'s ready.', visual: { kind: 'status', icon: 'wait', title: 'Request submitted', body: 'Meta will notify you when the file is ready', alt: 'Confirmation that the export request was submitted' } },
+    { type: 'step', number: 6, instruction: 'Open the downloaded file and upload the relevant conversation to ThirdPerson AI.', visual: { kind: 'app', mode: 'upload', file: 'message_1.json', alt: 'The Messenger export ready to upload to ThirdPerson AI' } },
     { type: 'callout', tone: 'privacy', text: 'Your chats are analysed securely and never shared.' },
     { type: 'callout', tone: 'tip', text: 'Takes about 5 minutes to request, then a short wait for Meta to prepare it.' },
   ],
   'how-to-export-snapchat-chats': [
     { type: 'callout', tone: 'note', text: 'Snapchat may not include messages that already disappeared or were never saved by either person — it can only export what Snapchat still has a record of.' },
-    { type: 'step', number: 1, instruction: 'Open Snapchat and go to Settings, then My Data.', screenshot: { id: 'screenshot-snapchat-step-1.png', alt: 'Snapchat My Data settings screen' } },
-    { type: 'step', number: 2, instruction: 'Request your data.', screenshot: { id: 'screenshot-snapchat-step-2.png', alt: 'Request my data button' } },
-    { type: 'step', number: 3, instruction: 'If given the option, select chat or message history specifically.', screenshot: { id: 'screenshot-snapchat-step-3.png', alt: 'Data type selection with chat history highlighted' } },
-    { type: 'step', number: 4, instruction: 'Submit the request and wait for Snapchat to prepare your file — you\'ll get a notification.', screenshot: { id: 'screenshot-snapchat-step-4.png', alt: 'Confirmation screen after requesting Snapchat data' } },
-    { type: 'step', number: 5, instruction: 'Download the prepared file and upload the relevant part to ThirdPerson AI.', screenshot: { id: 'screenshot-snapchat-step-5.png', alt: 'ThirdPerson AI upload screen with a Snapchat data file selected' } },
+    { type: 'step', number: 1, instruction: 'Open Snapchat and go to Settings, then My Data.', visual: { kind: 'list', title: 'Settings', items: ['My Account', 'My Data', 'Privacy Controls', 'Notifications'], highlight: 1, alt: 'Settings list with My Data highlighted' } },
+    { type: 'step', number: 2, instruction: 'Request your data.', visual: { kind: 'dialog', title: 'My Data', body: 'Export a copy of your account data', actions: ['Submit Request'], highlight: 0, alt: 'The submit request button on the My Data screen' } },
+    { type: 'step', number: 3, instruction: 'If given the option, select chat or message history specifically.', visual: { kind: 'checks', title: 'Select data', items: [['Chat history', true], ['Memories', false], ['Account info', false]], highlight: 0, alt: 'Data types with chat history ticked' } },
+    { type: 'step', number: 4, instruction: 'Submit the request and wait for Snapchat to prepare your file — you\'ll get a notification.', visual: { kind: 'status', icon: 'wait', title: 'Request submitted', body: 'Snapchat will email you when it is ready', alt: 'Confirmation that the data request was submitted' } },
+    { type: 'step', number: 5, instruction: 'Download the prepared file and upload the relevant part to ThirdPerson AI.', visual: { kind: 'app', mode: 'upload', file: 'chat_history.json', alt: 'The Snapchat data file ready to upload to ThirdPerson AI' } },
     { type: 'callout', tone: 'privacy', text: 'Your chats are analysed securely and never shared.' },
     { type: 'callout', tone: 'tip', text: 'Takes about 5 minutes to request, then a short wait for Snapchat to prepare it.' },
   ],
