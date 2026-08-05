@@ -119,10 +119,12 @@ export default function PricingPage() {
           </p>
         )}
 
-        <div className="accent-panel mt-7 p-5 sm:p-8">
+        <div className="hud-frame accent-panel mt-7 p-5 sm:p-8">
+          <span className="hud-corner hud-corner-tl" aria-hidden="true" />
+          <span className="hud-corner hud-corner-br" aria-hidden="true" />
           <div className="flex items-baseline justify-between gap-4">
             <p className="tech-label text-purple-100">How many reports?</p>
-            <p className="font-mono text-xs text-ash">₹{PRICE_PER_REPORT} each</p>
+            <span className="neon-chip">₹{PRICE_PER_REPORT} each</span>
           </div>
 
           <div className="mt-5 flex items-center justify-center gap-4">
@@ -211,8 +213,9 @@ export default function PricingPage() {
         {/* The in-flow price differs from this one and never used to be
             explained anywhere, which reads as inconsistent pricing. */}
         <p className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-7 text-smoke">
-          Buying mid-analysis costs <span className="text-bone">₹199</span> for that single report on its own.
-          The ₹{PRICE_PER_REPORT} above is the only way to get coach chats with it.
+          Starting an analysis with no credits offers a <span className="text-bone">₹199</span> report-only
+          option too — no coach chats included. The ₹{PRICE_PER_REPORT} bundle above is the only way to get
+          both together.
         </p>
 
         <div className="mt-8 grid gap-2.5">

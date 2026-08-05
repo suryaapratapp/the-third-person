@@ -41,7 +41,26 @@ function compactMessages(messages: any[] = [], limit = 12) {
   }));
 }
 
-function buildLanguageToneInstructions(languageProfile: Record<string, any> = {}, profileLanguages: unknown = []) {
+// `currentInputText`, when provided, is the live message the user just typed
+// to the coach right now — as opposed to `languageProfile`, which describes
+// the language of the ORIGINAL uploaded conversation being analysed. Those two
+// can differ (someone might analyse an English chat but then type a question
+// to the coach in Tamil), and when they do, the reply must follow whichever
+// language the person is actually talking to the assistant in right now. Only
+// buildBestiePrompt has a live message to pass here; the report and
+// personality-card prompts have no such input and fall back to matching the
+// analysed conversation, which is the only language signal they have.
+//
+// The product supports every language the model understands (see
+// src/lib/languages.js for the full list users can pick from) — this used to
+// hardcode Hindi/Hinglish-specific branches as if they were the only
+// non-English case, which both under-served every other supported language
+// and never once looked at what the user was actually typing.
+function buildLanguageToneInstructions(
+  languageProfile: Record<string, any> = {},
+  profileLanguages: unknown = [],
+  currentInputText = '',
+) {
   const selectedLanguages = Array.isArray(profileLanguages) ? profileLanguages.join(', ') : String(profileLanguages || '');
   return [
     'Detected conversation language style:',
@@ -51,10 +70,14 @@ function buildLanguageToneInstructions(languageProfile: Record<string, any> = {}
       languageMix: languageProfile.languageMix || '',
       recommendedOutputStyle: languageProfile.recommendedOutputStyle || '',
       userSelectedPreferredAnalysisLanguages: selectedLanguages,
+      ...(currentInputText ? { currentUserMessage: currentInputText.slice(0, 400) } : {}),
     }),
-    'Output language instruction: Reply in the same language style as the uploaded chat where natural. If the chat is Hindi and English mix, use natural Indian-style Hindi English language. If the chat is mixed language, keep the output mixed but easy to understand. Do not force awkward translation.',
-    'Tone: Speak like a sweet, cool, emotionally intelligent broski who genuinely wants to help. Be caring, honest, smart, and clear. Use simple words. Be warm but not childish. Be direct when needed, but never harsh. If the conversation language is Hindi, or mixed Indian English, naturally include that style in the output.',
-    'Light phrases are allowed where suitable: broski, honestly, thoda, scene, vibe, mixed signals, overthink mat karo, yeh pattern lag raha hai, thoda careful rehna, clarity zaroori hai.',
+    currentInputText
+      ? 'Output language instruction: This product supports every language you understand, not only English, Hindi and Hinglish. Detect the language of currentUserMessage above — the message the user just sent you — and reply in that same language. This takes priority over the uploaded conversation\'s dominant language when the two differ, because you are talking to this person right now, not to the people in the analysed chat.'
+      : 'Output language instruction: Reply in the same language style as the uploaded chat where natural. This product supports every language you understand, not only English, Hindi and Hinglish. If the chat mixes languages, keep the output mixed but easy to understand. Do not force awkward translation.',
+    'Script rule: match the SCRIPT the person actually typed in, not just the language. Casual chat in Hindi and several other languages is very commonly typed phonetically using the English/Latin alphabet rather than the native script — that is normal, not a mistake or a simplification. If the input is written that way, reply the same way: the language is Hindi (or whichever language it is), but the text itself stays in English letters, not Devanagari or another native script. Only switch to a native script if the person\'s own message used one.',
+    'Tone: Speak like a sweet, cool, emotionally intelligent broski who genuinely wants to help. Be caring, honest, smart, and clear. Use simple words. Be warm but not childish. Be direct when needed, but never harsh.',
+    'Light, culturally-fitting phrases are welcome where the detected language calls for them (for Hindi/Hinglish: broski, honestly, thoda, scene, vibe, mixed signals, overthink mat karo, yeh pattern lag raha hai, thoda careful rehna, clarity zaroori hai) — do not force Hindi/Hinglish phrases into a reply that is in a different language.',
     'Do not overuse slang. Do not make it cringe. Do not sound robotic. Do not make absolute claims.',
     'Use careful wording: may suggest, could mean, appears to, based on this conversation, this is not proof but it is worth noticing.',
   ].join('\n');
@@ -255,8 +278,8 @@ export function buildBestiePrompt({
     'You are replying as the user\'s selected AI Relationship Coach persona inside ThirdPerson AI.',
     lensInstructions(relationshipType || ''),
     `Other person: ${otherPersonName || 'This person'}`,
-    buildLanguageToneInstructions(languageProfile, []),
-    'The persona system prompt above defines your voice, tone, and personality and takes priority over the generic tone note above — use that note only to pick which language/style to reply in (English, Hindi, Hinglish), never to override the persona\'s personality.',
+    buildLanguageToneInstructions(languageProfile, [], userQuestion || ''),
+    'The persona system prompt above defines your voice, tone, and personality and takes priority over the generic tone note above — use that note only to pick which language and script to reply in, never to override the persona\'s personality.',
     safetyInstructions(),
     'BE CONCISE AND DIRECT. This is a chat, not a report. Answer the question that was actually asked in at most 120 words total across all fields. Lead with the answer, then at most two short supporting sentences. No preamble, no restating the question, no bullet lists, no headings, no sign-offs.',
     'ANSWER FROM THE REPORT, NOT FROM RAW CHAT. Everything you know comes from latestReportSummary and analysisChainSummary — the already-generated report, its flags, its timeline arc, and the quote-backed facts in knownFactsAboutThem. Ground your answer in those findings and refer to them naturally. If the report does not cover what was asked, say so plainly instead of inventing detail or asking for the chat again.',

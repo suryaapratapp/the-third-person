@@ -20,7 +20,7 @@ const CODEBASE_PERSONALITY_SYSTEM_PROMPT = [
   'Do not diagnose, shame, sexualize, or claim certainty about identity.',
   'Preserve stable traits, strengthen repeated patterns, soften weak signals, and say not enough evidence when data is limited.',
   'Use warm, emotionally intelligent, mature, shareable language.',
-  'Support English, Hindi, Hinglish, and mixed-language output where natural.',
+  'Support output in any language, including mixed-language and languages typed phonetically in the Latin/English alphabet rather than their native script (very common for casual Hindi and other South Asian language texting) — not only English, Hindi and Hinglish.',
   'Return valid JSON only.',
 ].join('\n');
 

@@ -12,6 +12,7 @@ import { useRouter } from '../state/RouterContext.jsx';
 const MAX_QUESTION_CHARS = 600;
 import { fetchCreditBalances } from '../lib/creditsService.js';
 import UsageWarningModal from '../components/UsageWarningModal.jsx';
+import CoachBot from '../components/CoachBot.jsx';
 import { COACH_PERSONAS, DEFAULT_PERSONA_ID, getPersonaById } from '../lib/personas.js';
 
 const starters = [
@@ -203,7 +204,9 @@ export default function BestieBotPage({ chainId }) {
         <div className="accent-panel overflow-hidden rounded-[34px] p-4 sm:p-7">
           <div className="flex flex-wrap items-start justify-between gap-5 border-b border-white/10 pb-5">
             <div className="flex items-start gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-pink-200/30 bg-gradient-to-br from-pink-300/20 via-purple-300/16 to-orange-300/14 text-2xl shadow-glow">✨</div>
+              <div className="shrink-0">
+                <CoachBot size={72} mood={isThinking ? 'thinking' : 'idle'} />
+              </div>
               <div>
                 <p className="tech-label text-pink-200">ThirdPerson AI Relationship Coach</p>
                 <h1 className="serif-title mt-3 text-5xl leading-none sm:text-7xl">Talk through {context.personName}.</h1>
@@ -297,8 +300,11 @@ export default function BestieBotPage({ chainId }) {
                   </div>
                 ))}
                 {isThinking && (
-                  <div className="max-w-[82%] rounded-[24px] border border-pink-200/10 bg-white/[0.06] px-5 py-4 text-sm text-smoke">
-                    {statusText || `${activePersona.name} is reading the relationship chain…`}
+                  <div className="flex items-center gap-3">
+                    <CoachBot size={40} mood="thinking" float={false} />
+                    <div className="neon-scan max-w-[82%] rounded-[24px] border border-electric/20 bg-white/[0.06] px-5 py-4 text-sm text-smoke">
+                      {statusText || `${activePersona.name} is reading the relationship chain…`}
+                    </div>
                   </div>
                 )}
                 <div ref={bottomRef} />

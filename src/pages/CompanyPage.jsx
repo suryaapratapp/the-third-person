@@ -1,11 +1,9 @@
 import ParticleBackground from '../components/ParticleBackground.jsx';
-import { useRouter } from '../state/RouterContext.jsx';
 
 const beliefs = ['Relationships need context', 'AI should support reflection, not control', 'Privacy must come first', 'Human judgment matters', 'Emotional clarity should be accessible'];
-const work = ['Conversation analysis', 'Emotional timeline mapping', 'Compatibility insights', 'Communication pattern detection', 'Personality card generation', 'Hindi, English, and Hinglish support', 'Privacy-first relationship intelligence'];
+const work = ['Conversation analysis', 'Emotional timeline mapping', 'Compatibility insights', 'Communication pattern detection', 'Personality card generation', 'Multi-language support', 'Privacy-first relationship intelligence'];
 
 export default function CompanyPage() {
-  const { navigate } = useRouter();
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <ParticleBackground className="opacity-45" />
@@ -65,15 +63,10 @@ export default function CompanyPage() {
             </p>
           </div>
         </section>
-
-        <section className="thin-panel p-6">
-          <p className="tech-label text-smoke">Legal</p>
-          <div className="mt-4 flex flex-wrap gap-4 text-sm">
-            <button type="button" onClick={() => navigate('/privacy')} className="text-purple-200 hover:text-bone">Privacy Policy</button>
-            <button type="button" onClick={() => navigate('/terms')} className="text-purple-200 hover:text-bone">Terms of Service</button>
-            <button type="button" onClick={() => navigate('/refund-policy')} className="text-purple-200 hover:text-bone">Refund &amp; Cancellation Policy</button>
-          </div>
-        </section>
+        {/* Legal links used to repeat here as their own section. The site
+            footer now carries Privacy / Terms / Refund Policy on every page,
+            this one included, so restating them a scroll above was the same
+            three links twice on one page. */}
       </div>
     </section>
   );

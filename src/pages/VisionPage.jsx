@@ -15,7 +15,7 @@ import { useRouter } from '../state/RouterContext.jsx';
 
 const TODAY = [
   ['Relationship reports', 'Upload a real conversation and get a phase-by-phase read on effort, mixed signals, conflict and repair — every claim tied to quotes from the chat.'],
-  ['A coach that knows your report', 'Ask follow-up questions about that specific relationship, in English, Hindi or Hinglish.'],
+  ['A coach that knows your report', 'Ask follow-up questions about that specific relationship in whichever language you type in — the coach replies in kind.'],
   ['Know Yourself', 'A profile of how you communicate that accumulates across every report you run, kept separate by relationship type.'],
   ['Relationship-aware analysis', 'A parent, a partner and an ex are read through different lenses. The same message does not mean the same thing in each.'],
 ];

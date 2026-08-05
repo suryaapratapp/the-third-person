@@ -14,6 +14,11 @@
   --glow-signal: rgba(167,139,250,0.20);
   --glow-bloom: rgba(251,123,166,0.15);
   --glow-ember: rgba(251,146,60,0.07);
+  /* Sci-fi accent + HUD grid. Cyan is deliberately low-alpha so the
+     high-tech read comes from thin glowing lines, not colour blocks. */
+  --neon-cyan: #8be9ff;
+  --neon-edge: rgba(139,233,255,0.30);
+  --hud-line: rgba(139,233,255,0.06);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -52,8 +57,34 @@ body::before {
     radial-gradient(circle at 82% 64%, rgba(251,123,166,0.06), transparent 24rem);
 }
 
+/* Dynamic HUD grid — a faint tech lattice that drifts slowly upward, giving
+   the whole site the "inside a machine" backdrop the sci-fi direction asks
+   for. It sits behind everything, never intercepts input, and holds still for
+   reduced-motion users. */
 body::after {
-  content: none;
+  content: '';
+  position: fixed;
+  inset: -50% 0 0 0;
+  height: 200%;
+  z-index: -3;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(var(--hud-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hud-line) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 30%, transparent 78%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 30%, transparent 78%);
+  animation: hudDrift 24s linear infinite;
+}
+
+@keyframes hudDrift {
+  from { transform: translateY(0); }
+  to { transform: translateY(46px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none; }
 }
 
 button,
@@ -157,7 +188,7 @@ select:focus-visible {
     linear-gradient(180deg, rgba(38,32,58,0.74), rgba(20,18,33,0.60));
   backdrop-filter: blur(12px) saturate(112%);
   -webkit-backdrop-filter: blur(12px) saturate(112%);
-  box-shadow: 0 18px 54px rgba(3,5,18,0.28), inset 0 1px 0 rgba(255,255,255,0.10);
+  box-shadow: 0 18px 54px rgba(3,5,18,0.28), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 0 40px rgba(139,233,255,0.03);
   border-radius: 32px;
 }
 
@@ -167,6 +198,92 @@ select:focus-visible {
 
 .accent-gradient {
   background: linear-gradient(90deg, #a78bfa, #fb7ba6);
+}
+
+/* ------------------------------------------------------------------ *
+ * Sci-fi HUD kit
+ * Reusable pieces for the "high-tech + gamified but professional" look.
+ * ------------------------------------------------------------------ */
+
+/* A panel that reads like a heads-up display: neon top rail, cyan corner
+   ticks, faint grid wash. Layer over .accent-panel / .thin-panel. */
+.hud-frame {
+  position: relative;
+}
+.hud-frame::before {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: -1px;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--neon-edge), transparent);
+}
+.hud-frame > .hud-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  opacity: 0.55;
+}
+.hud-frame > .hud-corner-tl { left: 10px; top: 10px; border-left: 1.5px solid var(--neon-edge); border-top: 1.5px solid var(--neon-edge); }
+.hud-frame > .hud-corner-tr { right: 10px; top: 10px; border-right: 1.5px solid var(--neon-edge); border-top: 1.5px solid var(--neon-edge); }
+.hud-frame > .hud-corner-bl { left: 10px; bottom: 10px; border-left: 1.5px solid var(--neon-edge); border-bottom: 1.5px solid var(--neon-edge); }
+.hud-frame > .hud-corner-br { right: 10px; bottom: 10px; border-right: 1.5px solid var(--neon-edge); border-bottom: 1.5px solid var(--neon-edge); }
+
+/* Gamified stat/level chip. */
+.neon-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--neon-edge);
+  background: rgba(139,233,255,0.06);
+  padding: 0.25rem 0.7rem;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #cdefff;
+  box-shadow: inset 0 0 12px rgba(139,233,255,0.08);
+}
+
+/* Animated neon meter fill for XP/score-style bars. */
+.neon-meter {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+.neon-meter > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #a78bfa, var(--neon-cyan));
+  box-shadow: 0 0 12px rgba(139,233,255,0.5);
+}
+
+/* Cyan scan sweep for loading / "processing" states. */
+.neon-scan {
+  position: relative;
+  overflow: hidden;
+}
+.neon-scan::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(139,233,255,0.14), transparent);
+  transform: translateX(-100%);
+  animation: neonSweep 2.4s ease-in-out infinite;
+}
+@keyframes neonSweep {
+  to { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .neon-scan::after { animation: none; opacity: 0; }
 }
 
 .corner-frame::before,
@@ -211,9 +328,9 @@ select:focus-visible {
 
 .glass-button:hover,
 .glass-button:focus-visible {
-  border-color: rgba(167,139,250,0.48);
+  border-color: var(--neon-edge);
   background: linear-gradient(135deg, rgba(74,56,105,0.82), rgba(58,42,72,0.78), rgba(74,45,66,0.70));
-  box-shadow: 0 14px 38px rgba(3,5,18,0.28);
+  box-shadow: 0 14px 38px rgba(3,5,18,0.28), 0 0 18px rgba(139,233,255,0.12);
   outline: none;
 }
 
@@ -581,4 +698,34 @@ select:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   [style*="tourFade"], [style*="tourProgress"] { animation: none !important; }
+}
+
+/* ------------------------------------------------------------------ *
+ * CoachBot mascot
+ * The relationship-coach robot. Motion is layered so each part has its
+ * own life: the whole bot bobs, the heart antenna pulses, the eyes
+ * blink, and the hover shadow breathes in counter-time.
+ * ------------------------------------------------------------------ */
+.coachbot { line-height: 0; }
+
+.coachbot-float { animation: cbBob 4.2s ease-in-out infinite; }
+
+.coachbot-heart { transform-box: fill-box; transform-origin: center; animation: cbHeart 1.9s ease-in-out infinite; }
+.coachbot-aura { transform-box: fill-box; transform-origin: center; animation: cbAura 4.2s ease-in-out infinite; }
+.coachbot-shadow { transform-box: fill-box; transform-origin: center; animation: cbShadow 4.2s ease-in-out infinite; }
+.coachbot-eyes { transform-box: fill-box; transform-origin: center; animation: cbBlink 5.4s steps(1, end) infinite; }
+.coachbot[data-mood="thinking"] .coachbot-heart { animation-duration: 0.9s; }
+.coachbot-scan { animation: cbScan 1.1s ease-in-out infinite; }
+
+@keyframes cbBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes cbHeart { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.22); } }
+@keyframes cbAura { 0%, 100% { opacity: 0.75; transform: scale(1); } 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes cbShadow { 0%, 100% { transform: scaleX(1); opacity: 0.28; } 50% { transform: scaleX(0.82); opacity: 0.18; } }
+@keyframes cbBlink { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+@keyframes cbScan { 0%, 100% { opacity: 0.4; transform: translateX(-2px); } 50% { opacity: 1; transform: translateX(2px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .coachbot-float, .coachbot-heart, .coachbot-aura, .coachbot-shadow, .coachbot-eyes, .coachbot-scan {
+    animation: none !important;
+  }
 }

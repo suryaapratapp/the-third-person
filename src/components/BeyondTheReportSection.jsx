@@ -1,4 +1,5 @@
-import { PiArrowRight, PiChatCircleDots, PiUserFocus } from 'react-icons/pi';
+import { PiArrowRight, PiUserFocus } from 'react-icons/pi';
+import CoachBot from './CoachBot.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
 // Replaces the old standalone "Meet your AI Relationship Coach" section.
@@ -11,11 +12,11 @@ import { useRouter } from '../state/RouterContext.jsx';
 
 const FEATURES = [
   {
-    Icon: PiChatCircleDots,
+    bot: true,
     label: 'Included with a report',
     title: 'Ask the coach about it',
     body: 'Once a report exists you can talk to it. “Is he actually interested?” “What do I reply to this?” The coach answers from your report — not generic advice — and always hands a question back to you.',
-    points: ['Reads your specific report', 'English, Hindi and Hinglish', 'Honest, not flattering'],
+    points: ['Reads your specific report', 'Replies in your language', 'Honest, not flattering'],
     accent: 'border-pink-200/30 bg-pink-300/[0.06]',
     labelClass: 'text-pink-100',
   },
@@ -42,10 +43,16 @@ export default function BeyondTheReportSection() {
         </h2>
 
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
-          {FEATURES.map(({ Icon, label, title, body, points, accent, labelClass }) => (
-            <article key={title} className={`rounded-[28px] border p-5 sm:p-7 ${accent}`}>
+          {FEATURES.map(({ Icon, bot, label, title, body, points, accent, labelClass }) => (
+            <article key={title} className={`hud-frame rounded-[28px] border p-5 sm:p-7 ${accent}`}>
+              <span className="hud-corner hud-corner-tl" aria-hidden="true" />
+              <span className="hud-corner hud-corner-br" aria-hidden="true" />
               <div className="flex items-center gap-3">
-                <Icon className={`text-2xl ${labelClass}`} aria-hidden="true" />
+                {bot ? (
+                  <CoachBot size={40} mood="happy" />
+                ) : (
+                  <Icon className={`text-2xl ${labelClass}`} aria-hidden="true" />
+                )}
                 <p className={`tech-label ${labelClass}`}>{label}</p>
               </div>
               <h3 className="serif-title mt-4 text-3xl leading-tight sm:text-4xl">{title}</h3>

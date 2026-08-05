@@ -16,12 +16,20 @@ import { useRouter } from '../state/RouterContext.jsx';
 // links, with no route to "start an analysis" at all. Primary navigation now
 // lives in the bottom tab bar; this menu holds the secondary links and is a
 // labelled sheet with full-width tap targets.
+//
+// Profile had no route on desktop at all: it lived only in the mobile bottom
+// tab bar, so a signed-in user on a laptop had no way to reach it short of
+// typing /profile into the address bar. It now appears in the Product
+// dropdown and the mobile sheet whenever someone is signed in.
 
-const PRODUCT_LINKS = [
-  ['Start an analysis', '/analysis/new'],
-  ['Your reports', '/reports'],
-  ['Know Yourself', '/personality-card'],
-];
+function productLinks(signedIn) {
+  const links = [
+    ['Start an analysis', '/analysis/new'],
+    ['Your reports', '/reports'],
+    ['Know Yourself', '/personality-card'],
+  ];
+  return signedIn ? [...links, ['Profile', '/profile']] : links;
+}
 
 const COMPANY_LINKS = [
   ['About', '/company'],
@@ -31,16 +39,19 @@ const COMPANY_LINKS = [
   ['Refund Policy', '/refund-policy'],
 ];
 
-const MOBILE_LINKS = [
-  ['Vision', '/vision'],
-  ['Pricing', '/pricing'],
-  ['Blog', '/blog'],
-  ['FAQs', '/faqs'],
-  ['About', '/company'],
-  ['Privacy', '/privacy'],
-  ['Terms of Service', '/terms'],
-  ['Refund Policy', '/refund-policy'],
-];
+function mobileLinks(signedIn) {
+  const links = [
+    ['Vision', '/vision'],
+    ['Pricing', '/pricing'],
+    ['Blog', '/blog'],
+    ['FAQs', '/faqs'],
+    ['About', '/company'],
+    ['Privacy', '/privacy'],
+    ['Terms of Service', '/terms'],
+    ['Refund Policy', '/refund-policy'],
+  ];
+  return signedIn ? [['Profile', '/profile'], ...links] : links;
+}
 
 function DropdownItem({ label, onClick }) {
   return (
@@ -57,6 +68,9 @@ function DropdownItem({ label, onClick }) {
 export default function TopNav() {
   const { navigate } = useRouter();
   const { user, signOut } = useAuth();
+  const signedIn = Boolean(user);
+  const PRODUCT_LINKS = productLinks(signedIn);
+  const MOBILE_LINKS = mobileLinks(signedIn);
   const [menuOpen, setMenuOpen] = useState(false);
   const [productOpen, setProductOpen] = useState(false);
   const [companyOpen, setCompanyOpen] = useState(false);

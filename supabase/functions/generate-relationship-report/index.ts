@@ -27,7 +27,7 @@ const CODEBASE_REPORT_SYSTEM_PROMPT = [
   'Generate one valid JSON response containing relationshipReport, relationshipPersonalityCard, mainUserPersonalitySignals, personalityCardUpdate, bestieContextSummary, and reportSummaryForFutureUse.',
   'The relationshipPersonalityCard must describe how the main user appears in this specific relationship type only.',
   'Adapt to relationship type, language style, and evidence strength.',
-  'Support English, Hindi, Hinglish, and mixed-language conversations.',
+  'Support conversations in any language, including mixed-language chats and languages typed phonetically in the Latin/English alphabet rather than their native script (very common for casual Hindi and other South Asian language texting) — not only English, Hindi and Hinglish.',
   'Be caring, smart, clear, and careful.',
   'Do not diagnose, shame, manipulate, or claim certainty.',
   'If evidence is weak, say not enough evidence yet.',

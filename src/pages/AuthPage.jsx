@@ -1,14 +1,24 @@
 import { useState } from 'react';
 import HCaptcha from '../components/HCaptcha.jsx';
 import ParticleBackground from '../components/ParticleBackground.jsx';
-import { defaultAnalysisLanguages, supportedAnalysisLanguages } from '../lib/languages.js';
+import { defaultAnalysisLanguages } from '../lib/languages.js';
 import { emptyProfile, saveUserProfile } from '../lib/profileStore.js';
 import { supabase } from '../lib/supabaseClient.js';
 import { upsertRemoteProfile } from '../lib/supabaseDataService.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
-const identityOptions = ['Female', 'Male', 'Transgender', 'Non-binary', 'Other', 'Prefer not to say'];
+// Sign-up used to require first name, last name, gender identity, date of
+// birth, AND at least one language before an account could be created —
+// five mandatory fields at the exact moment someone is deciding whether to
+// trust this product with a private conversation. Every one of them already
+// lives on ProfilePage.jsx with nothing required there, so this duplicated
+// that page's job as a checkout blocker instead of a checkout.
+//
+// Account creation is now just email + password (+ optional Google, +
+// captcha). Zodiac, coach tone-matching, and everything else that reads these
+// fields already tolerates them being unset — that's the same state a user is
+// in today the moment before they first open Profile.
 
 function nextPath() {
   const params = new URLSearchParams(window.location.search);
@@ -29,27 +39,7 @@ export default function AuthPage() {
   const [captchaToken, setCaptchaToken] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const [signupProfile, setSignupProfile] = useState({
-    firstName: '',
-    lastName: '',
-    genderIdentity: '',
-    dateOfBirth: '',
-    preferredAnalysisLanguages: defaultAnalysisLanguages,
-  });
   const captchaRequired = !isLocalAuthTesting();
-
-  function updateSignupProfile(field, value) {
-    setSignupProfile((current) => ({ ...current, [field]: value }));
-  }
-
-  function toggleSignupLanguage(language) {
-    setSignupProfile((current) => {
-      const selected = new Set(current.preferredAnalysisLanguages || []);
-      if (selected.has(language)) selected.delete(language);
-      else selected.add(language);
-      return { ...current, preferredAnalysisLanguages: [...selected] };
-    });
-  }
 
   async function handleEmail(event) {
     event.preventDefault();
@@ -57,29 +47,9 @@ export default function AuthPage() {
       setMessage('Please complete the security check before continuing.');
       return;
     }
-    if (mode === 'sign-up') {
-      const hasRequiredProfile =
-        signupProfile.firstName.trim()
-        && signupProfile.lastName.trim()
-        && signupProfile.genderIdentity
-        && signupProfile.dateOfBirth
-        && signupProfile.preferredAnalysisLanguages.length > 0;
-      if (!hasRequiredProfile) {
-        setMessage('Please complete your profile details before creating your account.');
-        return;
-      }
-    }
     setBusy(true);
     setMessage('');
-    const profilePayload = {
-      ...emptyProfile,
-      firstName: signupProfile.firstName.trim(),
-      lastName: signupProfile.lastName.trim(),
-      email: email.trim(),
-      genderIdentity: signupProfile.genderIdentity,
-      dateOfBirth: signupProfile.dateOfBirth,
-      preferredAnalysisLanguages: signupProfile.preferredAnalysisLanguages,
-    };
+    const profilePayload = { ...emptyProfile, email: email.trim(), preferredAnalysisLanguages: defaultAnalysisLanguages };
     const action = mode === 'sign-up'
       ? supabase.auth.signUp({
           email: email.trim(),
@@ -87,13 +57,6 @@ export default function AuthPage() {
           options: {
             ...(captchaRequired ? { captchaToken } : {}),
             emailRedirectTo: `${window.location.origin}${nextPath()}`,
-            data: {
-              first_name: profilePayload.firstName,
-              last_name: profilePayload.lastName,
-              gender_identity: profilePayload.genderIdentity,
-              date_of_birth: profilePayload.dateOfBirth,
-              preferred_analysis_languages: profilePayload.preferredAnalysisLanguages,
-            },
           },
         })
       : supabase.auth.signInWithPassword({
@@ -182,77 +145,9 @@ export default function AuthPage() {
                 <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={6} required className="mt-2 w-full border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none focus:border-purple-200/60" />
               </label>
               {mode === 'sign-up' && (
-                <div className="mt-5 rounded-3xl border border-white/10 bg-white/[0.035] p-4">
-                  <p className="tech-label text-purple-100">Profile details</p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="tech-label text-ash">First name</span>
-                      <input
-                        value={signupProfile.firstName}
-                        onChange={(event) => updateSignupProfile('firstName', event.target.value)}
-                        type="text"
-                        required
-                        className="mt-2 w-full border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none focus:border-purple-200/60"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="tech-label text-ash">Last name</span>
-                      <input
-                        value={signupProfile.lastName}
-                        onChange={(event) => updateSignupProfile('lastName', event.target.value)}
-                        type="text"
-                        required
-                        className="mt-2 w-full border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none focus:border-purple-200/60"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="tech-label text-ash">Gender / identity</span>
-                      <select
-                        value={signupProfile.genderIdentity}
-                        onChange={(event) => updateSignupProfile('genderIdentity', event.target.value)}
-                        required
-                        className="mt-2 w-full border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none focus:border-purple-200/60"
-                      >
-                        <option value="">Select one</option>
-                        {identityOptions.map((option) => <option key={option}>{option}</option>)}
-                      </select>
-                    </label>
-                    <label className="block">
-                      <span className="tech-label text-ash">Date of birth</span>
-                      <input
-                        value={signupProfile.dateOfBirth}
-                        onChange={(event) => updateSignupProfile('dateOfBirth', event.target.value)}
-                        type="date"
-                        required
-                        className="mt-2 w-full border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none focus:border-purple-200/60"
-                      />
-                    </label>
-                  </div>
-                  <div className="mt-5">
-                    <p className="tech-label text-ash">Preferred analysis languages</p>
-                    <p className="mt-2 text-xs leading-6 text-smoke">
-                      Choose at least one language that commonly appears in your conversations.
-                    </p>
-                    <div className="mt-3 flex max-h-56 flex-wrap gap-2 overflow-y-auto pr-1">
-                      {supportedAnalysisLanguages.map((language) => {
-                        const active = signupProfile.preferredAnalysisLanguages.includes(language);
-                        return (
-                          <button
-                            key={language}
-                            type="button"
-                            onClick={() => toggleSignupLanguage(language)}
-                            className={`rounded-full border px-3 py-2 font-mono text-[0.62rem] uppercase tracking-[0.1em] transition ${active ? 'border-purple-200/60 bg-purple-300/15 text-bone' : 'border-white/10 bg-black/25 text-ash hover:border-purple-200/40 hover:text-bone'}`}
-                          >
-                            {language}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <p className="mt-3 text-xs leading-6 text-ash">
-                      Selected: {signupProfile.preferredAnalysisLanguages.join(', ') || 'None yet'}
-                    </p>
-                  </div>
-                </div>
+                <p className="mt-4 text-xs leading-6 text-ash">
+                  You can add your name, date of birth, and language preferences from your Profile after signing up.
+                </p>
               )}
               {captchaRequired ? (
                 <div className="mt-5 rounded-3xl border border-white/10 bg-white/[0.035] p-4">
