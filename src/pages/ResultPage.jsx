@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import CardActions from '../components/CardActions.jsx';
 import { formatDuration } from '../lib/conversationMetrics.js';
+import { buildZodiacMatch } from '../lib/zodiac.js';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { exportElementAsImage, shareCardSummary } from '../lib/exportElementAsImage.js';
 import { fetchRelationshipReportById } from '../lib/supabaseDataService.js';
@@ -442,7 +443,7 @@ export default function ResultPage({ reportId = '' }) {
                 <p className="mx-auto mt-6 max-w-2xl text-sm leading-8 text-smoke">
                   {notFound
                     ? 'It may have been deleted, or the link is incorrect. Your saved reports are always available in your history.'
-                    : 'Run an analysis to unlock emotional timelines, score cards, sticky notes, receipts, word clouds, and a clear next move.'}
+                    : 'Run an analysis to see the timeline, effort balance, red and green flags, your zodiac layer, and a clear next move.'}
                 </p>
                 <button
                   onClick={() => navigate(notFound ? '/reports' : '/analysis/new')}
@@ -494,6 +495,12 @@ export default function ResultPage({ reportId = '' }) {
   const personFactGroups = Object.entries(analysis?.personProfile?.categories || {})
     .filter(([, items]) => Array.isArray(items) && items.length)
     .sort((a, b) => b[1].length - a[1].length);
+  // Zodiac is computed locally from the two birth dates captured in the wizard.
+  // A fixed astrological lookup — no tokens, and identical on every re-open.
+  const zodiacMatch = buildZodiacMatch(
+    prepared.metadata?.userProfile?.zodiacSign || '',
+    prepared.metadata?.otherPersonZodiac?.sign || '',
+  );
   const metrics = prepared.localMetrics || {};
   const emojis = list(metrics.emojis);
   const effort = metrics.effort || null;
@@ -759,6 +766,47 @@ export default function ResultPage({ reportId = '' }) {
                     <p className="mt-2 font-mono text-xs text-bone">{item.count}×</p>
                   </div>
                 ))}
+              </div>
+            </CardShell>
+          )}
+
+          {zodiacMatch && (
+            <CardShell id="zodiac-match" title="Zodiac Layer" emoji="✨" summary={`${zodiacMatch.userSign} + ${zodiacMatch.otherSign}: ${zodiacMatch.label}`} accent="purple">
+              <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+                <div className="rounded-[26px] border border-purple-200/20 bg-purple-300/[0.06] p-5 text-center">
+                  <div className="flex items-center justify-center gap-4">
+                    <div>
+                      <p className="text-4xl leading-none text-bone">{zodiacMatch.userGlyph}</p>
+                      <p className="mt-2 text-sm text-bone">{zodiacMatch.userSign}</p>
+                      <p className="font-mono text-[0.6rem] uppercase tracking-[0.1em] text-ash">You · {zodiacMatch.userElement}</p>
+                    </div>
+                    <p className="text-2xl text-ash">+</p>
+                    <div>
+                      <p className="text-4xl leading-none text-bone">{zodiacMatch.otherGlyph}</p>
+                      <p className="mt-2 text-sm text-bone">{zodiacMatch.otherSign}</p>
+                      <p className="font-mono text-[0.6rem] uppercase tracking-[0.1em] text-ash">{personName} · {zodiacMatch.otherElement}</p>
+                    </div>
+                  </div>
+                  <p className="serif-title mt-5 text-6xl leading-none text-bone">{zodiacMatch.score}</p>
+                  <p className="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.12em] text-purple-100">{zodiacMatch.label}</p>
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full rounded-full bg-gradient-to-r from-violet-300 to-pink-300" style={{ width: `${zodiacMatch.score}%` }} />
+                  </div>
+                </div>
+                <div className="grid gap-3">
+                  {[
+                    ['Aspect', `${zodiacMatch.aspect} — ${zodiacMatch.aspectNote}`],
+                    ['Where you flow', zodiacMatch.strength],
+                    ['Where you rub', zodiacMatch.friction],
+                    ['Pace', zodiacMatch.modalityNote],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+                      <p className="tech-label text-ash">{label}</p>
+                      <p className="mt-2 text-sm leading-6 text-smoke">{value}</p>
+                    </div>
+                  ))}
+                  <p className="text-xs leading-6 text-ash">{zodiacMatch.disclaimer}</p>
+                </div>
               </div>
             </CardShell>
           )}

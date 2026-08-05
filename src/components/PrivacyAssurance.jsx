@@ -49,8 +49,10 @@ export default function PrivacyAssurance({ compact = false, className = '' }) {
     );
   }
 
+  // The icon sits inline with the title rather than on its own line: five
+  // stacked cards on a phone, and that one change is most of a screen back.
   return (
-    <section className={`accent-panel relative overflow-hidden p-6 sm:p-8 ${className}`}>
+    <section className={`accent-panel relative overflow-hidden p-5 sm:p-8 ${className}`}>
       <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-emerald-300/10 blur-3xl" />
       <div className="relative">
         <p className="tech-label text-emerald-100">Privacy first</p>
@@ -60,18 +62,20 @@ export default function PrivacyAssurance({ compact = false, className = '' }) {
         <p className="mt-4 max-w-2xl text-sm leading-7 text-smoke">
           Sharing a private chat is a big deal. Here is exactly what happens to it — in plain words, with nothing exaggerated.
         </p>
-        <div className="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-6 grid gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
           {POINTS.map((point) => (
-            <div key={point.title} className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5">
-              <p className="text-2xl leading-none">{point.icon}</p>
-              <h3 className="mt-3 text-lg leading-6 text-bone">{point.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-smoke">{point.body}</p>
+            <div key={point.title} className="rounded-[22px] border border-white/10 bg-white/[0.05] p-4 sm:p-5">
+              <h3 className="flex items-center gap-2.5 text-base leading-6 text-bone sm:text-lg">
+                <span className="text-xl leading-none" aria-hidden="true">{point.icon}</span>
+                {point.title}
+              </h3>
+              <p className="mt-1.5 text-sm leading-6 text-smoke">{point.body}</p>
             </div>
           ))}
         </div>
         <p className="mt-6 text-xs leading-6 text-ash">
           Full detail — including which AI provider processes your text and how long anything is kept — is in our{' '}
-          <a href="/privacy" className="text-purple-200 underline hover:text-bone">Privacy Policy</a>.
+          <a href="/privacy" className="-my-3 inline-block py-3 text-purple-200 underline hover:text-bone">Privacy Policy</a>.
         </p>
       </div>
     </section>

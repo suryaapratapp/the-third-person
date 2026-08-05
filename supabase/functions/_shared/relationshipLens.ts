@@ -8,8 +8,8 @@
 //
 // Each lens tells the model what this relationship IS, what healthy and
 // concerning look like INSIDE it, and — just as importantly — which framings to
-// avoid, so it does not apply attachment-theory language to a client thread or
-// treat normal parental involvement as pathology.
+// avoid, so it does not, for example, treat normal parental involvement as
+// pathology or read sibling bluntness as contempt.
 
 export type RelationshipLens = {
   category: string;
@@ -153,71 +153,6 @@ const LENSES: Record<string, RelationshipLens> = {
     timelineFocus: 'Phases should track shared family events and shifts in who carries responsibility.',
     focusWords: ['loyalty', 'family roles', 'responsibility', 'comparison', 'repair', 'boundaries'],
   },
-  work_peer: {
-    category: 'work_peer',
-    label: 'a professional relationship with a colleague',
-    framing: 'A working relationship between peers. Success here means clarity, reliability and mutual respect — not emotional intimacy. Warmth is a bonus, not the measure.',
-    healthy: [
-      'clear expectations and reliable follow-through',
-      'credit shared appropriately',
-      'disagreement handled on the substance',
-    ],
-    concerning: [
-      'credit-taking or blame-shifting',
-      'passive-aggressive tone or exclusion from information',
-      'work requests that routinely ignore stated capacity',
-    ],
-    avoid: [
-      'never use attachment, intimacy or romantic language for colleagues',
-      'do not frame professional distance as emotional unavailability — it is appropriate',
-      'do not advise emotional confrontation; suggest professional, documented communication',
-    ],
-    timelineFocus: 'Phases should track collaboration quality and workload pressure, not emotional closeness.',
-    focusWords: ['professionalism', 'clarity', 'reliability', 'respect', 'workload pressure', 'collaboration'],
-  },
-  work_authority: {
-    category: 'work_authority',
-    label: 'a relationship with a manager or boss',
-    framing: 'There is a real power imbalance: one person controls the other’s work, evaluation and income. Behaviour must be read against that asymmetry, and advice must never put the user’s job at risk.',
-    healthy: [
-      'clear direction, realistic expectations, and feedback that is specific',
-      'the manager respecting stated limits and hours',
-      'recognition of good work',
-    ],
-    concerning: [
-      'unreasonable after-hours demands treated as normal',
-      'criticism that is personal rather than about the work',
-      'shifting expectations that make success impossible',
-    ],
-    avoid: [
-      'never advise confrontation, ultimatums or quitting — suggest documentation, clarifying questions, and escalation paths where appropriate',
-      'never use emotional or romantic framing for a manager',
-      'be careful labelling a manager: the user may be reading this at work with real consequences',
-    ],
-    timelineFocus: 'Phases should track workload demands, tone of feedback, and whether limits are respected.',
-    focusWords: ['power balance', 'expectations', 'tone of feedback', 'boundaries', 'workload', 'professional respect'],
-  },
-  work_client: {
-    category: 'work_client',
-    label: 'a client or customer relationship',
-    framing: 'A commercial relationship with an agreed scope. The measures are clarity, trust and whether the arrangement is sustainable — not closeness.',
-    healthy: [
-      'clear scope, timelines and expectations',
-      'prompt, respectful communication in both directions',
-      'trust built through delivery',
-    ],
-    concerning: [
-      'scope creep normalised without renegotiation',
-      'payment or approval delays paired with urgency demands',
-      'disrespectful tone excused as being "just business"',
-    ],
-    avoid: [
-      'never use emotional or attachment framing',
-      'do not advise anything that would breach a contract; suggest clear written communication',
-    ],
-    timelineFocus: 'Phases should track scope, responsiveness and trust across the engagement.',
-    focusWords: ['scope clarity', 'responsiveness', 'trust', 'professional boundaries', 'expectations'],
-  },
   generic: {
     category: 'generic',
     label: 'a personal relationship',
@@ -238,9 +173,6 @@ export function lensFor(relationshipType = ''): RelationshipLens {
   if (/best friend|friend/.test(value)) return LENSES.friendship;
   if (/mom|mum|mother|dad|father|parent/.test(value)) return LENSES.family_parent;
   if (/brother|sister|sibling|cousin|family/.test(value)) return LENSES.family_sibling;
-  if (/manager|boss|supervisor|lead/.test(value)) return LENSES.work_authority;
-  if (/client|customer/.test(value)) return LENSES.work_client;
-  if (/colleague|coworker|co-worker|team/.test(value)) return LENSES.work_peer;
   return LENSES.generic;
 }
 

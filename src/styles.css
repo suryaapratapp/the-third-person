@@ -221,51 +221,58 @@ select:focus-visible {
   transform: translateY(1px);
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 999px;
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  padding: 1rem 1.6rem;
-  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease, color 180ms ease;
-  cursor: pointer;
-}
+/* Button primitives live in @layer components so plain Tailwind utilities beat
+   them. Outside a layer these rules sit after `@tailwind utilities` in source
+   order, and at equal specificity that meant `.btn` won: a `hidden md:inline-flex`
+   button stayed visible on mobile because `.btn { display: inline-flex }`
+   overrode `hidden`. */
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    padding: 1rem 1.6rem;
+    transition: border-color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease, color 180ms ease;
+    cursor: pointer;
+  }
 
-.btn:active {
-  transform: translateY(1px);
-}
+  .btn:active {
+    transform: translateY(1px);
+  }
 
-.btn-primary {
-  border: 1px solid rgba(255,255,255,0.14);
-  color: #17122a;
-  background: linear-gradient(120deg, #cbb8ff 0%, #e3b0c8 55%, #fbc89a 100%);
-  box-shadow: 0 16px 42px rgba(167,139,250,0.28), 0 4px 14px rgba(251,123,166,0.18);
-}
+  .btn-primary {
+    border: 1px solid rgba(255,255,255,0.14);
+    color: #17122a;
+    background: linear-gradient(120deg, #cbb8ff 0%, #e3b0c8 55%, #fbc89a 100%);
+    box-shadow: 0 16px 42px rgba(167,139,250,0.28), 0 4px 14px rgba(251,123,166,0.18);
+  }
 
-.btn-primary:hover,
-.btn-primary:focus-visible {
-  transform: translateY(-1px);
-  box-shadow: 0 20px 54px rgba(167,139,250,0.36), 0 6px 18px rgba(251,123,166,0.22);
-  outline: none;
-}
+  .btn-primary:hover,
+  .btn-primary:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 20px 54px rgba(167,139,250,0.36), 0 6px 18px rgba(251,123,166,0.22);
+    outline: none;
+  }
 
-.btn-ghost {
-  border: 1px solid rgba(216,202,255,0.16);
-  color: #ddd6ee;
-  background: transparent;
-}
+  .btn-ghost {
+    border: 1px solid rgba(216,202,255,0.16);
+    color: #ddd6ee;
+    background: transparent;
+  }
 
-.btn-ghost:hover,
-.btn-ghost:focus-visible {
-  border-color: rgba(167,139,250,0.42);
-  color: #fffaff;
-  background: rgba(167,139,250,0.08);
-  outline: none;
+  .btn-ghost:hover,
+  .btn-ghost:focus-visible {
+    border-color: rgba(167,139,250,0.42);
+    color: #fffaff;
+    background: rgba(167,139,250,0.08);
+    outline: none;
+  }
 }
 
 .glass-card {
@@ -515,6 +522,15 @@ select:focus-visible {
     width: 28px;
     height: 28px;
   }
+}
+
+/* Mobile tab bar.
+   iOS puts a home indicator across the bottom ~34px of the screen in gesture
+   mode; without the safe-area inset the last row of tab labels sits underneath
+   it and the taps get swallowed. `viewport-fit=cover` in index.html is what
+   makes env() resolve to a non-zero value. */
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .marquee-row {

@@ -191,7 +191,7 @@ export default function ProductTour() {
                   key={item.key}
                   onClick={() => { setActive(index); }}
                   aria-current={index === active}
-                  className={`relative overflow-hidden rounded-full border px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] transition ${
+                  className={`relative min-h-[44px] overflow-hidden rounded-full border px-3.5 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] transition ${
                     index === active
                       ? 'border-purple-200/45 bg-purple-300/12 text-bone'
                       : 'border-white/12 bg-white/[0.04] text-smoke hover:border-purple-200/30'

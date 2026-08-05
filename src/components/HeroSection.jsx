@@ -1,7 +1,22 @@
 import ParticleBackground from './ParticleBackground.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
-import { PiArrowRight } from 'react-icons/pi';
+import { PiArrowRight, PiLockSimple } from 'react-icons/pi';
 import { SiImessage, SiInstagram, SiMessenger, SiSnapchat, SiTelegram, SiWhatsapp } from 'react-icons/si';
+
+// Mobile-first hero.
+//
+// The old hero was a full-viewport serif wordmark: on a phone the entire first
+// screen was the brand name, and the button that the whole product depends on
+// sat below the fold. Brand recognition is worth nothing to a first-time
+// visitor who does not yet know what this does.
+//
+// So the <h1> is now the value proposition (better for search too), the brand
+// moves to a label above it, and the primary action is guaranteed to be on the
+// first screen on a 375×667 phone.
+//
+// The trust line is deliberately literal. It used to say "No credit card",
+// which stopped being true when the free report was removed — the price is
+// stated up front instead.
 
 const messagingApps = [
   ['WhatsApp', SiWhatsapp, '#25D366'],
@@ -14,52 +29,64 @@ const messagingApps = [
 
 export default function HeroSection() {
   const { navigate } = useRouter();
+
   return (
-    <section className="relative min-h-[92vh] overflow-hidden border-b border-white/12 px-4 pt-28 sm:px-8">
+    <section className="relative overflow-hidden border-b border-white/12 px-4 pb-14 pt-24 sm:px-8 sm:pb-20 sm:pt-28">
       <ParticleBackground showAxis={false} />
-      <div className="corner-frame noise relative mx-auto flex min-h-[76vh] max-w-[1540px] flex-col items-center justify-center border border-white/15 px-4 py-20 text-center shadow-glow sm:px-8">
-        <div className="absolute left-8 top-24 hidden text-left lg:block">
-          <p className="tech-label decorative-label mb-28">▪ Observing conversations</p>
-          <p className="tech-label decorative-label">▪ Understanding behaviour</p>
-        </div>
-        <div className="absolute right-8 top-32 hidden text-right lg:block">
-          <p className="tech-label decorative-label mb-32">Detecting patterns ▪</p>
-          <p className="tech-label decorative-label">Revealing intent ▪</p>
-        </div>
-        <p className="tech-label mb-5 text-smoke">AI that sees between the lines</p>
-        <h1 className="serif-title max-w-5xl text-6xl font-medium leading-none text-bone sm:text-7xl md:text-8xl lg:text-9xl">
-          ThirdPerson AI
+
+      <div className="corner-frame noise relative mx-auto flex max-w-[1180px] flex-col items-center border border-white/15 px-4 py-10 text-center shadow-glow sm:px-8 sm:py-16">
+        <p className="tech-label text-purple-100/80">ThirdPerson AI</p>
+
+        <h1 className="serif-title mt-5 max-w-4xl text-[2.6rem] font-medium leading-[1.06] text-bone sm:text-6xl lg:text-7xl">
+          Understand any relationship from the chat you already have.
         </h1>
-        <p className="tech-label mt-6 max-w-3xl text-purple-100/80">
-          UNDERSTAND THE CONVERSATION BENEATH THE CONVERSATION
+
+        <p className="mt-5 max-w-xl text-base leading-7 text-smoke sm:text-lg sm:leading-8">
+          Export a conversation, upload it, and get an honest read on effort, mixed signals, how it
+          changed over time, and what to do next — backed by quotes from the chat itself.
         </p>
-        <p className="mt-7 max-w-2xl text-base leading-8 text-smoke sm:text-lg">
-          Upload or paste a conversation and ThirdPerson AI analyses emotional shifts, communication patterns, compatibility signals, and personality traits privately, carefully, and in context.
-        </p>
+
         <button
           onClick={() => navigate('/analysis/new')}
-          className="scan-line group mt-10 flex w-full max-w-xl items-center justify-between border border-purple-300/30 bg-gradient-to-r from-black/60 via-signal/10 to-black/60 px-4 py-4 text-left text-smoke transition hover:border-bloom/60 sm:px-6"
+          className="btn btn-primary mt-8 w-full max-w-sm text-sm"
         >
-          <span className="font-mono text-xs tracking-wide">Start a conversation analysis</span>
-          <span className="ml-5 flex border-l border-white/15 pl-5 transition group-hover:border-bloom/40">
-            <PiArrowRight className="text-xl text-bloom transition group-hover:translate-x-0.5" aria-hidden="true" />
-          </span>
+          Analyse a chat
+          <PiArrowRight className="text-base" aria-hidden="true" />
         </button>
-        <div className="mt-5 text-center">
-          <p className="text-sm text-smoke">No credit card · One-click Google signup · Your data stays private</p>
-          <p className="tech-label mt-5 text-purple-100/75">Works with</p>
-          <div className="mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-3">
+
+        <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-smoke">
+          <PiLockSimple className="text-emerald-200" aria-hidden="true" />
+          <span>Private to your account</span>
+          <span className="text-ash" aria-hidden="true">·</span>
+          <span>From ₹199 per report</span>
+          <span className="text-ash" aria-hidden="true">·</span>
+          <button
+            type="button"
+            onClick={() => navigate('/pricing')}
+            /* -my-3/py-3 grows the touch area to 44px without moving the text. */
+            className="-my-3 py-3 underline decoration-white/25 underline-offset-4 transition hover:text-bone"
+          >
+            See pricing
+          </button>
+        </p>
+
+        <div className="mt-9 w-full border-t border-white/10 pt-7">
+          <p className="tech-label text-purple-100/70">Works with</p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5 sm:gap-3">
             {messagingApps.map(([name, Icon, color]) => (
               <span
                 key={name}
                 title={name}
                 aria-label={name}
-                className="grid h-12 w-12 place-items-center rounded-full bg-transparent transition hover:-translate-y-1 hover:bg-white/[0.045] sm:h-14 sm:w-14"
+                className="grid h-11 w-11 place-items-center rounded-full transition hover:-translate-y-1 hover:bg-white/[0.045] sm:h-14 sm:w-14"
               >
                 <Icon className="text-2xl sm:text-3xl" style={{ color }} aria-hidden="true" />
               </span>
             ))}
           </div>
+          <p className="mt-4 text-xs leading-6 text-ash">
+            Exporting a chat takes about a minute — we show you how for each app.
+          </p>
         </div>
       </div>
     </section>

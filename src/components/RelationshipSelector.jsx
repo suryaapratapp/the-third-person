@@ -1,6 +1,8 @@
+// Professional relationships were removed on purpose: this product analyses
+// personal ones, and work chats need a different (and legally touchier) lens.
 const relationships = [
-  'Partner', 'Ex', 'Crush', 'Early stage dating / seeing each other', 'Friend', 'Best friend',
-  'Mom', 'Dad', 'Brother', 'Sister', 'Cousin', 'Colleague', 'Manager', 'Client', 'Family member', 'Other',
+  'Partner', 'Ex', 'Crush', 'Early stage dating / seeing each other', 'Friend',
+  'Mom', 'Dad', 'Brother', 'Sister', 'Cousin',
 ];
 
 export default function RelationshipSelector({ value, onChange }) {

@@ -1,28 +1,38 @@
+// The five relationship families this product actually analyses.
+//
+// This list used to include "Workplace Communication", which became a false
+// promise the moment the work relationship types were removed from the flow and
+// their lenses deleted from the prompt. These five now map exactly to the
+// lenses in supabase/functions/_shared/relationshipLens.ts, so the homepage
+// cannot advertise something the analysis will not do.
+
 const useCases = [
-  ['Dating & New Relationships', 'Analyse early communication patterns, emotional availability, consistency, and compatibility before getting too invested.'],
-  ['Long-Term Relationships', 'Understand how your relationship dynamics have evolved over time, including effort balance, conflict patterns, affection, distance, and repair.'],
-  ['Post-Breakup Clarity', 'Get objective, AI-assisted insights into what changed, what repeated, and what may have gone wrong without turning pain into blame.'],
-  ['Friendships', 'Reflect on effort, reliability, emotional availability, and repeated misunderstanding in close friendships.'],
-  ['Family Conversations', 'Notice recurring tension, care signals, boundaries, and repair attempts in sensitive family exchanges.'],
-  ['Workplace Communication', 'Review communication tone, clarity, expectation gaps, and professional relationship dynamics with care.'],
+  ['💬', 'Crushes & early dating', 'Is the interest mutual, or are you the only one carrying it? Read initiation, response patterns, and whether plans actually get made.'],
+  ['💛', 'Partners', 'How effort, affection and conflict-repair have shifted over months — including the arguments that keep coming back in different words.'],
+  ['🕯️', 'Exes', 'What changed, what repeated, and what the contact has become since — without turning hindsight into blame.'],
+  ['🤝', 'Friendships', 'Who reaches out, who follows through, and whether support is flowing both ways over time.'],
+  ['🏠', 'Family', 'Care and pressure often arrive in the same sentence. See recurring friction, and whether the limits you set are being heard.'],
 ];
 
 export default function WhenItHelpsSection() {
   return (
-    <section className="border-b border-white/12 px-4 py-20 sm:px-8">
-      <div className="mx-auto max-w-[1540px]">
-        <p className="tech-label text-smoke">When it helps</p>
-        <div className="mt-5 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-          <h2 className="serif-title text-5xl leading-none sm:text-6xl">For every stage of a relationship.</h2>
-          <p className="max-w-2xl text-sm leading-8 text-smoke">
-            From the first DM to making sense of what just ended, ThirdPerson AI helps you reflect with more clarity.
-          </p>
-        </div>
-        <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {useCases.map(([title, text]) => (
-            <article key={title} className="accent-panel p-6">
-              <h3 className="serif-title text-3xl">{title}</h3>
-              <p className="mt-4 text-sm leading-7 text-smoke">{text}</p>
+    <section className="px-4 py-14 sm:px-8 sm:py-20">
+      <div className="mx-auto max-w-[1180px]">
+        <p className="tech-label text-smoke">What it reads</p>
+        <h2 className="serif-title mt-4 max-w-2xl text-4xl leading-tight sm:text-6xl">
+          Analysis that changes with the relationship.
+        </h2>
+        <p className="mt-4 max-w-2xl text-sm leading-7 text-smoke sm:text-base sm:leading-8">
+          A daily “where are you?” is care from a parent and something else entirely from a partner.
+          You pick who this person is, and the whole analysis is written for that relationship.
+        </p>
+
+        <div className="mt-8 grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {useCases.map(([icon, title, text]) => (
+            <article key={title} className="accent-panel p-5 sm:p-6">
+              <p className="text-2xl leading-none">{icon}</p>
+              <h3 className="mt-3 text-lg leading-6 text-bone">{title}</h3>
+              <p className="mt-2 text-sm leading-6 text-smoke">{text}</p>
             </article>
           ))}
         </div>
