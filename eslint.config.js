@@ -36,4 +36,14 @@ export default [
       globals: { ...globals.node, ...globals.browser },
     },
   },
+  {
+    // Build-time tooling runs in Node, not the browser: it needs process,
+    // console and the node: builtins that the browser globals above exclude.
+    files: ['scripts/**/*.{js,mjs}'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: { ...globals.node },
+    },
+  },
 ];

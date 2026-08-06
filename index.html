@@ -3,31 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>ThirdPerson AI — Understand any relationship from the actual chat</title>
-    <meta name="description" content="ThirdPerson AI turns a real chat history with someone into a private relationship intelligence report — sentiment, red and green flags, communication style, and an ongoing AI Relationship Coach." />
     <meta name="theme-color" content="#100e1b" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="canonical" href="https://thethirdperson.ai/" />
+
+    <!--
+      Everything between the seo markers is REPLACED PER ROUTE at build time by
+      scripts/prerender.mjs. The values below are the homepage defaults and are
+      what the dev server and any un-prerendered route fall back to.
+
+      Do not hand-edit the tags in here expecting them to apply site-wide —
+      src/lib/seo.js is the single source of truth for per-route metadata, and
+      the prerender script reads it.
+    -->
+    <!--seo:start-->
+    <title>ThirdPerson AI — Understand any relationship from the actual chat</title>
+    <meta name="description" content="ThirdPerson AI turns a real chat history with someone into a private relationship intelligence report — sentiment, red and green flags, communication style, and an ongoing AI Relationship Coach." />
+    <link rel="canonical" href="https://www.thethirdperson.ai/" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ThirdPerson AI" />
     <meta property="og:title" content="ThirdPerson AI — Understand any relationship from the actual chat" />
-    <meta property="og:description" content="Upload or paste a real conversation and get a private relationship intelligence report: sentiment, communication style, red and green flags, and an ongoing AI Relationship Coach." />
-    <meta property="og:url" content="https://thethirdperson.ai/" />
-    <meta property="og:image" content="https://thethirdperson.ai/favicon.svg" />
+    <meta property="og:description" content="ThirdPerson AI turns a real chat history with someone into a private relationship intelligence report — sentiment, red and green flags, communication style, and an ongoing AI Relationship Coach." />
+    <meta property="og:url" content="https://www.thethirdperson.ai/" />
+    <meta property="og:image" content="https://www.thethirdperson.ai/og-default.png" />
 
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="ThirdPerson AI — Understand any relationship from the actual chat" />
-    <meta name="twitter:description" content="Upload or paste a real conversation and get a private relationship intelligence report from ThirdPerson AI." />
-    <meta name="twitter:image" content="https://thethirdperson.ai/favicon.svg" />
+    <meta name="twitter:description" content="ThirdPerson AI turns a real chat history with someone into a private relationship intelligence report." />
+    <meta name="twitter:image" content="https://www.thethirdperson.ai/og-default.png" />
+    <!--seo:end-->
 
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "ThirdPerson AI",
-        "url": "https://thethirdperson.ai/",
-        "logo": "https://thethirdperson.ai/favicon.svg",
+        "url": "https://www.thethirdperson.ai/",
+        "logo": "https://www.thethirdperson.ai/favicon.svg",
         "email": "hello@thethirdperson.ai"
       }
     </script>
@@ -36,12 +48,13 @@
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "ThirdPerson AI",
-        "url": "https://thethirdperson.ai/"
+        "url": "https://www.thethirdperson.ai/"
       }
     </script>
+    <!--seo:jsonld-->
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><!--app-html--></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

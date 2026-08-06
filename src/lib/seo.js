@@ -1,6 +1,20 @@
 import { getBlogPostMetaBySlug } from './blogPostsMeta.js';
 
 const SITE_NAME = 'ThirdPerson AI';
+
+// The one canonical host for the whole site. Everything that emits an absolute
+// URL — canonical tags, og:url, the sitemap, JSON-LD — derives from this.
+//
+// It is a hardcoded constant rather than window.location.origin on purpose.
+// Using the live origin meant every Vercel preview deployment emitted canonical
+// tags pointing at ITSELF (e.g. thirdperson-abc123.vercel.app), inviting Google
+// to index preview builds as separate sites competing with production.
+//
+// This must match whichever host actually serves a 200. The apex currently
+// redirects to www, so www is canonical. If the primary domain is ever flipped
+// to the apex in Vercel, change this line and rebuild — nothing else.
+export const SITE_ORIGIN = 'https://www.thethirdperson.ai';
+
 const DEFAULT_DESCRIPTION = 'ThirdPerson AI turns a real chat history with someone into a private relationship intelligence report — sentiment, red and green flags, communication style, and an ongoing AI Relationship Coach.';
 
 const PAGE_SEO = {
@@ -66,7 +80,10 @@ const PAGE_SEO = {
   },
 };
 
-function metaFor(path) {
+// Exported so scripts/prerender.mjs can emit the SAME metadata into the static
+// HTML it writes at build time. If this were duplicated in the build script the
+// two would drift and crawlers would get different tags than users.
+export function seoMetaFor(path) {
   if (PAGE_SEO[path]) return PAGE_SEO[path];
   if (path.startsWith('/reports/')) {
     // Coach lives at /reports/:chainId/coach (or /broski, /bestie); any other
@@ -118,9 +135,9 @@ function ensureLinkTag(rel) {
   return tag;
 }
 
-export function applyRouteSeo(path, origin = typeof window !== 'undefined' ? window.location.origin : '') {
+export function applyRouteSeo(path, origin = SITE_ORIGIN) {
   if (typeof document === 'undefined') return;
-  const { title, description } = metaFor(path);
+  const { title, description } = seoMetaFor(path);
 
   document.title = title;
   ensureMetaTag('description').setAttribute('content', description);
