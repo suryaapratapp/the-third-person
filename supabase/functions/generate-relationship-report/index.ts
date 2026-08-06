@@ -672,6 +672,18 @@ async function openAiAnalysis(body: Record<string, any>) {
         nextBestStep: S.str(),
       }),
       nextBestMove: S.str(),
+      // Relationship-type-specific scores. The keys are fixed by the strict
+      // schema, but WHICH four are requested comes from the lens, so a partner
+      // report and a parent report are scored on genuinely different things
+      // rather than one dating-shaped rubric.
+      signatureMetrics: S.arr(S.obj({
+        key: S.str('The metric key given in the signature metrics list'),
+        label: S.str('Human-readable name for this metric'),
+        score: S.int('0-100'),
+        reading: S.str('One or two sentences on what the messages actually show for this metric'),
+        evidenceQuote: S.str('A short REAL quote supporting it, or empty string'),
+        confidence: S.enum(CONFIDENCE),
+      }), 'Exactly the four signature metrics named for this relationship type, in that order'),
       energyMatchScore: S.obj({
         score: S.int('0-100'),
         userEnergy: S.str(),
@@ -716,7 +728,11 @@ async function openAiAnalysis(body: Record<string, any>) {
       keywords: S.arr(S.str()),
       viralOneLiner: S.str(),
       confidenceLevel: S.enum(CONFIDENCE),
-      conciseSummaryForDatabase: S.str('Compact summary reused later by Know Yourself'),
+      // Know Yourself is built ONLY from these per-relationship summaries —
+      // it never sees a conversation. Thin summaries here are the single
+      // biggest cap on how good that profile can ever get, and the chat is
+      // gone afterwards, so this is the only chance to write it well.
+      conciseSummaryForDatabase: S.str('A full paragraph on how the MAIN USER specifically shows up in this relationship: how they open, repair, argue, ask for reassurance, go quiet, express care. Concrete and behavioural, not flattering adjectives. This is the only record Know Yourself will ever have of this relationship.'),
       personalityScores: S.obj({
         speakingStyle: S.obj({ score: S.int(), label: S.str() }),
         humourScore: S.int(),
@@ -728,12 +744,25 @@ async function openAiAnalysis(body: Record<string, any>) {
         signatureBehaviours: S.arr(S.str(), '3-5 short first-person-readable observations'),
       }, 'All 0-100; use ~50 and say so in signatureBehaviours when evidence is thin'),
     }),
+    // The coach's PERMANENT memory of this relationship.
+    //
+    // The uploaded conversation is discarded once the report exists, so this
+    // object is the only thing the coach will ever be able to draw on. Whatever
+    // is not captured here is gone for good — which is why it is worth spending
+    // output tokens on generously. The cost is paid once per report, not once
+    // per coach message.
     bestieContextSummary: S.obj({
-      shortSummary: S.str(),
-      whatBestieShouldKnow: S.arr(S.str()),
-      repeatedPatterns: S.arr(S.str()),
+      shortSummary: S.str('A full paragraph, not a line: what this relationship is, how it has gone, and where it stands now'),
+      whereItStandsNow: S.str('The current state as of the most recent messages — the coach is usually asked about now, not the whole history'),
+      whatBestieShouldKnow: S.arr(S.str(), '5-8 specific things a friend would need to know to give good advice here'),
+      repeatedPatterns: S.arr(S.str(), 'Patterns that recur rather than one-off events'),
       relationshipWarnings: S.arr(S.str()),
-      usefulQuotes: S.arr(S.str()),
+      openQuestions: S.arr(S.str(), 'What is genuinely unresolved between them — the things most likely to be asked about'),
+      sensitiveTopics: S.arr(S.str(), 'Subjects to handle carefully because they clearly carry weight for this person'),
+      whatTheUserSeemsToWant: S.str('What the main user appears to be hoping for, based on what they chase and return to'),
+      whatChangedMost: S.str('The single biggest shift across the conversation'),
+      communicationRhythm: S.str('How these two actually talk — pace, length, who drives, how conflict opens and closes'),
+      usefulQuotes: S.arr(S.str(), '4-8 short real quotes that capture the relationship'),
     }),
     reportSummaryForFutureUse: S.obj({
       compressedSummary: S.str(),
@@ -795,7 +824,7 @@ async function openAiAnalysis(body: Record<string, any>) {
     'THIS REQUEST GENERATES THE REPORT NARRATIVE AND TIMELINE ONLY. Return exactly the relationshipReport keys described in combinedGenerationSchema (summary, dynamic, tone, communication patterns, timeline, timelineArc). The timeline is the priority of this request — do not produce flags, scores, advice, personality card, or coach context here.',
   ));
   const reportSignalsMessages = messagesForChatCompletions(promptFor(
-    'THIS REQUEST GENERATES THE REPORT SIGNAL CARDS ONLY. Return exactly the relationshipReport keys described in combinedGenerationSchema (red flags, green flags, mixed signals, scores, advice, next best move, energy match, attachment vibe, day/night dynamics, word cloud, sticky notes). Evidence-backed red and green flags are the priority of this request — do not produce the timeline, personality card, or coach context here.',
+    'THIS REQUEST GENERATES THE REPORT SIGNAL CARDS ONLY. Return exactly the relationshipReport keys described in combinedGenerationSchema (red flags, green flags, scores, advice, next best move, signature metrics, energy match). Evidence-backed red and green flags are the priority of this request — do not produce the timeline, personality card, or coach context here. relationshipReport.signatureMetrics must contain exactly the four metrics named in the SIGNATURE METRICS list above, using those exact keys and in that order, each scored 0-100 with a reading grounded in these specific messages.',
   ));
   const personaMessages = messagesForChatCompletions(promptFor(
     'THIS REQUEST GENERATES THE PERSONALITY LAYER ONLY. Return exactly the keys described in combinedGenerationSchema (personality signals, relationship personality card, personality card update, coach context summary, future-use summary, language style, confidence notes) — do not produce the relationshipReport object in this response.',

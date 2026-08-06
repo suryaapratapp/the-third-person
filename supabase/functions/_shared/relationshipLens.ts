@@ -165,6 +165,70 @@ const LENSES: Record<string, RelationshipLens> = {
   },
 };
 
+// Relationship-specific signature metrics.
+//
+// The common core (compatibility, communication health, effort balance, trust,
+// clarity) is the same everywhere, because those questions matter in every
+// relationship. These are the ones that DON'T generalise: "did the plan
+// actually happen" is the whole question for a crush and meaningless for a
+// parent; "is a stated limit respected" is central to a parent and nonsense for
+// someone you met last week.
+//
+// Generic chat analysers score every relationship on one dating-shaped rubric.
+// This is the thing that is genuinely hard to copy, because it requires having
+// decided what each relationship is actually for.
+//
+// Each metric is scored 0-100 with a short evidence-backed reading. Keep them
+// to 4 per lens: more than that and the report stops having a point of view.
+const SIGNATURE_METRICS: Record<string, Array<{ key: string; label: string; measures: string }>> = {
+  romantic_committed: [
+    { key: 'repairSuccess', label: 'Repair Success', measures: 'When conflict happens, does a repair attempt get made AND land? Score the proportion that actually resolved rather than went quiet.' },
+    { key: 'appreciationRatio', label: 'Appreciation vs Criticism', measures: 'Ratio of warm/appreciative messages to critical ones during and around disagreements. Healthy long-term couples run heavily positive; near-parity is the warning sign.' },
+    { key: 'futureOrientation', label: 'Future Talk', measures: 'How often the two of them talk about plans, decisions or life beyond the next few days — and whether both do it or only one.' },
+    { key: 'bidResponse', label: 'Turning Toward', measures: 'When one person makes a small bid for attention, affection or help, how often does the other engage rather than deflect or ignore?' },
+  ],
+  romantic_early: [
+    { key: 'interestTrajectory', label: 'Interest Trajectory', measures: 'Is interest building, flat, or fading across the chat? Direction matters far more than the current level.' },
+    { key: 'planFollowThrough', label: 'Plans That Happen', measures: 'Proportion of floated plans that turned into a confirmed, specific arrangement rather than staying a nice idea.' },
+    { key: 'curiosityReciprocity', label: 'Do They Ask Back', measures: 'Whether questions flow both ways or one person interviews while the other only answers.' },
+    { key: 'availabilityPattern', label: 'When They Show Up', measures: 'Whether warmth is spread through the day or clusters late at night / only when convenient for one person.' },
+  ],
+  romantic_past: [
+    { key: 'loopRepetition', label: 'Old Loop Repeating', measures: 'How strongly the current contact repeats the exact dynamic that ended it before.' },
+    { key: 'contactInitiation', label: 'Who Reaches Back', measures: 'Who restarts contact after silence, and whether it spikes at predictable low points (late night, weekends, after gaps).' },
+    { key: 'boundaryRespect', label: 'Boundary Respect', measures: 'When either person signals they need space or distance, is that honoured or pushed against?' },
+    { key: 'closureMovement', label: 'Closure vs Reopening', measures: 'Whether the conversation is genuinely resolving something or quietly reopening it.' },
+  ],
+  friendship: [
+    { key: 'supportReciprocity', label: 'Support Both Ways', measures: 'Does support flow in both directions across the whole history, or is one person permanently the listener?' },
+    { key: 'pickupEase', label: 'Picking Back Up', measures: 'After a gap, how easily the friendship resumes. Long gaps are normal here — what matters is whether warmth returns intact.' },
+    { key: 'showsUpWhenCostly', label: 'Shows Up When It Costs', measures: 'Evidence of turning up when it required real effort, not just easy agreement.' },
+    { key: 'bantersEdge', label: 'Banter vs Digs', measures: 'Whether the teasing reads as affection or has a consistent edge that lands as criticism.' },
+  ],
+  family_parent: [
+    { key: 'careVsPressure', label: 'Care vs Pressure', measures: 'Care and pressure often arrive in the same sentence here. Weigh how often concern comes with an expectation attached.' },
+    { key: 'limitHeard', label: 'Are Limits Heard', measures: 'When the adult child states a limit, is it acknowledged and respected over time, or restated and ignored?' },
+    { key: 'repairWithoutApology', label: 'Repair Without Apology', measures: 'Many families repair by moving on warmly rather than apologising. Score whether repair happens at all, in whatever form it takes.' },
+    { key: 'guiltPattern', label: 'Guilt as a Lever', measures: 'How often guilt is used to steer a decision, as distinct from ordinary worry.' },
+  ],
+  family_sibling: [
+    { key: 'responsibilitySplit', label: 'Who Carries It', measures: 'How family responsibility and emotional labour are divided between them.' },
+    { key: 'oldRoles', label: 'Childhood Roles', measures: 'Whether either is still being held in a role from childhood long past its usefulness.' },
+    { key: 'comparisonTheme', label: 'Comparison', measures: 'How present comparison or perceived favouritism is as a running theme.' },
+    { key: 'showsUpInStress', label: 'Shows Up in Family Stress', measures: 'Whether they close ranks and support each other when something family-wide goes wrong.' },
+  ],
+  generic: [
+    { key: 'reciprocity', label: 'Reciprocity', measures: 'Whether effort and attention flow both ways over time.' },
+    { key: 'repairPattern', label: 'Repair', measures: 'What happens after friction — is it addressed or quietly dropped?' },
+    { key: 'consistency', label: 'Consistency', measures: 'Whether behaviour is steady or arrives in unpredictable bursts.' },
+    { key: 'directness', label: 'Directness', measures: 'Whether things get said plainly or hinted around.' },
+  ],
+};
+
+export function signatureMetricsFor(relationshipType = '') {
+  return SIGNATURE_METRICS[lensFor(relationshipType).category] || SIGNATURE_METRICS.generic;
+}
+
 export function lensFor(relationshipType = ''): RelationshipLens {
   const value = String(relationshipType || '').toLowerCase().trim();
   if (/\bex\b|ex-|ex /.test(value)) return LENSES.romantic_past;
@@ -188,5 +252,9 @@ export function lensInstructions(relationshipType = ''): string {
     `Framings to avoid here: ${lens.avoid.join('; ')}.`,
     `Timeline emphasis: ${lens.timelineFocus}`,
     `Prioritise these dimensions: ${lens.focusWords.join(', ')}.`,
+    `SIGNATURE METRICS for this relationship type — score each 0-100 and justify from the messages:\n${signatureMetricsFor(relationshipType)
+      .map((metric) => `- ${metric.key} (${metric.label}): ${metric.measures}`)
+      .join('\n')}`,
+    'These signature metrics are specific to this relationship type. Do not score a metric that the conversation genuinely cannot speak to — give it a value near 50, say so plainly in its reading, and mark its confidence low rather than inventing a number.',
   ].join('\n');
 }

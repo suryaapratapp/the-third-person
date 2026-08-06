@@ -504,6 +504,10 @@ export default function ResultPage({ reportId = '' }) {
   const metrics = prepared.localMetrics || {};
   const emojis = list(metrics.emojis);
   const effort = metrics.effort || null;
+  // Scored on dimensions chosen for THIS relationship type — a partner report
+  // and a parent report are measured on different things, not one shared rubric.
+  const signatureMetrics = list(analysis?.relationshipReport?.signatureMetrics)
+    .filter((metric) => metric && (metric.label || metric.key));
   const effortPeople = list(effort?.people);
   const trend = effort?.trend || null;
 
@@ -695,6 +699,51 @@ export default function ResultPage({ reportId = '' }) {
           <CardShell id="activity-over-time" title="Messages Over Time" emoji="📊" summary="How much you both talked across the life of this chat." accent="blue">
             <ActivityBars activity={metrics.activity} />
           </CardShell>
+
+          {signatureMetrics.length > 0 && (
+              <CardShell
+                id="signature-metrics"
+                title={`What Matters In ${meta.relationshipType || 'This Relationship'}`}
+                emoji="🎯"
+                summary={signatureMetrics.map((metric) => `${metric.label}: ${metric.score}`).join(' · ')}
+                accent="pink"
+              >
+                <p className="max-w-3xl text-sm leading-7 text-smoke">
+                  These four are scored specifically for a {String(meta.relationshipType || 'relationship').toLowerCase()}.
+                  A different relationship type is measured on different things — what counts as healthy here
+                  would be the wrong question somewhere else.
+                </p>
+                <div className="mt-5 grid gap-3 sm:gap-4 md:grid-cols-2">
+                  {signatureMetrics.map((metric) => {
+                    const score = Math.max(0, Math.min(100, Number(metric.score) || 0));
+                    return (
+                      <div key={metric.key || metric.label} className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <h3 className="text-lg leading-6 text-bone">{metric.label || metric.key}</h3>
+                          <span className="font-mono text-xl tabular-nums text-bone">{score}</span>
+                        </div>
+                        <div className="neon-meter mt-3">
+                          <span style={{ width: `${score}%` }} />
+                        </div>
+                        {metric.reading && (
+                          <p className="mt-3 text-sm leading-6 text-smoke">{metric.reading}</p>
+                        )}
+                        {metric.evidenceQuote && (
+                          <p className="mt-3 border-l-2 border-pink-200/40 pl-3 text-sm italic leading-6 text-ash">
+                            “{metric.evidenceQuote}”
+                          </p>
+                        )}
+                        {metric.confidence && (
+                          <p className="mt-3 font-mono text-[0.58rem] uppercase tracking-[0.1em] text-ash">
+                            {metric.confidence}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardShell>
+          )}
 
           {effort && (
             <CardShell id="effort-balance" title="Effort & Reciprocity" emoji="⚖️" summary="Measured counts: who starts, who replies faster, who lets it end." accent="purple">
