@@ -80,6 +80,11 @@ const PAGE_SEO = {
   },
 };
 
+const NOT_FOUND_SEO = {
+  title: `Page not found — ${SITE_NAME}`,
+  description: 'That page does not exist. It may have moved, or the link may be wrong.',
+};
+
 // Exported so scripts/prerender.mjs can emit the SAME metadata into the static
 // HTML it writes at build time. If this were duplicated in the build script the
 // two would drift and crawlers would get different tags than users.
@@ -100,18 +105,18 @@ export function seoMetaFor(path) {
     };
   }
   if (path.startsWith('/blog/')) {
-    const post = getBlogPostMetaBySlug(path.replace('/blog/', ''));
+    const post = getBlogPostMetaBySlug(path.replace('/blog/', '').replace(/\/$/, ''));
     if (post) {
       return {
         title: post.seoTitle || `${post.title} — ${SITE_NAME}`,
         description: post.seoDescription || post.excerpt,
       };
     }
-    return {
-      title: `Blog — ${SITE_NAME}`,
-      description: 'Export guides for every supported messaging app, and a closer look at the psychology behind how we communicate.',
-    };
+    return NOT_FOUND_SEO;
   }
+  // Unknown paths are not the homepage. Returning the homepage's metadata here
+  // meant every broken URL advertised itself as the front page.
+  if (path !== '/') return NOT_FOUND_SEO;
   return PAGE_SEO['/'];
 }
 

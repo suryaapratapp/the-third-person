@@ -11,11 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Single source of truth for the Node version: .nvmrc, which
+      # package.json engines also enforces. Previously pinned to Node 20 here,
+      # which drifted from what the project actually builds on.
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      # Ship-blocking: production dependencies must carry no known high-severity
+      # advisories. Scoped to prod deps so a dev-only advisory cannot block a
+      # release, while still failing the build on anything users are exposed to.
+      - run: npm audit --omit=dev --audit-level=high

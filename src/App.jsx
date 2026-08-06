@@ -1,9 +1,11 @@
 import AppShell from './components/AppShell.jsx';
 import { Suspense, lazy, useEffect } from 'react';
 import HomePage from './pages/HomePage.jsx';
+import NotFoundPage from './pages/NotFoundPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { useRouter } from './state/RouterContext.jsx';
 import { applyRouteSeo } from './lib/seo.js';
+import { getBlogPostMetaBySlug } from './lib/blogPostsMeta.js';
 
 const NewAnalysisPage = lazy(() => import('./pages/NewAnalysisPage.jsx'));
 const ResultPage = lazy(() => import('./pages/ResultPage.jsx'));
@@ -62,8 +64,17 @@ function RouteSwitch() {
   if (path === '/faqs') return <FaqsPage />;
   if (path === '/pricing') return <PricingPage />;
   if (path === '/blog') return <BlogIndexPage />;
-  if (path.startsWith('/blog/')) return <BlogPostPage slug={path.replace('/blog/', '')} />;
-  return <HomePage />;
+  if (path.startsWith('/blog/')) {
+    const slug = path.replace('/blog/', '').replace(/\/$/, '');
+    // Unknown slugs are genuinely missing pages, not the blog index.
+    return getBlogPostMetaBySlug(slug)
+      ? <BlogPostPage slug={slug} />
+      : <NotFoundPage path={path} />;
+  }
+  if (path === '/') return <HomePage />;
+  // Anything else is a real 404. This used to return <HomePage />, which meant
+  // every broken or mistyped URL silently rendered the front page.
+  return <NotFoundPage path={path} />;
 }
 
 export default function App() {

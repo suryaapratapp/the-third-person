@@ -275,6 +275,34 @@ for (const path of ALL_ROUTES) {
   written += 1;
 }
 
+// SPA fallback shell.
+//
+// Vercel serves this for anything not matched by a real file: the private app
+// routes (/analysis/new, /reports/:id, /profile…) and any unknown URL.
+//
+// It is a dedicated file rather than reusing index.html for two reasons.
+// First, `cleanUrls: true` turns /index.html into a 308 redirect, so a rewrite
+// pointing at it resolves to nothing and Vercel returns 404 — which took every
+// private route offline. Second, falling back to the homepage would serve the
+// homepage's prerendered body and `canonical: /` for every mistyped URL,
+// which is the "broken links silently render the front page" problem in the
+// HTML itself, where a client-side 404 page cannot reach a non-JS crawler.
+//
+// So: no prerendered body, no canonical, and an explicit noindex.
+const fallbackShell = shell
+  .replace(
+    /<!--seo:start-->[\s\S]*?<!--seo:end-->/,
+    [
+      '<!--seo:start-->',
+      '    <title>ThirdPerson AI</title>',
+      '    <meta name="robots" content="noindex, follow" />',
+      '    <!--seo:end-->',
+    ].join('\n'),
+  )
+  .replace('<!--seo:jsonld-->', '')
+  .replace('<!--app-html-->', '');
+writeFileSync(join(DIST, 'app-shell.html'), fallbackShell, 'utf8');
+
 writeFileSync(join(DIST, 'sitemap.xml'), buildSitemap(), 'utf8');
 writeFileSync(join(DIST, 'robots.txt'), buildRobots(), 'utf8');
 
