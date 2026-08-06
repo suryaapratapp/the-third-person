@@ -977,6 +977,52 @@ function buildRelationshipPersonalityRecord({
   };
 }
 
+// The uploaded conversation is used to generate the report and then DISCARDED.
+// Only these derived, aggregate keys are persisted.
+//
+// This is an allowlist, not a denylist, on purpose: a denylist silently starts
+// storing raw text again the moment the preprocessor gains a new field, and the
+// failure mode is invisible. Anything not named here never reaches the database.
+//
+// Verified against every reader before narrowing — ResultPage and
+// buildAnalysisChainContext only ever consumed these. The dropped keys
+// (cleanedText, parsedMessages, compressedConversation, firstMessages,
+// lastMessages, importantMoments, analysisPipeline.chunks) held the verbatim
+// conversation and had no readers at all: ~83% of the stored payload, kept for
+// nothing.
+//
+// Note what is NOT dropped: short evidence quotes inside analysis_json
+// (redFlags[].evidenceQuote, timeline[].quote, personProfile[].quote). Those are
+// the receipts the report is built on and are shown to the user. Deleting them
+// would gut the product; they are a deliberate, disclosed exception.
+const RETAINED_CONVERSATION_KEYS = [
+  'metadata',            // person name, relationship type, platform, zodiac
+  'messageCount',
+  'estimatedDateRange',
+  'participants',
+  'participantNames',
+  'senderStats',         // per-person counts only
+  'monthlyBreakdown',    // per-month counts only
+  'parseConfidence',
+  'warningFlags',
+  'languageStyle',
+  'languageProfile',
+  'topWords',            // word + frequency
+  'localMetrics',        // effort, activity buckets, emoji counts
+  'sensitiveDataProtectionSummary',
+];
+
+function retainableConversation(prepared: Record<string, any> = {}) {
+  const kept: Record<string, any> = {};
+  for (const key of RETAINED_CONVERSATION_KEYS) {
+    if (prepared[key] !== undefined) kept[key] = prepared[key];
+  }
+  // Marks rows written under this policy, so a later audit can tell
+  // "no raw chat was ever stored" apart from "this row predates the change".
+  kept.rawConversationDiscarded = true;
+  return kept;
+}
+
 Deno.serve(async (req: Request) => {
   const cors = buildCorsHeaders(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -1062,7 +1108,8 @@ Deno.serve(async (req: Request) => {
       compatibility_score: asScore(recap.compatibilityScore ?? analysis.scores?.compatibility),
       summary: analysis.summary || {},
       analysis_json: analysis,
-      prepared_conversation: prepared,
+      // Derived aggregates only — the transcript itself is never written.
+      prepared_conversation: retainableConversation(prepared),
       bestie_context_summary: analysis.bestieContextSummary || {},
       report_summary_for_future_use: analysis.reportSummaryForFutureUse || {},
       main_user_personality_signals: analysis.mainUserPersonalitySignals || {},

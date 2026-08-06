@@ -1,3 +1,5 @@
+import { retainableConversation } from './retainedConversation.js';
+
 const REPORTS_KEY = 'thirdperson_relationship_reports';
 const RELATIONSHIP_PERSONALITY_CARDS_KEY = 'thirdperson_relationship_personality_cards_v1';
 
@@ -168,7 +170,11 @@ export function saveAnalysisReport({ analysis, preparedConversation }) {
     participants: preparedConversation?.participants || preparedConversation?.participantNames || analysis.participants?.detectedParticipants || [],
     messageCount: preparedConversation?.messageCount || 0,
     analysisJson: analysis,
-    preparedConversation,
+    // Aggregates only. This is the offline/fallback path and it writes to
+    // localStorage, so persisting the transcript here would leave the full
+    // conversation sitting in the browser of a device the user may share —
+    // while the product tells them it was discarded after analysis.
+    preparedConversation: retainableConversation(preparedConversation),
     bestieContextSummary: analysis.bestieContextSummary || {},
     reportSummaryForFutureUse: analysis.reportSummaryForFutureUse || {},
     mainUserPersonalitySignals: analysis.mainUserPersonalitySignals || {},
