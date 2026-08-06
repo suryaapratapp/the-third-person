@@ -50,11 +50,17 @@ prerendering, and per-route SEO.
       failures are invisible unless a user complains. Sentry free tier covers it.
 - [ ] **Rate limit the expensive endpoints.** Credits gate abuse, but a signup
       loop can still burn OpenAI spend.
-- [ ] **Remove `claimPayAsYouGoPack`** (`src/lib/creditsService.js`). Dead code
-      from the removed free tier that still calls the `claim_test_credit_pack`
-      RPC. Confirm server-side that the RPC cannot grant credits — it is
-      granted to `authenticated`, so it is reachable from devtools regardless
-      of whether the UI calls it.
+- [x] **`claimPayAsYouGoPack` removed — and the hole behind it closed.** The
+      dead wrapper was never the problem. `claim_test_credit_pack` was still
+      granted to `authenticated`, and while it refused `free_starter`, it
+      happily granted `clarity_pack` (5 reports + 25 chats) and
+      `deep_clarity_pack` (10 reports + 50 chats) to any signed-in user via a
+      one-line browser-console call. Signup is free, so this was repeatable
+      with a fresh email. Execute is now revoked from `authenticated`
+      (migration `20260806180000`); `service_role` keeps it, so test credits
+      can still be granted deliberately from the SQL editor. One pre-existing
+      claim (2 unused credits) was found — consistent with your own testing,
+      not abuse.
 - [ ] **Delete the throwaway test account** `paytest.claude@thirdperson.test`.
 - [ ] **Confirm Supabase point-in-time recovery** is enabled. Paid reports are
       irreplaceable user data.

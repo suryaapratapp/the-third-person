@@ -48,15 +48,10 @@ export async function fetchUsageEntitlements() {
   return fetchCreditBalances();
 }
 
-export async function claimPayAsYouGoPack(packId) {
-  if (!isSupabaseConfigured || !supabase) {
-    throw new Error('Please configure Supabase before adding credits.');
-  }
-  const { data, error } = await supabase.rpc('claim_test_credit_pack', {
-    p_pack_id: packId,
-  });
-  if (error) {
-    throw new Error(error.message || 'We could not add this pack right now.');
-  }
-  return data;
-}
+// `claimPayAsYouGoPack` used to live here, wrapping the `claim_test_credit_pack`
+// RPC. It was left behind when the free tier was removed and nothing called it.
+//
+// Deleting it does NOT close the underlying surface: that RPC still exists in
+// the database and is granted to `authenticated`, so it is reachable from the
+// browser console whether or not this file references it. Credit granting has
+// to be secured in the function itself, not by removing its client wrapper.

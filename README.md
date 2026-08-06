@@ -112,9 +112,9 @@ Edge Function secrets: `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
 
 ## Notes
 
-- **There is no free tier.** Every Relationship Report is paid. `claimPayAsYouGoPack`
-  in `src/lib/creditsService.js` is a leftover of the removed free tier and is
-  no longer called from the UI — see `LAUNCH_CHECKLIST.md`.
+- **There is no free tier.** Every Relationship Report is paid. Credit granting
+  happens only through Razorpay. The `claim_test_credit_pack` RPC is
+  service_role-only — do not grant it to `authenticated` (see the migration).
 - Reports are analysed by software, not read by staff. Sensitive details are
   stripped before anything reaches the AI provider — see the Privacy Policy.
 - Current pre-launch status and remaining work: **`LAUNCH_CHECKLIST.md`**.
