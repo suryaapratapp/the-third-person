@@ -45,7 +45,16 @@ export default function NewAnalysisPage() {
   // Advancing a step swaps the panel contents in place. Without this the user
   // keeps whatever scroll position the previous (often longer) step left
   // behind, and can land halfway down the next one.
+  //
+  // Skipped on first render: this effect also runs on mount, which scrolled
+  // people ~400px down the moment they opened the wizard and pushed the page
+  // heading off the top of the screen before they had touched anything.
+  const isFirstRender = useRef(true);
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [step]);
 
@@ -77,14 +86,20 @@ export default function NewAnalysisPage() {
   ];
 
   return (
-    <section className="relative min-h-screen overflow-hidden pb-32 pt-20 sm:pt-28">
+    <section className="relative min-h-screen overflow-hidden pb-32 pt-24 sm:pt-28">
       <ParticleBackground className="opacity-70" />
 
+      {/* The page heading sits ABOVE the sticky bar on mobile so it scrolls
+          away cleanly. Ordered after it, the heading slid underneath the
+          translucent bar and ghosted through the blur. */}
+      <h1 className="serif-title relative mb-4 px-4 text-3xl leading-tight lg:hidden">Prepare the signal.</h1>
+
       {/* Sticky mobile progress. Keeps "where am I / how much is left" on screen
-          without spending a scroll on it. */}
-      {/* 78px clears the floating header pill, which measures 74px to its
-          bottom edge on a phone. */}
-      <div className="sticky top-[78px] z-30 mb-5 border-y border-white/10 bg-[#12101f]/92 px-4 py-3 backdrop-blur-xl lg:hidden">
+          without spending a scroll on it.
+          78px clears the floating header pill, which measures 74px to its
+          bottom edge on a phone. Fully opaque, not translucent: content
+          scrolling underneath a blurred bar reads as a rendering artifact. */}
+      <div className="sticky top-[78px] z-30 mb-5 border-y border-white/10 bg-[#141220] px-4 py-3 lg:hidden">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-sm text-bone">{steps[step].label}</p>
           <p className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-ash">
@@ -112,8 +127,6 @@ export default function NewAnalysisPage() {
           <p className="tech-label text-smoke">New conversation analysis</p>
           <h1 className="serif-title mt-4 text-5xl leading-none sm:text-7xl">Prepare the signal.</h1>
         </div>
-        <h1 className="serif-title mb-4 text-3xl leading-tight lg:hidden">Prepare the signal.</h1>
-
         <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
           <aside className="thin-panel hidden h-fit p-5 lg:block">
             {steps.map((item, index) => {
