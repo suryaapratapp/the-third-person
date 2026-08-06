@@ -1,6 +1,6 @@
 import ParticleBackground from '../components/ParticleBackground.jsx';
+import RouteLink from '../components/RouteLink.jsx';
 import { BLOG_POSTS_META } from '../lib/blogPostsMeta.js';
-import { useRouter } from '../state/RouterContext.jsx';
 
 const CATEGORY_ACCENTS = {
   'Export Guides': 'border-purple-200/20 text-purple-100',
@@ -8,8 +8,6 @@ const CATEGORY_ACCENTS = {
 };
 
 export default function BlogIndexPage() {
-  const { navigate } = useRouter();
-
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <ParticleBackground className="opacity-45" />
@@ -24,10 +22,10 @@ export default function BlogIndexPage() {
 
         <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {BLOG_POSTS_META.map((post) => (
-            <button
+            <RouteLink
               key={post.slug}
-              onClick={() => navigate(`/blog/${post.slug}`)}
-              className="thin-panel group flex flex-col p-6 text-left transition hover:-translate-y-0.5"
+              to={`/blog/${post.slug}`}
+              className="thin-panel group flex flex-col p-6 text-left no-underline transition hover:-translate-y-0.5"
             >
               <div className="flex items-center justify-between gap-3">
                 <span className={`rounded-full border px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.12em] ${CATEGORY_ACCENTS[post.category] || 'border-white/15 text-smoke'}`}>
@@ -38,7 +36,7 @@ export default function BlogIndexPage() {
               <h2 className="serif-title mt-5 text-2xl leading-tight text-bone group-hover:text-bone">{post.title}</h2>
               <p className="mt-3 flex-1 text-sm leading-7 text-smoke">{post.excerpt}</p>
               <span className="mt-5 font-mono text-xs uppercase tracking-[0.12em] text-purple-200">Read more →</span>
-            </button>
+            </RouteLink>
           ))}
         </div>
       </div>

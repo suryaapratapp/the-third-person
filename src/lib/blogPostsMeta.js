@@ -90,3 +90,19 @@ export const BLOG_POSTS_META = [
 export function getBlogPostMetaBySlug(slug) {
   return BLOG_POSTS_META.find((post) => post.slug === slug);
 }
+
+// Related posts for the end of an article.
+//
+// Shared by BlogPostPage and scripts/prerender.mjs so the links a crawler sees
+// in the static HTML are the same ones a reader sees after hydration. Same
+// category first (an export guide should lead to other export guides), then
+// topped up from the rest so every post always has onward links — a post with
+// no outbound links is a dead end for both readers and crawl depth.
+export function getRelatedPosts(slug, limit = 3) {
+  const current = getBlogPostMetaBySlug(slug);
+  if (!current) return [];
+  const others = BLOG_POSTS_META.filter((post) => post.slug !== slug);
+  const sameCategory = others.filter((post) => post.category === current.category);
+  const rest = others.filter((post) => post.category !== current.category);
+  return [...sameCategory, ...rest].slice(0, limit);
+}

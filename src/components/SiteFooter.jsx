@@ -1,5 +1,5 @@
 import Logo from './Logo.jsx';
-import { useRouter } from '../state/RouterContext.jsx';
+import RouteLink from './RouteLink.jsx';
 
 // The site had no footer at all — Terms, Refund Policy and Contact lived only
 // inside a desktop nav dropdown, which is both a discoverability problem and a
@@ -38,7 +38,6 @@ const COLUMNS = [
 ];
 
 export default function SiteFooter() {
-  const { navigate } = useRouter();
   const year = new Date().getFullYear();
 
   return (
@@ -58,13 +57,12 @@ export default function SiteFooter() {
               <ul className="mt-4 grid gap-1">
                 {column.links.map(([label, href]) => (
                   <li key={label}>
-                    <button
-                      type="button"
-                      onClick={() => navigate(href)}
-                      className="-mx-2 flex min-h-[44px] w-full items-center rounded-lg px-2 text-left text-sm text-smoke transition hover:text-bone"
+                    <RouteLink
+                      to={href}
+                      className="-mx-2 flex min-h-[44px] w-full items-center rounded-lg px-2 text-left text-sm text-smoke no-underline transition hover:text-bone"
                     >
                       {label}
-                    </button>
+                    </RouteLink>
                   </li>
                 ))}
               </ul>

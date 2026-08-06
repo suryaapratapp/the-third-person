@@ -43,7 +43,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { SITE_ORIGIN, seoMetaFor } from '../src/lib/seo.js';
-import { BLOG_POSTS_META } from '../src/lib/blogPostsMeta.js';
+import { BLOG_POSTS_META, getRelatedPosts } from '../src/lib/blogPostsMeta.js';
 import { BLOG_CONTENT } from '../src/lib/blogContent.js';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -180,17 +180,26 @@ function bodyFor(path) {
   const post = BLOG_POSTS_META.find((entry) => `/blog/${entry.slug}` === path);
   if (!post) return '';
 
+  // Onward links must exist in the static HTML too, and must match what the
+  // hydrated page shows. A post with no outbound links is a crawl dead end.
+  const related = getRelatedPosts(post.slug)
+    .map((item) => `<li><a href="/blog/${item.slug}">${escapeHtml(item.title)}</a></li>`)
+    .join('');
+
   return [
     '<main>',
-    `<article>`,
+    '<article>',
     `<h1>${escapeHtml(post.title)}</h1>`,
     `<p>${escapeHtml(post.category)} · ${escapeHtml(post.readTime)}</p>`,
     `<p>${escapeHtml(post.excerpt)}</p>`,
     renderBlocks(BLOG_CONTENT[post.slug]),
     '</article>',
+    '<section><h2>Got your chat exported?</h2>',
+    '<p><a href="/analysis/new">Analyse a chat with ThirdPerson AI</a></p></section>',
+    related ? `<nav aria-label="Related articles"><h2>Keep reading</h2><ul>${related}</ul></nav>` : '',
     '<nav><a href="/blog">All articles</a> · <a href="/">ThirdPerson AI home</a></nav>',
     '</main>',
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
 
 // ------------------------------------------------------------------- sitemap
