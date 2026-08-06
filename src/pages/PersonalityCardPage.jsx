@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import CardActions from '../components/CardActions.jsx';
 import ParticleBackground from '../components/ParticleBackground.jsx';
+import CorePersonality from '../components/CorePersonality.jsx';
 import { generatePersonalityCardViaSupabase } from '../lib/backendAiService.js';
 import { fetchCreditBalances } from '../lib/creditsService.js';
 import { exportElementAsImage } from '../lib/exportElementAsImage.js';
@@ -441,6 +442,12 @@ export default function PersonalityCardPage() {
         <section className="accent-panel glow-border relative mb-7 overflow-hidden p-5 sm:p-8">
           <div className="pointer-events-none absolute -left-16 top-24 h-52 w-52 rounded-full bg-purple-300/12 blur-3xl" />
           <div className="pointer-events-none absolute -right-20 bottom-10 h-52 w-52 rounded-full bg-pink-300/10 blur-3xl" />
+          {/* The accumulating core self sits above the per-relationship map:
+              the constant first, then how it varies by who you are with. */}
+          <div className="relative mb-10">
+            <CorePersonality cards={relationshipCards} />
+          </div>
+
           <div className="relative flex flex-wrap items-start justify-between gap-6">
             <div>
               <p className="tech-label text-purple-100">Relationship Worlds</p>

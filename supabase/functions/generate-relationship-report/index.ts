@@ -743,6 +743,32 @@ async function openAiAnalysis(body: Record<string, any>) {
         patienceScore: S.int(),
         signatureBehaviours: S.arr(S.str(), '3-5 short first-person-readable observations'),
       }, 'All 0-100; use ~50 and say so in signatureBehaviours when evidence is thin'),
+      // FIXED TRAIT VECTOR — the accumulating core self, and later the basis for
+      // matching. Every user must be scored on identical axes or compatibility
+      // between two people is meaningless, so these keys are not optional and
+      // must not drift. Mirrors TRAIT_KEYS in src/lib/personalityTraits.js.
+      //
+      // Score the MAIN USER only, from THIS conversation only. Cross-relationship
+      // accumulation happens client-side; guessing at a lifetime average here
+      // would double-count. 50 means "this chat does not show it" — a real and
+      // expected answer, not a failure.
+      traitScores: S.obj({
+        openness: S.int('0-100. Appetite for new ideas, plans, perspectives.'),
+        conscientiousness: S.int('0-100. Follow-through: do stated intentions become actions?'),
+        extraversion: S.int('0-100. How much they initiate and drive conversation.'),
+        agreeableness: S.int('0-100. Warmth and willingness to yield in friction.'),
+        emotionalStability: S.int('0-100. HIGH = steady under stress, LOW = reactive.'),
+        warmth: S.int('0-100. How openly affection and appreciation are expressed.'),
+        directness: S.int('0-100. HIGH = names hard things plainly, LOW = hints.'),
+        reassuranceNeed: S.int('0-100. How much comfort is sought when uncertain.'),
+        conflictRepair: S.int('0-100. HIGH = moves toward repair, LOW = withdraws.'),
+        autonomy: S.int('0-100. HIGH = needs space, LOW = wants closeness.'),
+        humour: S.int('0-100. How much play runs through their messages.'),
+        curiosity: S.int('0-100. HIGH = asks questions back, LOW = mostly tells.'),
+        vulnerability: S.int('0-100. Willingness to say what is actually going on inside.'),
+        responsiveness: S.int('0-100. Attentiveness and reply pace.'),
+        expressiveness: S.int('0-100. Emoji, emphasis, length — how much colour.'),
+      }, 'The main user, scored from this conversation only. Use 50 where this chat genuinely does not show the trait.'),
     }),
     // The coach's PERMANENT memory of this relationship.
     //
@@ -960,12 +986,19 @@ function buildRelationshipPersonalityRecord({
   analysis,
   relationshipType,
   personName,
+  messageCount,
+  parseConfidence,
 }: {
   userId: string;
   reportId: string;
   analysis: Record<string, any>;
   relationshipType: string;
   personName: string;
+  // Carried through so the accumulator can weight this analysis: a long,
+  // cleanly-parsed history should move the core self more than 30 messages
+  // that barely parsed.
+  messageCount?: number;
+  parseConfidence?: string;
 }) {
   const rawCard = analysis.relationshipPersonalityCard || analysis.personalityCardUpdate || {};
   const signals = analysis.mainUserPersonalitySignals || {};
@@ -1001,7 +1034,26 @@ function buildRelationshipPersonalityRecord({
     growth_areas_summary: shortText(growthAreas),
     keywords: keywords.length ? keywords : ['Early signal'],
     confidence_level: rawCard.confidenceLevel || (signals.notEnoughEvidence?.length ? 'Early Signal' : 'Repeated Pattern'),
-    personality_scores: rawCard.personalityScores || null,
+    // Two different things live here on purpose.
+    //
+    // `display` is the loose per-report card (humour, calmness, ego…) shown on
+    // the report itself. `traits` is the FIXED vector that Know Yourself folds
+    // into a core self and that matching will eventually compare between two
+    // people — so it must stay on identical axes for every user.
+    //
+    // The per-report vector is stored raw and accumulated on read rather than
+    // being folded into a running total here. That means improving the
+    // accumulation maths later upgrades every existing profile without anyone
+    // re-running an analysis, and a corrupted write can never poison a total
+    // that cannot be recomputed.
+    personality_scores: {
+      display: rawCard.personalityScores || null,
+      traits: rawCard.traitScores || null,
+      relationshipType: rawCard.relationshipType || relationshipType,
+      messageCount: messageCount ?? null,
+      parseConfidence: parseConfidence ?? null,
+      taxonomyVersion: 1,
+    },
     updated_at: new Date().toISOString(),
   };
 }
@@ -1174,6 +1226,8 @@ Deno.serve(async (req: Request) => {
           analysis,
           relationshipType,
           personName,
+          messageCount: prepared.messageCount,
+          parseConfidence: prepared.parseConfidence,
         }),
         { onConflict: 'user_id,report_id' },
       );
