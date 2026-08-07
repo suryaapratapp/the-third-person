@@ -11,8 +11,6 @@
 export default function MatchmakingPitch({ className = '' }) {
   return (
     <section className={`accent-panel relative overflow-hidden p-6 sm:p-10 ${className}`} aria-label="Where matching is going">
-      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-violet-400/18 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-pink-400/14 blur-2xl" />
 
       <div className="relative mx-auto max-w-3xl text-center">
         <p className="eyebrow">Why we are building this</p>
@@ -28,7 +26,7 @@ export default function MatchmakingPitch({ className = '' }) {
           There’s someone out there you’d stay up all night talking to — two compatible people who
           would vibe perfectly, if only they knew each other existed.
         </p>
-        <p className="mt-4 text-base leading-7 text-violet-100 sm:text-xl sm:leading-9">
+        <p className="mt-4 text-base leading-7 text-violet-700 sm:text-xl sm:leading-9">
           We’re going to help you find them.
         </p>
 

@@ -10,43 +10,43 @@ const platformData = {
     initials: 'WA',
     Icon: SiWhatsapp,
     color: '#25D366',
-    accent: 'from-emerald-300/20 to-purple-300/10',
+    accent: '',
   },
   iMessage: {
     initials: 'IM',
     Icon: SiImessage,
     color: '#34C759',
-    accent: 'from-emerald-300/20 to-purple-300/10',
+    accent: '',
   },
   Telegram: {
     initials: 'TG',
     Icon: SiTelegram,
     color: '#26A5E4',
-    accent: 'from-sky-300/20 to-purple-300/10',
+    accent: '',
   },
   Instagram: {
     initials: 'IG',
     Icon: SiInstagram,
     color: '#E4405F',
-    accent: 'from-pink-300/20 to-purple-300/10',
+    accent: '',
   },
   Messenger: {
     initials: 'MS',
     Icon: SiMessenger,
     color: '#00B2FF',
-    accent: 'from-blue-300/20 to-pink-300/10',
+    accent: '',
   },
   Snapchat: {
     initials: 'SC',
     Icon: SiSnapchat,
     color: '#FFFC00',
-    accent: 'from-yellow-200/15 to-pink-300/10',
+    accent: '',
   },
   Other: {
     initials: 'OT',
     Icon: BsThreeDots,
     color: '#C4B5FD',
-    accent: 'from-purple-300/20 to-pink-300/10',
+    accent: '',
   },
 };
 
@@ -63,16 +63,16 @@ function ExportHelpDialog({ platform, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 px-4 py-8 "
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-well px-4 py-8 "
       role="dialog"
       aria-modal="true"
       aria-labelledby="export-guide-heading"
       onKeyDown={(event) => { if (event.key === 'Escape') onClose(); }}
     >
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto border border-purple-300/25 bg-black p-5 shadow-glow sm:p-7">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto border border-purple-200 bg-well p-5 shadow-glow sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/[0.06] text-xl">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-paper text-xl">
               <Icon style={{ color: data.color }} aria-hidden="true" />
             </span>
             <div>
@@ -84,18 +84,18 @@ function ExportHelpDialog({ platform, onClose }) {
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <span className="flex items-center gap-2 rounded-sm border border-white/12 bg-white/[0.04] px-4 py-2 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-smoke">
-            <PiClockLight className="text-sm text-purple-200" aria-hidden="true" />
+          <span className="flex items-center gap-2 rounded-sm border border-line bg-paper px-4 py-2 text-xs text-smoke">
+            <PiClockLight className="text-sm text-purple-700" aria-hidden="true" />
             {guide.estimatedTime}
           </span>
-          <span className="flex items-center gap-2 rounded-sm border border-white/12 bg-white/[0.04] px-4 py-2 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-smoke">
-            <PiFileTextLight className="text-sm text-purple-200" aria-hidden="true" />
+          <span className="flex items-center gap-2 rounded-sm border border-line bg-paper px-4 py-2 text-xs text-smoke">
+            <PiFileTextLight className="text-sm text-purple-700" aria-hidden="true" />
             {guide.fileFormat}
           </span>
         </div>
 
         {guide.note && (
-          <div className="mt-4 rounded-2xl border border-orange-300/20 bg-orange-300/[0.05] p-4 text-sm leading-6 text-smoke">
+          <div className="mt-4 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm leading-6 text-smoke">
             {guide.note}
           </div>
         )}
@@ -109,7 +109,7 @@ function ExportHelpDialog({ platform, onClose }) {
                 role="tab"
                 aria-selected={osTab === index}
                 onClick={() => setOsTab(index)}
-                className={`rounded-sm border px-5 py-2 font-mono text-xs uppercase tracking-[0.12em] transition ${osTab === index ? 'border-purple-200/60 bg-purple-300/15 text-bone' : 'border-white/12 bg-white/[0.03] text-smoke hover:border-purple-200/35'}`}
+                className={`rounded-sm border px-5 py-2 text-xs transition ${osTab === index ? 'border-purple-200 bg-purple-50 text-bone' : 'border-line bg-paper text-smoke hover:border-purple-200'}`}
               >
                 {variant.os}
               </button>
@@ -119,15 +119,15 @@ function ExportHelpDialog({ platform, onClose }) {
 
         <ol className="mt-5 space-y-3">
           {steps.map((step, index) => (
-            <li key={step} className="flex gap-3 border border-white/10 p-3 text-sm leading-6 text-smoke">
-              <span className="font-mono text-purple-200">{String(index + 1).padStart(2, '0')}</span>
+            <li key={step} className="flex gap-3 border border-line p-3 text-sm leading-6 text-smoke">
+              <span className="font-mono text-purple-700">{String(index + 1).padStart(2, '0')}</span>
               <span>{step}</span>
             </li>
           ))}
         </ol>
 
-        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.05] p-4">
-          <PiShieldCheckLight className="mt-0.5 shrink-0 text-lg text-emerald-200" aria-hidden="true" />
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <PiShieldCheckLight className="mt-0.5 shrink-0 text-lg text-emerald-700" aria-hidden="true" />
           <p className="text-sm leading-6 text-smoke">{guide.privacyNote}</p>
         </div>
 
@@ -135,14 +135,14 @@ function ExportHelpDialog({ platform, onClose }) {
           <button
             type="button"
             onClick={() => navigate(`/blog/${guide.blogSlug}`)}
-            className="mt-4 flex items-center gap-2 text-sm text-purple-200 underline hover:text-bone"
+            className="mt-4 flex items-center gap-2 text-sm text-purple-700 underline hover:text-bone"
           >
             Read the full guide with screenshots
             <PiArrowRight aria-hidden="true" />
           </button>
         )}
 
-        <button onClick={onClose} className="glass-button mt-5 w-full px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
+        <button onClick={onClose} className="glass-button mt-5 w-full px-5 py-4 text-xs text-bone">
           I have my chat file
         </button>
       </div>
@@ -173,8 +173,8 @@ export default function PlatformSelector({ value, onChange }) {
               key={platform}
               className={`group relative overflow-hidden rounded-sm border transition ${
                 selected
-                  ? 'border-purple-200/60 bg-purple-300/[0.10] shadow-[0_0_30px_rgba(168,85,247,0.18)]'
-                  : 'border-white/12 bg-white/[0.04] hover:border-purple-200/40 hover:bg-white/[0.07]'
+                  ? 'border-signal bg-accent-wash shadow-glow'
+                  : 'border-line bg-paper hover:border-purple-200 hover:bg-well'
               }`}
             >
               <button
@@ -182,13 +182,13 @@ export default function PlatformSelector({ value, onChange }) {
                 aria-pressed={selected}
                 className="flex w-full items-center gap-3.5 p-4 text-left"
               >
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/[0.06] text-2xl transition group-hover:bg-white/[0.10]">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-paper text-2xl transition group-hover:bg-well">
                   <Icon style={{ color: data.color }} aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1 text-base text-bone">{platform}</span>
                 <span
                   className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border transition ${
-                    selected ? 'border-transparent bg-bone text-[#17122a]' : 'border-white/25'
+                    selected ? 'border-transparent bg-signal text-white' : 'border-line'
                   }`}
                   aria-hidden="true"
                 >
@@ -197,7 +197,7 @@ export default function PlatformSelector({ value, onChange }) {
               </button>
               <button
                 onClick={() => setHelpPlatform(platform)}
-                className="flex min-h-[40px] w-full items-center gap-1.5 border-t border-white/10 px-4 text-left font-mono text-[0.6rem] uppercase tracking-[0.1em] text-ash transition hover:bg-white/[0.05] hover:text-bone"
+                className="flex min-h-[40px] w-full items-center gap-1.5 border-t border-line px-4 text-left text-xs text-ash transition hover:bg-well hover:text-bone"
               >
                 <PiQuestion className="text-sm" aria-hidden="true" />
                 How to export from {platform}

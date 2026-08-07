@@ -7,6 +7,7 @@ import MissionSection from '../components/MissionSection.jsx';
 import MatchmakingPitch from '../components/MatchmakingPitch.jsx';
 import HonestLimitsStrip from '../components/HonestLimitsStrip.jsx';
 
+
 // Homepage order, chosen for a first-time visitor on a phone.
 //
 // The page used to run nine sections and roughly twenty phone screens, three of
@@ -21,14 +22,13 @@ import HonestLimitsStrip from '../components/HonestLimitsStrip.jsx';
 // has to be answered before the page asks anyone to hand over a real
 // conversation.
 //
-// Each band carries a tone and alternate bands sit on a slightly lifted
-// ground. Both are pure CSS variables inherited by whatever renders inside, so
-// no section component knows what colour it is — the page decides, and the
-// scroll gets a rhythm instead of running as one unbroken dark column.
+// Alternate bands sit on a slightly lifted ground. That is the only device
+// giving the scroll a rhythm now — sections are not coloured boxes, so without
+// it a phone reads the whole page as one unbroken white column.
 
-function Band({ children, tone = 'tone-violet', alt = false, className = '' }) {
+function Band({ children, alt = false, className = '' }) {
   return (
-    <div className={`${tone} ${alt ? 'band-alt' : ''} ${className}`}>
+    <div className={`${alt ? 'band-alt' : ''} ${className}`}>
       <div className="mx-auto w-full max-w-[1180px] px-4 py-12 sm:px-8 sm:py-16">
         {children}
       </div>
@@ -41,28 +41,28 @@ export default function HomePage() {
     <>
       <HeroSection />
 
-      <Band tone="tone-cyan" alt>
+      <Band alt>
         <ProductTour />
       </Band>
 
-      <Band tone="tone-amber">
+      <Band>
         <WhenItHelpsSection />
       </Band>
 
-      <Band tone="tone-green" alt>
+      <Band alt>
         <PrivacyAssurance />
       </Band>
 
-      <Band tone="tone-rose">
+      <Band>
         <BeyondTheReportSection />
       </Band>
 
-      <Band tone="tone-violet" alt>
+      <Band alt>
         <MissionSection />
         <MatchmakingPitch className="mt-6" />
       </Band>
 
-      <Band tone="tone-cyan">
+      <Band>
         <HonestLimitsStrip />
       </Band>
     </>

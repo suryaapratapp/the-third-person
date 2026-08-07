@@ -3,8 +3,10 @@ import CardActions from '../components/CardActions.jsx';
 import { formatDuration } from '../lib/conversationMetrics.js';
 import AfterReportActions from '../components/AfterReportActions.jsx';
 import FloatingCoach from '../components/FloatingCoach.jsx';
+import QuickStats from '../components/QuickStats.jsx';
+import RhythmHeatmap from '../components/RhythmHeatmap.jsx';
+import ToneOverTime from '../components/ToneOverTime.jsx';
 import { buildZodiacMatch } from '../lib/zodiac.js';
-import ParticleBackground from '../components/ParticleBackground.jsx';
 import { exportElementAsImage, shareCardSummary } from '../lib/exportElementAsImage.js';
 import { fetchRelationshipReportById } from '../lib/supabaseDataService.js';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
@@ -63,16 +65,16 @@ function scoreTone(key, score) {
 
 function CardShell({ id, title, emoji, summary, children, className = '', accent = 'purple' }) {
   const accentClass = {
-    purple: 'from-purple-300/18 via-pink-300/10 to-violet-300/10',
-    pink: 'from-pink-300/18 via-purple-300/10 to-orange-300/10',
-    blue: 'from-violet-300/18 via-purple-300/10 to-fuchsia-300/10',
-    orange: 'from-orange-300/16 via-pink-300/10 to-purple-300/10',
-    green: 'from-emerald-300/14 via-green-200/8 to-purple-300/10',
-  }[accent] || 'from-purple-300/18 via-pink-300/10 to-violet-300/10';
+    purple: '',
+    pink: '',
+    blue: '',
+    orange: '',
+    green: '',
+  }[accent] || '';
 
   return (
-    <section id={id} data-export-bg="#100d21" className={`glass-card glow-border relative overflow-hidden p-5 sm:p-6 ${className}`}>
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${accentClass} opacity-80`} />
+    <section id={id} data-export-bg="#ffffff" className={`glass-card glow-border relative overflow-hidden p-5 sm:p-6 ${className}`}>
+      <div className={`pointer-events-none absolute inset-0 ${accentClass} opacity-80`} />
       <div className="relative">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
@@ -88,13 +90,13 @@ function CardShell({ id, title, emoji, summary, children, className = '', accent
 
 function Badge({ children, tone = 'purple' }) {
   const colors = {
-    purple: 'border-purple-200/25 bg-purple-300/10 text-purple-100',
-    pink: 'border-pink-200/25 bg-pink-300/10 text-pink-100',
-    blue: 'border-violet-200/25 bg-violet-300/10 text-violet-100',
-    orange: 'border-orange-200/25 bg-orange-300/10 text-orange-100',
-    green: 'border-emerald-200/25 bg-emerald-300/10 text-emerald-100',
+    purple: 'border-purple-200 bg-purple-50 text-purple-700',
+    pink: 'border-pink-200 bg-pink-50 text-pink-700',
+    blue: 'border-violet-200 bg-violet-50 text-violet-700',
+    orange: 'border-orange-200 bg-orange-50 text-orange-700',
+    green: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   };
-  return <span className={`rounded-sm border px-3 py-1.5 font-mono text-[0.66rem] uppercase tracking-[0.13em] ${colors[tone]}`}>{children}</span>;
+  return <span className={`rounded-sm border px-3 py-1.5 text-xs ${colors[tone]}`}>{children}</span>;
 }
 
 function ScoreBubble({ item }) {
@@ -127,15 +129,15 @@ function ScoreBubble({ item }) {
           <p className="absolute inset-0 flex items-center justify-center font-mono text-2xl text-bone">{score}</p>
         </div>
       </div>
-      <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full bg-gradient-to-r from-pink-300 via-purple-300 to-orange-300" style={{ width: `${score}%` }} />
+      <div className="mt-5 h-2 overflow-hidden rounded-full bg-well">
+        <div className="h-full rounded-full bg-signal" style={{ width: `${score}%` }} />
       </div>
     </div>
   );
 }
 
 function EmptyHint({ children = 'More chats can make this clearer.' }) {
-  return <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-smoke">{children}</p>;
+  return <p className="rounded-2xl border border-line bg-paper p-4 text-sm leading-7 text-smoke">{children}</p>;
 }
 
 // Hand-rolled so the report no longer pulls in a ~285KB charting library for
@@ -207,7 +209,7 @@ function ActivityBars({ activity }) {
           <div key={bucket.key} className="group flex h-full min-w-0 flex-1 flex-col justify-end" title={`${bucket.label}: ${bucket.count}`}>
             <span className="mb-1 text-center font-mono text-[0.55rem] text-ash opacity-0 transition group-hover:opacity-100">{bucket.count}</span>
             <div
-              className="w-full rounded-t bg-gradient-to-t from-violet-400/45 to-pink-300/85 transition hover:from-violet-300/60 hover:to-pink-200"
+              className="w-full rounded-t bg-signal transition hover: hover:"
               style={{ height: `${Math.max(3, (bucket.count / peak) * 100)}%` }}
             />
           </div>
@@ -217,7 +219,7 @@ function ActivityBars({ activity }) {
         {buckets.map((bucket, index) => (
           <span
             key={bucket.key}
-            className="min-w-0 flex-1 truncate text-center font-mono text-[0.5rem] uppercase tracking-tight text-ash sm:text-[0.58rem]"
+            className="min-w-0 flex-1 truncate text-center text-xs tracking-tight text-ash sm:text-xs"
           >
             {/* Thin the labels on dense charts so they never overlap. */}
             {buckets.length > 12 && index % 2 ? '' : bucket.label}
@@ -232,12 +234,12 @@ function EffortBar({ value, personName = 'Them' }) {
   const userShare = Math.max(0, Math.min(100, Number(value) || 0));
   return (
     <div>
-      <div className="flex justify-between font-mono text-[0.6rem] uppercase tracking-[0.1em] text-ash">
+      <div className="flex justify-between text-xs text-ash">
         <span>You {userShare}%</span>
         <span>{personName} {100 - userShare}%</span>
       </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full bg-gradient-to-r from-violet-300 to-pink-300" style={{ width: `${userShare}%` }} />
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-well">
+        <div className="h-full rounded-full bg-signal" style={{ width: `${userShare}%` }} />
       </div>
     </div>
   );
@@ -246,7 +248,7 @@ function EffortBar({ value, personName = 'Them' }) {
 function TimelinePhaseDetail({ phase = {}, personName }) {
   const hasEffort = phase.effortBalance !== undefined && phase.effortBalance !== null && phase.effortBalance !== '';
   return (
-    <div className="mt-6 grid gap-5 rounded-sm border border-white/10 bg-white/[0.045] p-5 lg:grid-cols-[1.1fr_.9fr]">
+    <div className="mt-6 grid gap-5 rounded-sm border border-line bg-paper p-5 lg:grid-cols-[1.1fr_.9fr]">
       <div className="grid content-start gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <h3 className="serif-title text-3xl leading-tight">{safe(phase.title, 'This phase')}</h3>
@@ -263,7 +265,7 @@ function TimelinePhaseDetail({ phase = {}, personName }) {
         </div>
         {(phase.turningPoint || phase.quote) && (
           <div className="sticky-glass rotate-[-1deg] p-4">
-            <p className="tech-label text-orange-100">Turning point</p>
+            <p className="tech-label text-orange-700">Turning point</p>
             {phase.turningPoint && <p className="mt-2 text-sm leading-7 text-bone">{safe(phase.turningPoint)}</p>}
             {phase.quote && <p className="mt-2 font-mono text-sm leading-6 text-smoke">“{String(phase.quote).slice(0, 200)}”</p>}
           </div>
@@ -276,7 +278,7 @@ function TimelinePhaseDetail({ phase = {}, personName }) {
           ['What you might not have noticed', phase.youMightNotHaveNoticed],
           ['How it shaped what came next', phase.affectedNextPhase || phase.why || phase.whyItMatters],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-2xl border border-white/10 bg-black/15 p-4">
+          <div key={label} className="rounded-2xl border border-line bg-well p-4">
             <p className="tech-label text-ash">{label}</p>
             <p className="mt-2 text-sm leading-7 text-smoke">{safe(value, 'Not enough evidence for this yet.')}</p>
           </div>
@@ -391,7 +393,7 @@ export default function ResultPage({ reportId = '' }) {
         title: 'Directional read — small sample',
         description: `This report is based on ${messageCount} message${messageCount === 1 ? '' : 's'}. Treat everything below as a first impression worth checking, not a conclusion about this relationship.`,
         notes,
-        className: 'border-orange-200/25 bg-orange-300/[0.07]',
+        className: 'border-orange-200 bg-orange-50',
       };
     }
     if (moderate) {
@@ -400,7 +402,7 @@ export default function ResultPage({ reportId = '' }) {
         title: 'Moderate evidence',
         description: `Based on ${messageCount.toLocaleString()} messages. The strongest patterns are the repeated ones — single moments may just be one bad day.`,
         notes,
-        className: 'border-white/12 bg-white/[0.05]',
+        className: 'border-line bg-paper',
       };
     }
     return null;
@@ -430,13 +432,12 @@ export default function ResultPage({ reportId = '' }) {
     const notFound = fetchState === 'notfound' || fetchState === 'error';
     return (
       <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
-        <ParticleBackground className="opacity-70" />
         <div className="relative mx-auto max-w-5xl">
           <div className="accent-panel corner-frame p-8 text-center sm:p-14">
             {isLoading ? (
               <>
                 <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-purple-200 border-t-transparent" />
-                <p className="mt-6 font-mono text-xs uppercase tracking-[0.14em] text-smoke">Loading your report…</p>
+                <p className="mt-6 text-xs text-smoke">Loading your report…</p>
               </>
             ) : (
               <>
@@ -451,7 +452,7 @@ export default function ResultPage({ reportId = '' }) {
                 </p>
                 <button
                   onClick={() => navigate(notFound ? '/reports' : '/analysis/new')}
-                  className="glass-button mt-8 rounded-sm px-6 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone"
+                  className="glass-button mt-8 rounded-sm px-6 py-4 text-xs text-bone"
                 >
                   {notFound ? 'Go to your reports' : 'Start a conversation analysis'}
                 </button>
@@ -506,6 +507,16 @@ export default function ResultPage({ reportId = '' }) {
     prepared.metadata?.otherPersonZodiac?.sign || '',
   );
   const metrics = prepared.localMetrics || {};
+  // ONE colour per participant, decided here and passed to every chart, so a
+  // reader learns "pink is me, blue is them" once instead of re-reading a
+  // legend on each figure. Anyone who is not the named other person is you —
+  // exports name the account holder inconsistently, and defaulting the unknown
+  // case to "them" would mislabel the person reading their own report.
+  const colorFor = (sender) => (
+    String(sender || '').trim().toLowerCase() === String(personName || '').trim().toLowerCase()
+      ? 'var(--them)'
+      : 'var(--you)'
+  );
   const emojis = list(metrics.emojis);
   const effort = metrics.effort || null;
   // Scored on dimensions chosen for THIS relationship type — a partner report
@@ -517,16 +528,13 @@ export default function ResultPage({ reportId = '' }) {
 
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
-      <ParticleBackground className="opacity-80" />
       {/* Rides the top-right corner once the reader is past the header. */}
       <FloatingCoach chainId={source?.chainId} />
-      <div id="relationship-report-export" data-export-bg="#090817" className="relative mx-auto max-w-[1560px] rounded-sm bg-[#090817]/70 p-2 sm:p-4">
+      <div id="relationship-report-export" data-export-bg="#ffffff" className="relative mx-auto max-w-[1560px] rounded-sm bg-canvas0 p-2 sm:p-4">
         <header className="accent-panel glow-border relative mb-6 overflow-hidden p-6 sm:p-8">
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-purple-400/25 blur-2xl" />
-          <div className="absolute -bottom-20 left-1/4 h-64 w-64 rounded-full bg-pink-400/18 blur-2xl" />
           <div className="relative flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-4xl">
-              <p className="tech-label text-purple-100">Relationship Intelligence Report</p>
+              <p className="tech-label text-purple-700">Relationship Intelligence Report</p>
               <h1 className="serif-title mt-4 text-5xl leading-none sm:text-7xl">{personName}</h1>
               <p className="mt-5 max-w-3xl text-lg leading-8 text-smoke">
                 This is your private emotional map of what the conversation appears to show: warm signals, clarity gaps, energy balance, key moments, and the next best move.
@@ -538,7 +546,7 @@ export default function ResultPage({ reportId = '' }) {
                 <Badge tone="orange">{(prepared.messageCount || 0).toLocaleString()} messages</Badge>
               </div>
             </div>
-            <div className="grid min-w-[260px] gap-3 rounded-sm border border-white/14 bg-white/[0.06] p-4 ">
+            <div className="grid min-w-[260px] gap-3 rounded-sm border border-line bg-paper p-4 ">
               {[
                 ['Participants', list(prepared.participants || prepared.participantNames || analysis.participants?.detectedParticipants).join(', ')],
                 ['Language style', detectedLanguage],
@@ -550,7 +558,7 @@ export default function ResultPage({ reportId = '' }) {
                   <p className="mt-1 text-sm leading-6 text-bone">{safe(value)}</p>
                 </div>
               ))}
-              <button data-export-ignore onClick={exportFullReport} className="glass-button mt-2 rounded-sm px-4 py-3 font-mono text-xs uppercase tracking-[0.15em] text-bone">
+              <button data-export-ignore onClick={exportFullReport} className="glass-button mt-2 rounded-sm px-4 py-3 text-xs text-bone">
                 Download Report
               </button>
             </div>
@@ -570,13 +578,22 @@ export default function ResultPage({ reportId = '' }) {
             </div>
           )}
           {(source?.analysisError || source?.cacheNotice || toast) && (
-            <p data-export-ignore className="relative mt-5 rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-sm leading-7 text-smoke">
+            <p data-export-ignore className="relative mt-5 rounded-2xl border border-line bg-paper p-4 text-sm leading-7 text-smoke">
               {toast || source?.cacheNotice || source?.analysisError}
             </p>
           )}
         </header>
 
         <div className="grid gap-5">
+          {/* Counted facts before interpreted ones. Everything in this strip is
+              arithmetic the reader could redo by hand, which is what buys the
+              credit that the hedged sections below it spend. */}
+          {list(metrics.quickStats).length > 0 && (
+            <CardShell id="quick-stats" title="At a glance" emoji="📌" summary="Exact counts from the conversation." accent="blue">
+              <QuickStats stats={list(metrics.quickStats)} />
+            </CardShell>
+          )}
+
           <CardShell id="report-summary-card" title="Relationship Summary" emoji="✨" summary={analysis.screenshotWorthySummary || summary.currentDynamic} accent="pink">
             <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
               <div>
@@ -590,7 +607,7 @@ export default function ResultPage({ reportId = '' }) {
                   ['Current vibe', analysis.simpleSummaryForYoungAudience],
                   ['Quick read', analysis.bestieBreakdown?.whatItLooksLike || relationshipReport.vibeLabel],
                 ].map(([label, value]) => (
-                  <div key={label} className="rounded-2xl border border-white/10 bg-black/15 p-4">
+                  <div key={label} className="rounded-2xl border border-line bg-well p-4">
                     <p className="tech-label text-ash">{label}</p>
                     <p className="mt-2 text-sm leading-7 text-bone">{safe(value)}</p>
                   </div>
@@ -599,9 +616,9 @@ export default function ResultPage({ reportId = '' }) {
             </div>
           </CardShell>
 
-          <section id="score-cards" data-export-bg="#090817" className="relative">
+          <section id="score-cards" data-export-bg="#ffffff" className="relative">
             <div className="mb-4 flex items-center justify-between gap-4">
-              <p className="tech-label text-emerald-100">Score Cards 🧠</p>
+              <p className="tech-label text-emerald-700">Score Cards 🧠</p>
               <CardActions targetId="score-cards" name="score-cards" summary={`Compatibility ${scores.compatibility || 0}/100`} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -616,7 +633,7 @@ export default function ResultPage({ reportId = '' }) {
                 {/* Phones: vertical rail. The horizontal version needed a ~680px
                     sideways drag, which was the weakest mobile surface in the report. */}
                 <div className="relative grid gap-3 sm:hidden">
-                  <div className="absolute bottom-5 left-[0.72rem] top-5 w-1 rounded-full bg-gradient-to-b from-orange-300 via-purple-300 to-pink-300 opacity-60" />
+                  <div className="absolute bottom-5 left-[0.72rem] top-5 w-1 rounded-full bg-signal opacity-60" />
                   {timeline.map((item = {}, index) => {
                     const active = selectedTimeline === index;
                     const phaseSentiment = item.sentiment || item.emotionalTone || 'mixed';
@@ -627,12 +644,12 @@ export default function ResultPage({ reportId = '' }) {
                         aria-pressed={active}
                         className="relative flex items-start gap-4 text-left"
                       >
-                        <span className={`relative z-10 mt-4 block h-6 w-6 shrink-0 rounded-full border ${active ? 'border-violet-100 bg-violet-200 shadow-[0_0_28px_rgba(167,139,250,0.5)]' : 'border-white/35 bg-white/10'} transition`} />
-                        <span className={`min-w-0 flex-1 rounded-2xl border p-4 transition ${active ? 'border-violet-200/45 bg-white/[0.08]' : 'border-white/12 bg-white/[0.05]'}`}>
-                          <span className="block font-mono text-[0.63rem] uppercase tracking-[0.12em] text-ash">{compactPeriod(item.period, index)}</span>
+                        <span className={`relative z-10 mt-4 block h-6 w-6 shrink-0 rounded-full border ${active ? 'border-signal bg-signal' : 'border-line bg-well'} transition`} />
+                        <span className={`min-w-0 flex-1 rounded-2xl border p-4 transition ${active ? 'border-violet-200 bg-paper' : 'border-line bg-paper'}`}>
+                          <span className="block text-xs text-ash">{compactPeriod(item.period, index)}</span>
                           <span className="mt-1.5 block text-sm font-semibold text-bone">{safe(item.title, `Phase ${index + 1}`)}</span>
                           <span className="mt-1.5 block text-xs leading-5 text-smoke">{phaseSentiment} • {item.compatibility || scores.compatibility || 50}/100</span>
-                          {item.confidence && <span className="mt-2 block font-mono text-[0.58rem] uppercase tracking-[0.1em] text-ash">{item.confidence}</span>}
+                          {item.confidence && <span className="mt-2 block text-xs text-ash">{item.confidence}</span>}
                         </span>
                       </button>
                     );
@@ -641,7 +658,7 @@ export default function ResultPage({ reportId = '' }) {
 
                 <div className="hidden overflow-x-auto pb-3 sm:block">
                   <div className="relative flex min-w-[680px] items-start gap-5 px-2 sm:min-w-[880px]">
-                    <div className="absolute left-12 right-12 top-[4.1rem] h-1 rounded-full bg-gradient-to-r from-orange-300 via-purple-300 to-pink-300 opacity-70" />
+                    <div className="absolute left-12 right-12 top-[4.1rem] h-1 rounded-full bg-signal opacity-70" />
                     {timeline.map((item = {}, index) => {
                       const active = selectedTimeline === index;
                       const phaseSentiment = item.sentiment || item.emotionalTone || 'mixed';
@@ -652,12 +669,12 @@ export default function ResultPage({ reportId = '' }) {
                           aria-pressed={active}
                           className="group relative w-44 shrink-0 text-left"
                         >
-                          <p className="h-12 font-mono text-[0.67rem] uppercase tracking-[0.13em] text-ash">{compactPeriod(item.period, index)}</p>
-                          <span className={`relative z-10 block h-7 w-7 rounded-full border ${active ? 'border-violet-100 bg-violet-200 shadow-[0_0_34px_rgba(167,139,250,0.55)]' : 'border-white/35 bg-white/10'} transition group-hover:border-pink-200`} />
-                          <div className={`mt-5 rounded-2xl border p-4  transition ${active ? 'border-violet-200/45 bg-white/[0.08]' : 'border-white/12 bg-white/[0.05]'}`}>
+                          <p className="h-12 text-xs text-ash">{compactPeriod(item.period, index)}</p>
+                          <span className={`relative z-10 block h-7 w-7 rounded-full border ${active ? 'border-signal bg-signal' : 'border-line bg-well'} transition group-hover:border-signal`} />
+                          <div className={`mt-5 rounded-2xl border p-4  transition ${active ? 'border-violet-200 bg-paper' : 'border-line bg-paper'}`}>
                             <p className="text-sm font-semibold text-bone">{safe(item.title, `Phase ${index + 1}`)}</p>
                             <p className="mt-2 text-xs leading-5 text-smoke">{phaseSentiment} • {item.compatibility || scores.compatibility || 50}/100</p>
-                            {item.confidence && <p className="mt-2 font-mono text-[0.58rem] uppercase tracking-[0.1em] text-ash">{item.confidence}</p>}
+                            {item.confidence && <p className="mt-2 text-xs text-ash">{item.confidence}</p>}
                           </div>
                         </button>
                       );
@@ -677,12 +694,12 @@ export default function ResultPage({ reportId = '' }) {
             <CardShell id="person-profile" title={`About ${personName}`} emoji="🔍" summary={`What ${personName}'s own messages reveal about them.`} accent="purple">
               <p className="max-w-3xl text-sm leading-7 text-smoke">
                 Everything {personName} revealed about themselves in this chat — each point backed by their own words.
-                Mentioned in more than one period shows as <span className="text-purple-100">Confirmed</span>.
+                Mentioned in more than one period shows as <span className="text-purple-700">Confirmed</span>.
               </p>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 {personFactGroups.map(([category, items]) => (
-                  <div key={category} className="rounded-sm border border-white/10 bg-white/[0.05] p-5">
-                    <p className="tech-label text-purple-100">{FACT_CATEGORY_LABELS[category] || category.replace(/_/g, ' ')}</p>
+                  <div key={category} className="rounded-sm border border-line bg-paper p-5">
+                    <p className="tech-label text-purple-700">{FACT_CATEGORY_LABELS[category] || category.replace(/_/g, ' ')}</p>
                     <ul className="mt-4 space-y-4">
                       {items.map((item, index) => (
                         <li key={`${item.fact}-${index}`}>
@@ -690,7 +707,7 @@ export default function ResultPage({ reportId = '' }) {
                             <p className="text-sm leading-6 text-bone">{item.fact}</p>
                             {item.confidence === 'Confirmed' && <Badge tone="green">Confirmed</Badge>}
                           </div>
-                          <p className="mt-1.5 border-l-2 border-white/12 pl-3 font-mono text-xs leading-5 text-smoke">
+                          <p className="mt-1.5 border-l-2 border-line pl-3 font-mono text-xs leading-5 text-smoke">
                             “{String(item.quote).slice(0, 160)}”
                           </p>
                         </li>
@@ -723,7 +740,7 @@ export default function ResultPage({ reportId = '' }) {
                   {signatureMetrics.map((metric) => {
                     const score = Math.max(0, Math.min(100, Number(metric.score) || 0));
                     return (
-                      <div key={metric.key || metric.label} className="rounded-sm border border-white/10 bg-white/[0.05] p-5">
+                      <div key={metric.key || metric.label} className="rounded-sm border border-line bg-paper p-5">
                         <div className="flex flex-wrap items-baseline justify-between gap-2">
                           <h3 className="text-lg leading-6 text-bone">{metric.label || metric.key}</h3>
                           <span className="font-mono text-xl tabular-nums text-bone">{score}</span>
@@ -735,12 +752,12 @@ export default function ResultPage({ reportId = '' }) {
                           <p className="mt-3 text-sm leading-6 text-smoke">{metric.reading}</p>
                         )}
                         {metric.evidenceQuote && (
-                          <p className="mt-3 border-l-2 border-pink-200/40 pl-3 text-sm italic leading-6 text-ash">
+                          <p className="mt-3 border-l-2 border-pink-200 pl-3 text-sm italic leading-6 text-ash">
                             “{metric.evidenceQuote}”
                           </p>
                         )}
                         {metric.confidence && (
-                          <p className="mt-3 font-mono text-[0.58rem] uppercase tracking-[0.1em] text-ash">
+                          <p className="mt-3 text-xs text-ash">
                             {metric.confidence}
                           </p>
                         )}
@@ -758,9 +775,16 @@ export default function ResultPage({ reportId = '' }) {
               </p>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 {effortPeople.map((person) => (
-                  <div key={person.sender} className="rounded-sm border border-white/10 bg-white/[0.05] p-5">
+                  <div key={person.sender} className="rounded-sm border border-line bg-paper p-5">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="text-xl text-bone">{person.sender}</h3>
+                      <h3 className="flex items-center gap-2 text-xl text-bone">
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ background: colorFor(person.sender) }}
+                          aria-hidden="true"
+                        />
+                        {person.sender}
+                      </h3>
                       <Badge tone="purple">{person.messageShare}% of messages</Badge>
                     </div>
                     <dl className="mt-4 grid grid-cols-2 gap-4">
@@ -775,7 +799,7 @@ export default function ResultPage({ reportId = '' }) {
                         <div key={label}>
                           <dt className="tech-label text-ash">{label}</dt>
                           <dd className="mt-1.5 text-lg leading-6 text-bone">{value}</dd>
-                          {hint && <p className="mt-0.5 font-mono text-[0.58rem] uppercase tracking-[0.1em] text-ash">{hint}</p>}
+                          {hint && <p className="mt-0.5 text-xs text-ash">{hint}</p>}
                         </div>
                       ))}
                     </dl>
@@ -783,7 +807,7 @@ export default function ResultPage({ reportId = '' }) {
                 ))}
               </div>
               {trend && (
-                <div className="mt-4 grid gap-3 rounded-sm border border-white/10 bg-black/15 p-5 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 rounded-sm border border-line bg-well p-5 sm:grid-cols-2">
                   <div>
                     <p className="tech-label text-ash">Reply speed, then vs now</p>
                     <p className="mt-2 text-sm leading-7 text-smoke">
@@ -816,7 +840,7 @@ export default function ResultPage({ reportId = '' }) {
               <p className="max-w-2xl text-sm leading-7 text-smoke">Counted directly from the uploaded chat.</p>
               <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
                 {emojis.map((item) => (
-                  <div key={item.emoji} className="rounded-sm border border-white/10 bg-white/[0.05] p-3 text-center">
+                  <div key={item.emoji} className="rounded-sm border border-line bg-paper p-3 text-center">
                     <p className="text-3xl leading-none">{item.emoji}</p>
                     <p className="mt-2 font-mono text-xs text-bone">{item.count}×</p>
                   </div>
@@ -825,27 +849,46 @@ export default function ResultPage({ reportId = '' }) {
             </CardShell>
           )}
 
+          {(metrics.rhythm || metrics.tone) && (
+            <CardShell
+              id="conversation-patterns"
+              title="Patterns Over Time"
+              emoji="📈"
+              summary={metrics.rhythm ? `Busiest ${metrics.rhythm.peakLabel}.` : 'How the tone moved.'}
+              accent="blue"
+            >
+              <p className="max-w-3xl text-sm leading-7 text-smoke">
+                Counted from the timestamps and the words themselves. No model
+                was asked for any of this — it is arithmetic on your own chat.
+              </p>
+              <div className="mt-5 grid gap-6">
+                {metrics.rhythm && <RhythmHeatmap rhythm={metrics.rhythm} />}
+                {metrics.tone && <ToneOverTime tone={metrics.tone} colorFor={colorFor} />}
+              </div>
+            </CardShell>
+          )}
+
           {zodiacMatch && (
             <CardShell id="zodiac-match" title="Zodiac Layer" emoji="✨" summary={`${zodiacMatch.userSign} + ${zodiacMatch.otherSign}: ${zodiacMatch.label}`} accent="purple">
               <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-                <div className="rounded-sm border border-purple-200/20 bg-purple-300/[0.06] p-5 text-center">
+                <div className="rounded-sm border border-purple-200 bg-purple-50 p-5 text-center">
                   <div className="flex items-center justify-center gap-4">
                     <div>
                       <p className="text-4xl leading-none text-bone">{zodiacMatch.userGlyph}</p>
                       <p className="mt-2 text-sm text-bone">{zodiacMatch.userSign}</p>
-                      <p className="font-mono text-[0.6rem] uppercase tracking-[0.1em] text-ash">You · {zodiacMatch.userElement}</p>
+                      <p className=" text-xs text-ash">You · {zodiacMatch.userElement}</p>
                     </div>
                     <p className="text-2xl text-ash">+</p>
                     <div>
                       <p className="text-4xl leading-none text-bone">{zodiacMatch.otherGlyph}</p>
                       <p className="mt-2 text-sm text-bone">{zodiacMatch.otherSign}</p>
-                      <p className="font-mono text-[0.6rem] uppercase tracking-[0.1em] text-ash">{personName} · {zodiacMatch.otherElement}</p>
+                      <p className=" text-xs text-ash">{personName} · {zodiacMatch.otherElement}</p>
                     </div>
                   </div>
                   <p className="serif-title mt-5 text-6xl leading-none text-bone">{zodiacMatch.score}</p>
-                  <p className="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.12em] text-purple-100">{zodiacMatch.label}</p>
-                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-gradient-to-r from-violet-300 to-pink-300" style={{ width: `${zodiacMatch.score}%` }} />
+                  <p className="mt-1 text-xs text-purple-700">{zodiacMatch.label}</p>
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-well">
+                    <div className="h-full rounded-full bg-signal" style={{ width: `${zodiacMatch.score}%` }} />
                   </div>
                 </div>
                 <div className="grid gap-3">
@@ -855,7 +898,7 @@ export default function ResultPage({ reportId = '' }) {
                     ['Where you rub', zodiacMatch.friction],
                     ['Pace', zodiacMatch.modalityNote],
                   ].map(([label, value]) => (
-                    <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+                    <div key={label} className="rounded-2xl border border-line bg-paper p-4">
                       <p className="tech-label text-ash">{label}</p>
                       <p className="mt-2 text-sm leading-6 text-smoke">{value}</p>
                     </div>
@@ -873,8 +916,8 @@ export default function ResultPage({ reportId = '' }) {
             {topWords.length ? (
               <div className="mt-5 grid gap-3 sm:grid-cols-5">
                 {topWords.map((item, index) => (
-                  <div key={item.word} className="rounded-sm border border-white/10 bg-white/[0.05] p-4 text-center">
-                    <p className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-ash">#{index + 1}</p>
+                  <div key={item.word} className="rounded-sm border border-line bg-paper p-4 text-center">
+                    <p className=" text-xs text-ash">#{index + 1}</p>
                     <p className="mt-2 break-words text-xl text-bone">{item.word}</p>
                     <p className="mt-2 font-mono text-xs text-smoke">{item.count}×</p>
                   </div>
@@ -889,7 +932,7 @@ export default function ResultPage({ reportId = '' }) {
             <CardShell id="red-flags" title="Red Flags" emoji="🚩" summary="Gentle red flag reflections." accent="pink">
               <div className="grid gap-4">
                 {flags.red.length ? flags.red.map((flag, index) => (
-                  <div key={`${flag.label}-${index}`} className="rounded-sm border border-pink-200/16 bg-pink-300/[0.055] p-4">
+                  <div key={`${flag.label}-${index}`} className="rounded-sm border border-pink-200 bg-pink-50 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <h3 className="text-xl text-bone">{safe(flag.label || flag.title, 'Pattern worth noticing')}</h3>
                       <div className="flex flex-wrap gap-2">
@@ -899,15 +942,15 @@ export default function ResultPage({ reportId = '' }) {
                     </div>
                     <p className="mt-3 text-sm leading-7 text-smoke">{safe(flag.explanation, 'This may be worth noticing based on the conversation.')}</p>
                     {flag.evidenceQuote ? (
-                      <blockquote className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
-                        <p className="tech-label text-pink-100">Receipt</p>
+                      <blockquote className="mt-3 rounded-2xl border border-line bg-well p-3">
+                        <p className="tech-label text-pink-700">Receipt</p>
                         <p className="mt-2 font-mono text-sm leading-6 text-bone">“{String(flag.evidenceQuote).slice(0, 220)}”</p>
                       </blockquote>
                     ) : (
-                      <p className="mt-3 rounded-2xl border border-white/10 bg-black/15 p-3 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-ash">No direct quote from this chat — treat as a limited-evidence signal</p>
+                      <p className="mt-3 rounded-2xl border border-line bg-well p-3 text-xs text-ash">No direct quote from this chat — treat as a limited-evidence signal</p>
                     )}
-                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-pink-100">Why it matters:</span> {safe(flag.whyItMatters, 'This could affect clarity or emotional safety over time.')}</p>
-                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-pink-100">Reflection:</span> {safe(flag.reflectionQuestion, 'What would you need to ask clearly instead of guessing?')}</p>
+                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-pink-700">Why it matters:</span> {safe(flag.whyItMatters, 'This could affect clarity or emotional safety over time.')}</p>
+                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-pink-700">Reflection:</span> {safe(flag.reflectionQuestion, 'What would you need to ask clearly instead of guessing?')}</p>
                   </div>
                 )) : <EmptyHint>This conversation did not show strong red flag evidence. That does not prove everything is fine, it just means the signal is limited.</EmptyHint>}
               </div>
@@ -916,22 +959,22 @@ export default function ResultPage({ reportId = '' }) {
             <CardShell id="green-flags" title="Green Flags" emoji="🟢" summary="Positive signals from this conversation." accent="green">
               <div className="grid gap-4">
                 {flags.green.length ? flags.green.map((flag, index) => (
-                  <div key={`${flag.label}-${index}`} className="rounded-sm border border-emerald-200/16 bg-emerald-300/[0.045] p-4">
+                  <div key={`${flag.label}-${index}`} className="rounded-sm border border-emerald-200 bg-emerald-50 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <h3 className="text-xl text-bone">{safe(flag.label || flag.title, 'Promising signal')}</h3>
                       {flag.confidence && <Badge tone="green">{flag.confidence}</Badge>}
                     </div>
                     <p className="mt-3 text-sm leading-7 text-smoke">{safe(flag.explanation, 'A possible positive sign appears in this chat.')}</p>
                     {flag.evidenceQuote ? (
-                      <blockquote className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
-                        <p className="tech-label text-emerald-100">Receipt</p>
+                      <blockquote className="mt-3 rounded-2xl border border-line bg-well p-3">
+                        <p className="tech-label text-emerald-700">Receipt</p>
                         <p className="mt-2 font-mono text-sm leading-6 text-bone">“{String(flag.evidenceQuote).slice(0, 220)}”</p>
                       </blockquote>
                     ) : (
-                      <p className="mt-3 rounded-2xl border border-white/10 bg-black/15 p-3 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-ash">No direct quote from this chat — treat as a limited-evidence signal</p>
+                      <p className="mt-3 rounded-2xl border border-line bg-well p-3 text-xs text-ash">No direct quote from this chat — treat as a limited-evidence signal</p>
                     )}
-                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-emerald-100">Why it matters:</span> {safe(flag.whyItMatters, 'Healthy signals can create room for calmer repair.')}</p>
-                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-emerald-100">Build on it:</span> {safe(flag.howToBuildOnIt, 'Name the good signal and ask for one clear next step.')}</p>
+                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-emerald-700">Why it matters:</span> {safe(flag.whyItMatters, 'Healthy signals can create room for calmer repair.')}</p>
+                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-emerald-700">Build on it:</span> {safe(flag.howToBuildOnIt, 'Name the good signal and ask for one clear next step.')}</p>
                   </div>
                 )) : <EmptyHint>Green flags were not strong in this sample yet. More chats can make this clearer.</EmptyHint>}
               </div>
@@ -940,14 +983,14 @@ export default function ResultPage({ reportId = '' }) {
 
           <CardShell id="energy-match" title="Energy Match Score" emoji="⚡" summary={energy.explanation} accent="orange">
             <div className="grid gap-5 xl:grid-cols-[.75fr_1.25fr]">
-              <div className="flex flex-col justify-between rounded-sm border border-orange-200/16 bg-orange-300/[0.055] p-5">
+              <div className="flex flex-col justify-between rounded-sm border border-orange-200 bg-orange-50 p-5">
                 <div>
-                  <p className="tech-label text-orange-100">Overall energy match</p>
+                  <p className="tech-label text-orange-700">Overall energy match</p>
                   <p className="serif-title mt-3 text-7xl">{Number(energy.score ?? scores.effortBalance) || 50}</p>
                   <p className="mt-4 text-sm leading-7 text-smoke">{safe(energy.explanation, 'The energy balance needs more data, but effort and clarity are the main things to watch.')}</p>
                 </div>
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-gradient-to-r from-orange-300 via-pink-300 to-purple-300" style={{ width: `${Number(energy.score ?? scores.effortBalance) || 50}%` }} />
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-well">
+                  <div className="h-full rounded-full bg-signal" style={{ width: `${Number(energy.score ?? scores.effortBalance) || 50}%` }} />
                 </div>
               </div>
               <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
@@ -959,13 +1002,13 @@ export default function ResultPage({ reportId = '' }) {
                     ['Emotional availability', energy.emotionalAvailability],
                     ['Consistency', energy.consistency],
                   ].map(([label, value]) => (
-                    <div key={label} className="rounded-sm border border-white/10 bg-white/[0.045] p-4">
+                    <div key={label} className="rounded-sm border border-line bg-paper p-4">
                       <p className="tech-label text-ash">{label}</p>
                       <p className="mt-3 text-sm leading-7 text-bone">{safe(value)}</p>
                     </div>
                   ))}
                 </div>
-                <div className="rounded-sm border border-white/10 bg-black/15 p-4">
+                <div className="rounded-sm border border-line bg-well p-4">
                   <RadarPentagon data={radarData} />
                 </div>
               </div>
@@ -983,7 +1026,7 @@ export default function ResultPage({ reportId = '' }) {
                   const tone = /^new:/i.test(text) ? 'purple' : /^softened:/i.test(text) ? 'orange' : 'green';
                   const kind = /^new:/i.test(text) ? 'New' : /^softened:/i.test(text) ? 'Softened' : 'Reinforced';
                   return (
-                    <div key={`${text}-${index}`} className="rounded-sm border border-white/10 bg-white/[0.045] p-4">
+                    <div key={`${text}-${index}`} className="rounded-sm border border-line bg-paper p-4">
                       <Badge tone={tone}>{kind}</Badge>
                       <p className="mt-3 text-sm leading-7 text-bone">{text.replace(/^(new|reinforced|softened):\s*/i, '')}</p>
                     </div>
@@ -1007,7 +1050,7 @@ export default function ResultPage({ reportId = '' }) {
                   ['What to avoid', analysis.advice?.avoid],
                   ['Gentle reality check', analysis.bestieBreakdown?.whatNotToIgnore],
                 ].map(([label, value]) => (
-                  <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+                  <div key={label} className="rounded-2xl border border-line bg-paper p-4">
                     <p className="tech-label text-ash">{label}</p>
                     <p className="mt-2 text-sm leading-7 text-bone">{safe(value)}</p>
                   </div>
@@ -1015,8 +1058,8 @@ export default function ResultPage({ reportId = '' }) {
               </div>
             </div>
             <div data-export-ignore className="mt-6 flex flex-wrap gap-3">
-              <button onClick={exportFullReport} className="glass-button rounded-sm px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Download Report Card</button>
-              <button onClick={shareSummary} className="glass-button rounded-sm px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Share Summary</button>
+              <button onClick={exportFullReport} className="glass-button rounded-sm px-5 py-3 text-xs text-bone">Download Report Card</button>
+              <button onClick={shareSummary} className="glass-button rounded-sm px-5 py-3 text-xs text-bone">Share Summary</button>
             </div>
           </CardShell>
 

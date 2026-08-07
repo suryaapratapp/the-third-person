@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { PiArrowRight } from 'react-icons/pi';
-import ParticleBackground from '../components/ParticleBackground.jsx';
 import RouteLink from '../components/RouteLink.jsx';
 import { BLOG_POSTS_META } from '../lib/blogPostsMeta.js';
 
@@ -23,7 +22,6 @@ export default function NotFoundPage({ path }) {
 
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
-      <ParticleBackground className="opacity-45" />
       <div className="relative mx-auto max-w-2xl text-center">
         <div className="accent-panel p-6 sm:p-10">
           <p className="tech-label text-smoke">404</p>

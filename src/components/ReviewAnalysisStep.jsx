@@ -361,7 +361,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       )}
       {isGenerating && (
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 px-4 "
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-well px-4 "
           role="dialog"
           aria-modal="true"
           aria-labelledby="analysis-progress-heading"
@@ -373,7 +373,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
               progress checklist and never changed state. An indeterminate bar
               is the honest signal when there is no real per-step progress. */}
           <div className="accent-panel w-full max-w-md p-6 text-center sm:p-7">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-purple-200/40 bg-purple-300/10">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-purple-200 bg-purple-50">
               <div className="h-9 w-9 animate-spin rounded-full border-2 border-purple-200 border-t-transparent" />
             </div>
             <h3 id="analysis-progress-heading" className="serif-title mt-5 text-3xl leading-tight sm:text-4xl">
@@ -382,13 +382,13 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
             <p className="mt-3 min-h-[3rem] text-sm leading-6 text-smoke">
               {processingStage || 'Preparing private relationship intelligence…'}
             </p>
-            <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-well">
               <div className="analysis-progress h-full w-1/3 rounded-full accent-gradient" />
             </div>
             <p className="mt-4 text-xs leading-6 text-ash">
               This usually takes under two minutes. Keep this tab open.
             </p>
-            <div className="mt-5 border-t border-white/10 pt-5">
+            <div className="mt-5 border-t border-line pt-5">
               <RotatingQuote />
             </div>
           </div>
@@ -396,7 +396,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       )}
       <div className="thin-panel p-4 sm:p-5">
         <p className="tech-label text-smoke">What will be analysed</p>
-        <dl className="mt-4 divide-y divide-white/10">
+        <dl className="mt-4 divide-y divide-line">
           {rows.map(([label, value]) => (
             <div key={label} className="flex items-start justify-between gap-4 py-3">
               <dt className="text-sm text-ash">{label}</dt>
@@ -408,15 +408,15 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
 
       <div className="grid gap-4">
         {sampleWarning && (
-          <div className="flex gap-3 rounded-sm border border-orange-200/25 bg-orange-300/[0.07] p-4">
-            <PiWarning className="mt-0.5 shrink-0 text-lg text-orange-100" aria-hidden="true" />
+          <div className="flex gap-3 rounded-sm border border-orange-200 bg-orange-50 p-4">
+            <PiWarning className="mt-0.5 shrink-0 text-lg text-orange-700" aria-hidden="true" />
             <p className="text-sm leading-6 text-smoke">{sampleWarning}</p>
           </div>
         )}
 
         {/* The price, or the balance, stated plainly right above the button that
             spends it — this used to be one of four small boxes of prose. */}
-        <div className="rounded-sm border border-white/12 bg-white/[0.04] p-4">
+        <div className="rounded-sm border border-line bg-paper p-4">
           {!entitlements ? (
             <p className="text-sm leading-6 text-smoke">Checking your balance…</p>
           ) : entitlements.relationshipReportsLeft > 0 ? (
@@ -442,7 +442,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         </button>
 
         {analysisError && (
-          <p className="rounded-sm border border-orange-200/25 bg-orange-300/[0.07] p-3 text-sm leading-6 text-orange-100">
+          <p className="rounded-sm border border-orange-200 bg-orange-50 p-3 text-sm leading-6 text-orange-700">
             {analysisError}
           </p>
         )}

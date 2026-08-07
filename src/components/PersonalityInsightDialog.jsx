@@ -24,7 +24,7 @@ function ScoreMeter({ label, score, color, animate }) {
         <p className="tech-label text-ash">{label}</p>
         <p className="font-mono text-xs text-bone">{score}</p>
       </div>
-      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/10">
+      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-well">
         <div
           className="h-full rounded-full transition-all duration-700 ease-out"
           style={{ width: animate ? `${score}%` : '0%', background: color }}
@@ -50,7 +50,7 @@ export default function PersonalityInsightDialog({ item, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[95] flex items-center justify-center bg-black/75 px-4 py-8 "
+      className="fixed inset-0 z-[95] flex items-center justify-center bg-well px-4 py-8 "
       role="dialog"
       aria-modal="true"
       aria-labelledby="personality-dialog-heading"
@@ -71,8 +71,8 @@ export default function PersonalityInsightDialog({ item, onClose }) {
         </div>
 
         {!hasCard ? (
-          <div className="mt-8 rounded-2xl border border-white/12 bg-white/[0.04] p-6 text-center">
-            <PiSparkleFill className="mx-auto text-2xl text-purple-200" aria-hidden="true" />
+          <div className="mt-8 rounded-2xl border border-line bg-paper p-6 text-center">
+            <PiSparkleFill className="mx-auto text-2xl text-purple-700" aria-hidden="true" />
             <p className="mt-3 text-sm leading-7 text-smoke">
               Analyse a chat {item.key === 'partner' ? 'with a partner' : item.key === 'ex' ? 'with an ex' : `with a ${item.key === 'family' ? 'family member' : item.key.replace(/s$/, '')}`} to unlock this ✨
             </p>
@@ -89,7 +89,7 @@ export default function PersonalityInsightDialog({ item, onClose }) {
 
             <div className="mt-6 flex flex-wrap gap-2">
               {item.keywords.slice(0, 5).map((keyword) => (
-                <span key={keyword} className="rounded-sm border border-white/12 bg-white/[0.05] px-3 py-1.5 font-mono text-[0.63rem] uppercase tracking-[0.1em] text-smoke">
+                <span key={keyword} className="rounded-sm border border-line bg-paper px-3 py-1.5 text-xs text-smoke">
                   {keyword}
                 </span>
               ))}
@@ -97,13 +97,13 @@ export default function PersonalityInsightDialog({ item, onClose }) {
 
             {scores ? (
               <>
-                <div className="mt-7 border-t border-white/10 pt-6">
-                  <p className="tech-label text-purple-200">Speaking style</p>
+                <div className="mt-7 border-t border-line pt-6">
+                  <p className="tech-label text-purple-700">Speaking style</p>
                   <div className="mt-3 flex items-center justify-between gap-3">
                     <p className="serif-title text-2xl text-bone">{scores.speakingStyle?.label || 'Still forming'}</p>
                     <p className="font-mono text-xs text-ash">{clampScore(scores.speakingStyle?.score)}/100</p>
                   </div>
-                  <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/10">
+                  <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-well">
                     <div
                       className="h-full rounded-full transition-all duration-700 ease-out"
                       style={{ width: animate ? `${clampScore(scores.speakingStyle?.score)}%` : '0%', background: '#a78bfa' }}
@@ -118,12 +118,12 @@ export default function PersonalityInsightDialog({ item, onClose }) {
                 </div>
 
                 {scores.signatureBehaviours?.length > 0 && (
-                  <div className="mt-7 border-t border-white/10 pt-6">
-                    <p className="tech-label text-orange-100">Your signature behaviours</p>
+                  <div className="mt-7 border-t border-line pt-6">
+                    <p className="tech-label text-orange-700">Your signature behaviours</p>
                     <ul className="mt-4 space-y-2 text-sm leading-7 text-smoke">
                       {scores.signatureBehaviours.slice(0, 5).map((behaviour) => (
                         <li key={behaviour} className="flex gap-2">
-                          <span className="text-purple-200">•</span>
+                          <span className="text-purple-700">•</span>
                           {behaviour}
                         </li>
                       ))}
@@ -132,7 +132,7 @@ export default function PersonalityInsightDialog({ item, onClose }) {
                 )}
               </>
             ) : (
-              <div className="mt-7 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center text-sm leading-6 text-ash">
+              <div className="mt-7 rounded-2xl border border-line bg-paper p-5 text-center text-sm leading-6 text-ash">
                 Detailed score meters unlock after your next analysis in this category ✨
               </div>
             )}

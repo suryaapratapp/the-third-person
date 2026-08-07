@@ -1,5 +1,4 @@
 import { PiArrowRight } from 'react-icons/pi';
-import ParticleBackground from '../components/ParticleBackground.jsx';
 import MatchmakingPitch from '../components/MatchmakingPitch.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
@@ -32,11 +31,10 @@ export default function VisionPage() {
 
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-24 sm:px-8 sm:pt-28">
-      <ParticleBackground className="opacity-50" />
 
       <div className="relative mx-auto max-w-[1180px]">
         <div className="corner-frame accent-panel p-5 sm:p-12">
-          <p className="tech-label text-violet-100">The north star</p>
+          <p className="tech-label text-violet-700">The north star</p>
           <h1 className="serif-title mt-4 max-w-4xl text-4xl leading-tight sm:text-7xl">
             Match people on who they really are.
           </h1>
@@ -53,8 +51,8 @@ export default function VisionPage() {
 
         <div className="mt-10">
           <div className="flex items-center gap-3">
-            <span className="h-2 w-2 rounded-full bg-emerald-300" aria-hidden="true" />
-            <p className="tech-label text-emerald-100">Here today</p>
+            <span className="h-2 w-2 rounded-full bg-emerald-50" aria-hidden="true" />
+            <p className="tech-label text-emerald-700">Here today</p>
           </div>
           <div className="mt-5 grid gap-3 sm:gap-4 md:grid-cols-2">
             {TODAY.map(([title, body]) => (
@@ -68,13 +66,13 @@ export default function VisionPage() {
 
         <div className="mt-10">
           <div className="flex items-center gap-3">
-            <span className="h-2 w-2 rounded-full bg-pink-300" aria-hidden="true" />
-            <p className="tech-label text-pink-100">Not built yet</p>
+            <span className="h-2 w-2 rounded-full bg-pink-50" aria-hidden="true" />
+            <p className="tech-label text-pink-700">Not built yet</p>
           </div>
           <div className="mt-5 grid gap-3 sm:gap-4 md:grid-cols-3">
             {NEXT.map(([title, body], index) => (
-              <article key={title} className="rounded-sm border border-pink-200/25 bg-pink-300/[0.05] p-5 sm:p-6">
-                <p className="font-mono text-[0.66rem] uppercase tracking-[0.14em] text-ash">
+              <article key={title} className="rounded-sm border border-pink-200 bg-pink-50 p-5 sm:p-6">
+                <p className=" text-xs text-ash">
                   {String(index + 1).padStart(2, '0')}
                 </p>
                 <h2 className="mt-3 text-lg leading-6 text-bone sm:text-xl">{title}</h2>
@@ -90,7 +88,7 @@ export default function VisionPage() {
 
         <MatchmakingPitch className="mt-10" />
 
-        <div className="mt-6 rounded-sm border border-violet-200/25 bg-violet-300/[0.06] p-5 text-center sm:p-8">
+        <div className="mt-6 rounded-sm border border-violet-200 bg-violet-50 p-5 text-center sm:p-8">
           <p className="text-base leading-7 text-bone sm:text-lg">
             Every report you run makes that profile sharper.
           </p>

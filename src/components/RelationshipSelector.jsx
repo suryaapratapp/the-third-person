@@ -14,8 +14,8 @@ const GROUPS = [
   {
     key: 'romantic',
     title: 'Romantic',
-    accent: 'border-pink-200/30 bg-pink-300/[0.06]',
-    labelClass: 'text-pink-100',
+    accent: 'border-pink-200 bg-pink-50',
+    labelClass: 'text-pink-700',
     options: [
       { value: 'Partner', label: 'Partner', hint: 'Together now' },
       { value: 'Early stage dating / seeing each other', label: 'Early dating', hint: 'Seeing each other' },
@@ -26,8 +26,8 @@ const GROUPS = [
   {
     key: 'friendship',
     title: 'Friendship',
-    accent: 'border-violet-200/30 bg-violet-300/[0.06]',
-    labelClass: 'text-violet-100',
+    accent: 'border-violet-200 bg-violet-50',
+    labelClass: 'text-violet-700',
     options: [
       { value: 'Friend', label: 'Friend', hint: 'Any closeness' },
     ],
@@ -35,8 +35,8 @@ const GROUPS = [
   {
     key: 'family',
     title: 'Family',
-    accent: 'border-emerald-200/25 bg-emerald-300/[0.05]',
-    labelClass: 'text-emerald-100',
+    accent: 'border-emerald-200 bg-emerald-50',
+    labelClass: 'text-emerald-700',
     options: [
       { value: 'Mom', label: 'Mom', hint: 'Parent' },
       { value: 'Dad', label: 'Dad', hint: 'Parent' },
@@ -70,14 +70,14 @@ export default function RelationshipSelector({ value, onChange }) {
                   className={`group relative flex min-h-[72px] flex-col justify-center rounded-sm border px-4 py-3 text-left transition ${
                     selected
                       ? `${group.accent} shadow-[0_0_30px_rgba(168,85,247,0.14)]`
-                      : 'border-white/12 bg-white/[0.04] hover:border-white/25 hover:bg-white/[0.07]'
+                      : 'border-line bg-paper hover:border-lineStrong hover:bg-well'
                   }`}
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className="text-base leading-5 text-bone">{option.label}</span>
                     <span
                       className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border transition ${
-                        selected ? 'border-transparent bg-bone text-[#17122a]' : 'border-white/25'
+                        selected ? 'border-transparent bg-signal text-white' : 'border-line'
                       }`}
                       aria-hidden="true"
                     >

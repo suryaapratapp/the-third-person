@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import ParticleBackground from '../components/ParticleBackground.jsx';
 import { askBestieViaSupabase } from '../lib/backendAiService.js';
 import { buildAnalysisChainContext, getChainById, groupReports } from '../lib/reportsStore.js';
 import { getUserProfile } from '../lib/profileStore.js';
@@ -173,7 +172,6 @@ export default function BestieBotPage({ chainId }) {
   if (!context) {
     return (
       <section className="page-coach relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
-        <ParticleBackground className="opacity-45" />
         <div className="relative mx-auto max-w-4xl text-center">
           <div className="accent-panel p-8 sm:p-12">
             <p className="tech-label text-smoke">ThirdPerson AI Relationship Coach</p>
@@ -181,7 +179,7 @@ export default function BestieBotPage({ chainId }) {
             <p className="mx-auto mt-5 max-w-2xl text-sm leading-8 text-smoke">
               Run an analysis first so your AI Relationship Coach can understand the relationship properly.
             </p>
-            <button onClick={() => navigate('/analysis/new')} className="glass-button mt-8 px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">Start an analysis</button>
+            <button onClick={() => navigate('/analysis/new')} className="glass-button mt-8 px-5 py-4 text-xs text-bone">Start an analysis</button>
           </div>
         </div>
       </section>
@@ -199,26 +197,25 @@ export default function BestieBotPage({ chainId }) {
           onContinue={() => setCreditBlock(null)}
         />
       )}
-      <ParticleBackground className="opacity-45" />
       <div className="relative mx-auto max-w-[1280px]">
         <div className="accent-panel overflow-hidden rounded-sm p-4 sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-5 border-b border-white/10 pb-5">
+          <div className="flex flex-wrap items-start justify-between gap-5 border-b border-line pb-5">
             <div className="flex items-start gap-4">
               <div className="shrink-0">
                 <CoachBot size={72} mood={isThinking ? 'thinking' : 'idle'} />
               </div>
               <div>
-                <p className="tech-label text-pink-200">ThirdPerson AI Relationship Coach</p>
+                <p className="tech-label text-pink-700">ThirdPerson AI Relationship Coach</p>
                 <h1 className="serif-title mt-3 text-5xl leading-none sm:text-7xl">Talk through {context.personName}.</h1>
               </div>
               <p className="mt-4 max-w-3xl text-sm leading-7 text-smoke">
                 Ask anything about this relationship: what changed, what feels unclear, what to reply, or what may need more attention.
               </p>
-              <p className="mt-3 max-w-3xl rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-xs leading-6 text-ash">
+              <p className="mt-3 max-w-3xl rounded-2xl border border-line bg-paper p-3 text-xs leading-6 text-ash">
                 Your AI Relationship Coach uses your report summaries, personality signals, and important moments for faster replies.
               </p>
             </div>
-            <button onClick={() => navigate('/reports')} className="glass-button px-4 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Back to reports</button>
+            <button onClick={() => navigate('/reports')} className="glass-button px-4 py-3 text-xs text-bone">Back to reports</button>
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-5">
@@ -229,7 +226,7 @@ export default function BestieBotPage({ chainId }) {
               ['Reports', `${context.reportCount}`],
               ['Trend', context.emotionalTrendAcrossReports || 'Mixed'],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.045] p-3">
+              <div key={label} className="rounded-2xl border border-line bg-paper p-3">
                 <p className="tech-label text-ash">{label}</p>
                 <p className="mt-2 text-sm text-bone">{value}</p>
               </div>
@@ -238,23 +235,23 @@ export default function BestieBotPage({ chainId }) {
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[330px_1fr]">
             <aside className="thin-panel rounded-sm p-4">
-              <p className="tech-label text-purple-200">Ask me</p>
+              <p className="tech-label text-purple-700">Ask me</p>
               <div className="mt-4 grid gap-2">
                 {starters.map((starter) => (
-                  <button key={starter} onClick={() => send(starter)} className="rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 text-left text-sm text-smoke transition hover:border-pink-200/50 hover:text-bone">
+                  <button key={starter} onClick={() => send(starter)} className="rounded-2xl border border-line bg-paper px-4 py-3 text-left text-sm text-smoke transition hover:border-pink-200 hover:text-bone">
                     {starter}
                   </button>
                 ))}
               </div>
-              <div className="mt-5 rounded-3xl border border-orange-300/15 bg-orange-300/[0.04] p-4 text-sm leading-7 text-smoke">
+              <div className="mt-5 rounded-3xl border border-orange-200 bg-orange-50 p-4 text-sm leading-7 text-smoke">
                 Zodiac, if available, is treated as a fun reflection layer. The real chat patterns matter more.
               </div>
-              <div className="mt-3 rounded-3xl border border-purple-300/15 bg-purple-300/[0.05] p-4 text-sm leading-7 text-smoke">
+              <div className="mt-3 rounded-3xl border border-purple-200 bg-purple-50 p-4 text-sm leading-7 text-smoke">
                 {balances ? `${balances.paidRelationshipReportsLeft} paid Relationship Reports left • ${balances.paidBestieChatsLeft} paid Coach Chats left` : 'Checking your credit balance…'}
               </div>
             </aside>
 
-            <div className="flex min-h-[620px] flex-col rounded-sm border border-white/12 bg-gradient-to-br from-white/[0.06] via-purple-300/[0.035] to-pink-300/[0.025] p-4">
+            <div className="flex min-h-[620px] flex-col rounded-sm border border-line from-white/[0.06] p-4">
               <div>
                 <p className="tech-label text-ash">Choose your coach</p>
                 <div className="mt-3 flex gap-2 overflow-x-auto pb-1" role="radiogroup" aria-label="Choose your AI Relationship Coach persona">
@@ -268,10 +265,10 @@ export default function BestieBotPage({ chainId }) {
                         aria-checked={active}
                         title={persona.description}
                         onClick={() => setSelectedPersonaId(persona.id)}
-                        className={`flex shrink-0 items-center gap-2 rounded-sm border px-4 py-2 transition ${active ? 'border-bloom/60 bg-gradient-to-r from-purple-300/18 via-pink-300/16 to-orange-300/10 text-bone' : 'border-white/12 bg-white/[0.035] text-smoke hover:border-purple-200/40 hover:text-bone'}`}
+                        className={`flex shrink-0 items-center gap-2 rounded-sm border px-4 py-2 transition ${active ? 'border-bloom/60 text-bone' : 'border-line bg-paper text-smoke hover:border-purple-200 hover:text-bone'}`}
                       >
                         <span className="text-base leading-none" aria-hidden="true">{persona.emoji}</span>
-                        <span className="font-mono text-[0.65rem] uppercase tracking-[0.1em]">{persona.name}</span>
+                        <span className=" text-xs">{persona.name}</span>
                       </button>
                     );
                   })}
@@ -281,9 +278,9 @@ export default function BestieBotPage({ chainId }) {
               <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
                 {messages.map((message, index) => (
                   <div key={`${message.role}-${index}`} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[82%] rounded-sm px-5 py-4 text-sm leading-7 shadow-[0_14px_40px_rgba(0,0,0,0.16)] ${message.role === 'user' ? 'bg-purple-300/18 text-bone' : 'border border-pink-200/10 bg-white/[0.07] text-smoke'}`}>
+                    <div className={`max-w-[82%] rounded-sm px-5 py-4 text-sm leading-7 shadow-glow ${message.role === 'user' ? 'bg-purple-50 text-bone' : 'border border-pink-200 bg-paper text-smoke'}`}>
                       {message.role === 'bot' && (
-                        <p className="mb-2 flex items-center gap-1.5 font-mono text-[0.62rem] uppercase tracking-[0.13em] text-pink-200">
+                        <p className="mb-2 flex items-center gap-1.5 text-xs text-pink-700">
                           <span aria-hidden="true">{getPersonaById(message.personaId).emoji}</span>
                           {getPersonaById(message.personaId).name}
                         </p>
@@ -291,9 +288,9 @@ export default function BestieBotPage({ chainId }) {
                       <p>{message.text}</p>
                       {message.role === 'bot' && index > 0 && (
                         <div className="mt-4 flex flex-wrap gap-2" data-export-ignore>
-                          <button onClick={() => copyReply(message.text)} className="rounded-sm border border-white/10 px-3 py-1 text-[0.68rem] text-ash hover:text-bone">Copy</button>
-                          <button onClick={() => saveInsight(message.text)} className="rounded-sm border border-white/10 px-3 py-1 text-[0.68rem] text-ash hover:text-bone">Save insight</button>
-                          <button onClick={() => shareReply(message.text)} className="rounded-sm border border-white/10 px-3 py-1 text-[0.68rem] text-ash hover:text-bone">Share</button>
+                          <button onClick={() => copyReply(message.text)} className="rounded-sm border border-line px-3 py-1 text-[0.68rem] text-ash hover:text-bone">Copy</button>
+                          <button onClick={() => saveInsight(message.text)} className="rounded-sm border border-line px-3 py-1 text-[0.68rem] text-ash hover:text-bone">Save insight</button>
+                          <button onClick={() => shareReply(message.text)} className="rounded-sm border border-line px-3 py-1 text-[0.68rem] text-ash hover:text-bone">Share</button>
                         </div>
                       )}
                     </div>
@@ -302,7 +299,7 @@ export default function BestieBotPage({ chainId }) {
                 {isThinking && (
                   <div className="flex items-center gap-3">
                     <CoachBot size={40} mood="thinking" float={false} />
-                    <div className="neon-scan max-w-[82%] rounded-sm border border-electric/20 bg-white/[0.06] px-5 py-4 text-sm text-smoke">
+                    <div className="neon-scan max-w-[82%] rounded-sm border border-electric/20 bg-paper px-5 py-4 text-sm text-smoke">
                       {statusText || `${activePersona.name} is reading the relationship chain…`}
                     </div>
                   </div>
@@ -310,7 +307,7 @@ export default function BestieBotPage({ chainId }) {
                 <div ref={bottomRef} />
               </div>
               {(statusText && !isThinking) || toast ? <p className="mt-3 text-xs text-ash">{statusText || toast}</p> : null}
-              <div className="sticky bottom-0 mt-4 flex gap-3 rounded-sm border border-white/10 bg-black/35 p-2 ">
+              <div className="sticky bottom-0 mt-4 flex gap-3 rounded-sm border border-line bg-well p-2 ">
                 <textarea
                   value={input}
                   maxLength={MAX_QUESTION_CHARS}
@@ -323,13 +320,13 @@ export default function BestieBotPage({ chainId }) {
                   }}
                   placeholder="Ask what you need to understand..."
                   aria-label={`Message your AI Relationship Coach about ${context.personName}`}
-                  className="min-h-14 flex-1 resize-none rounded-3xl border border-white/12 bg-black/50 px-5 py-4 text-sm text-bone outline-none placeholder:text-ash focus:border-purple-200/60"
+                  className="min-h-14 flex-1 resize-none rounded-3xl border border-line bg-well px-5 py-4 text-sm text-bone outline-none placeholder:text-ash focus:border-purple-200"
                 />
-                <button onClick={() => send()} disabled={!input.trim() || isThinking} className="rounded-3xl border border-purple-200/30 bg-gradient-to-r from-purple-300/20 via-pink-300/16 to-orange-300/14 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone disabled:opacity-40">
+                <button onClick={() => send()} disabled={!input.trim() || isThinking} className="rounded-3xl border border-purple-200 bg-signal px-5 py-3 text-xs text-bone disabled:opacity-40">
                   Send
                 </button>
               </div>
-              <p className={`mt-2 text-right font-mono text-[0.63rem] uppercase tracking-[0.12em] ${input.length >= MAX_QUESTION_CHARS ? 'text-orange-100' : 'text-ash'}`}>
+              <p className={`mt-2 text-right text-xs ${input.length >= MAX_QUESTION_CHARS ? 'text-orange-700' : 'text-ash'}`}>
                 {input.length} / {MAX_QUESTION_CHARS}
                 {input.length >= MAX_QUESTION_CHARS ? ' · ask one thing at a time' : ''}
               </p>

@@ -1,4 +1,3 @@
-import ParticleBackground from './ParticleBackground.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 import { PiArrowRight, PiLockSimple } from 'react-icons/pi';
 import { SiImessage, SiInstagram, SiMessenger, SiSnapchat, SiTelegram, SiWhatsapp } from 'react-icons/si';
@@ -31,34 +30,32 @@ export default function HeroSection() {
   const { navigate } = useRouter();
 
   return (
-    <section className="relative overflow-hidden border-b border-white/12 px-4 pb-14 pt-24 sm:px-8 sm:pb-20 sm:pt-28">
-      <ParticleBackground showAxis={false} />
-
-      <div className="corner-frame noise relative mx-auto flex max-w-[1180px] flex-col items-center border border-white/15 px-4 py-10 text-center shadow-glow sm:px-8 sm:py-16">
-        <p className="tech-label text-purple-100/80">ThirdPerson AI</p>
-
-        {/* Sized for Playfair, which sets far wider than the old face did: at
-            the previous 2.6rem this headline ran five lines and took the whole
-            first screen of a phone on its own. */}
-        <h1 className="serif-title mt-5 max-w-3xl text-[2.05rem] font-medium leading-[1.08] text-bone sm:text-5xl lg:text-6xl">
+    <section className="relative border-b border-line px-4 pb-12 pt-20 sm:px-8 sm:pb-16 sm:pt-24">
+      {/* No frame. The hero used to be a bordered, shadowed card floating
+          inside the page — a box drawn around the first thing anyone reads,
+          for no reason other than that the old theme drew boxes. The brand
+          eyebrow went with it: the wordmark is already in the header, two
+          inches above. */}
+      <div className="relative mx-auto flex max-w-[760px] flex-col items-center text-center">
+        <h1 className="serif-title max-w-[19ch] text-[1.85rem] leading-[1.14] sm:max-w-none sm:text-5xl lg:text-[3.4rem]">
           Understand any relationship from the chat you already have.
         </h1>
 
-        <p className="mt-5 max-w-xl text-base leading-7 text-smoke sm:text-lg sm:leading-8">
+        <p className="mt-4 max-w-xl text-[0.95rem] leading-7 text-smoke sm:text-lg sm:leading-8">
           Export a conversation, upload it, and get an honest read on effort, mixed signals, how it
           changed over time, and what to do next — backed by quotes from the chat itself.
         </p>
 
         <button
           onClick={() => navigate('/analysis/new')}
-          className="btn btn-primary mt-8 w-full max-w-sm text-sm"
+          className="btn btn-primary mt-7 w-full max-w-xs"
         >
           Analyse a chat
           <PiArrowRight className="text-base" aria-hidden="true" />
         </button>
 
         <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-smoke">
-          <PiLockSimple className="text-emerald-200" aria-hidden="true" />
+          <PiLockSimple className="text-emerald-700" aria-hidden="true" />
           <span>Private to your account</span>
           <span className="text-ash" aria-hidden="true">·</span>
           <span>From ₹199 per report</span>
@@ -67,21 +64,21 @@ export default function HeroSection() {
             type="button"
             onClick={() => navigate('/pricing')}
             /* -my-3/py-3 grows the touch area to 44px without moving the text. */
-            className="-my-3 py-3 underline decoration-white/25 underline-offset-4 transition hover:text-bone"
+            className="-my-3 py-3 font-medium text-signal underline underline-offset-4 transition hover:text-signalStrong"
           >
             See pricing
           </button>
         </p>
 
-        <div className="mt-9 w-full border-t border-white/10 pt-7">
-          <p className="tech-label text-purple-100/70">Works with</p>
+        <div className="mt-10 w-full border-t border-line pt-7">
+          <p className="tech-label">Works with</p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5 sm:gap-3">
             {messagingApps.map(([name, Icon, color]) => (
               <span
                 key={name}
                 title={name}
                 aria-label={name}
-                className="grid h-11 w-11 place-items-center rounded-full transition hover:-translate-y-1 hover:bg-white/[0.045] sm:h-14 sm:w-14"
+                className="grid h-11 w-11 place-items-center rounded-full transition hover:-translate-y-1 hover:bg-well sm:h-14 sm:w-14"
               >
                 <Icon className="text-2xl sm:text-3xl" style={{ color }} aria-hidden="true" />
               </span>

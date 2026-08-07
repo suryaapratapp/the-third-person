@@ -41,7 +41,7 @@ export default function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-white/12 px-4 pb-10 pt-12 sm:px-8">
+    <footer className="border-t border-line px-4 pb-10 pt-12 sm:px-8">
       <div className="mx-auto max-w-[1180px]">
         <div className="grid gap-9 sm:grid-cols-2 lg:grid-cols-[1.3fr_repeat(3,1fr)]">
           <div>
@@ -70,7 +70,7 @@ export default function SiteFooter() {
           ))}
         </div>
 
-        <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs leading-6 text-ash">© {year} ThirdPerson AI. All rights reserved.</p>
           <p className="text-xs leading-6 text-ash">
             Reflective insight, not professional advice. Not a substitute for therapy or counselling.

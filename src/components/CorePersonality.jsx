@@ -27,10 +27,10 @@ import {
 // The full list is still one tap away — nothing was removed, it was ranked.
 
 const CONFIDENCE_TONE = {
-  'Strong Pattern': 'text-emerald-100 border-emerald-200/30 bg-emerald-300/10',
-  'Repeated Pattern': 'text-violet-100 border-violet-200/30 bg-violet-300/10',
-  'Early Signal': 'text-orange-100 border-orange-200/25 bg-orange-300/10',
-  'Not Enough Evidence': 'text-ash border-white/12 bg-white/[0.04]',
+  'Strong Pattern': 'text-emerald-700 border-emerald-200 bg-emerald-50',
+  'Repeated Pattern': 'text-violet-700 border-violet-200 bg-violet-50',
+  'Early Signal': 'text-orange-700 border-orange-200 bg-orange-50',
+  'Not Enough Evidence': 'text-ash border-line bg-paper',
 };
 
 const prettyRelationship = (value = '') => String(value)
@@ -55,7 +55,7 @@ function TraitBar({ trait, delta }) {
         <h4 className="text-[0.95rem] leading-6 text-bone">{trait.label}</h4>
         <div className="flex shrink-0 items-baseline gap-2">
           {delta ? (
-            <span className={`font-mono text-xs tabular-nums ${delta > 0 ? 'text-emerald-100' : 'text-pink-100'}`}>
+            <span className={`font-mono text-xs tabular-nums ${delta > 0 ? 'text-emerald-700' : 'text-pink-700'}`}>
               {delta > 0 ? '+' : ''}{delta}
             </span>
           ) : null}
@@ -65,19 +65,19 @@ function TraitBar({ trait, delta }) {
         </div>
       </div>
 
-      <div className="relative mt-2 h-1.5 rounded-full bg-white/10">
+      <div className="relative mt-2 h-1.5 rounded-full bg-well">
         <span
-          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-violet-300 to-pink-300 transition-[width] duration-700"
+          className="absolute inset-y-0 left-0 rounded-full bg-signal transition-[width] duration-700"
           style={{ width: `${score}%`, opacity: known ? 1 : 0.25 }}
         />
-        <span className="absolute inset-y-[-3px] left-1/2 w-px bg-white/25" aria-hidden="true" />
+        <span className="absolute inset-y-[-3px] left-1/2 w-px bg-well" aria-hidden="true" />
       </div>
 
       <div className="mt-1.5 flex items-center justify-between gap-3 text-[0.68rem] leading-5 text-ash">
         <span>{trait.low}</span>
         {/* Confidence is only called out when it is weak. Labelling every row
             "Strong Pattern" was noise that made the thin ones harder to spot. */}
-        {trait.confidence === 'Early Signal' && <span className="text-orange-100">thin evidence</span>}
+        {trait.confidence === 'Early Signal' && <span className="text-orange-700">thin evidence</span>}
         {trait.confidence === 'Not Enough Evidence' && <span>no data yet</span>}
         <span>{trait.high}</span>
       </div>
@@ -131,7 +131,7 @@ export default function CorePersonality({ cards = [] }) {
         <span className="hud-corner hud-corner-br" aria-hidden="true" />
         <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto]">
           <div>
-            <p className="tech-label text-violet-100">Core personality</p>
+            <p className="tech-label text-violet-700">Core personality</p>
             <h2 className="serif-title mt-3 text-3xl leading-tight">Your constellation is empty.</h2>
             <p className="mt-3 max-w-md text-sm leading-7 text-smoke">
               Each relationship you analyse adds one reading across fifteen traits. One chat sketches
@@ -160,7 +160,7 @@ export default function CorePersonality({ cards = [] }) {
           <TraitConstellation view={view} size={280} />
         </div>
         <div className="text-center lg:text-left">
-          <p className="tech-label text-violet-100">Core personality</p>
+          <p className="tech-label text-violet-700">Core personality</p>
           <h2 className="serif-title mt-2 text-4xl leading-[1.05] sm:text-5xl">{archetype.name}</h2>
           <p className="mt-3 text-base leading-7 text-smoke">{archetype.blurb}</p>
           <div className="mt-4 flex flex-wrap justify-center gap-2 lg:justify-start">
@@ -174,12 +174,12 @@ export default function CorePersonality({ cards = [] }) {
       {/* WHAT STANDS OUT — the payoff. Four sentences beat fifteen bars. */}
       {standouts.length > 0 && (
         <div className="relative mt-8">
-          <h3 className="tech-label text-pink-100">What stands out</h3>
+          <h3 className="tech-label text-pink-700">What stands out</h3>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {standouts.map((trait) => {
               const reading = traitReading(trait);
               return (
-                <div key={trait.key} className="rounded-sm border border-white/10 bg-white/[0.05] p-4">
+                <div key={trait.key} className="rounded-sm border border-line bg-paper p-4">
                   <div className="flex items-baseline justify-between gap-3">
                     <h4 className="text-lg leading-6 text-bone">{reading.pole}</h4>
                     <span className="font-mono text-lg tabular-nums text-bone">{Math.round(trait.score)}</span>
@@ -205,18 +205,18 @@ export default function CorePersonality({ cards = [] }) {
 
       {/* HOW YOU SHIFT — the thing a questionnaire cannot produce. */}
       {shifts.length > 0 && (
-        <div className="relative mt-8 rounded-sm border border-pink-200/25 bg-pink-300/[0.06] p-4 sm:p-5">
-          <h3 className="tech-label text-pink-100">You are not the same with everyone</h3>
+        <div className="relative mt-8 rounded-sm border border-pink-200 bg-pink-50 p-4 sm:p-5">
+          <h3 className="tech-label text-pink-700">You are not the same with everyone</h3>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             {shifts.map((trait) => (
               <div key={trait.key}>
                 <p className="text-base leading-6 text-bone">{trait.label}</p>
                 <div className="mt-2 flex items-baseline gap-2 font-mono text-sm">
-                  <span className="text-emerald-100">{Math.round(trait.highest.score)}</span>
+                  <span className="text-emerald-700">{Math.round(trait.highest.score)}</span>
                   <span className="text-ash">with {prettyRelationship(trait.highest.relationship)}</span>
                 </div>
                 <div className="mt-1 flex items-baseline gap-2 font-mono text-sm">
-                  <span className="text-pink-100">{Math.round(trait.lowest.score)}</span>
+                  <span className="text-pink-700">{Math.round(trait.lowest.score)}</span>
                   <span className="text-ash">with {prettyRelationship(trait.lowest.relationship)}</span>
                 </div>
               </div>
@@ -229,13 +229,13 @@ export default function CorePersonality({ cards = [] }) {
       )}
 
       {movers.length > 0 && (
-        <div className="trait-delta relative mt-6 rounded-sm border border-violet-200/25 bg-violet-300/[0.07] p-4">
-          <h3 className="tech-label text-violet-100">What your last analysis changed</h3>
+        <div className="trait-delta relative mt-6 rounded-sm border border-violet-200 bg-violet-50 p-4">
+          <h3 className="tech-label text-violet-700">What your last analysis changed</h3>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
             {movers.map(([key, diff]) => (
               <span key={key} className="font-mono text-sm text-bone">
                 {byKey[key]?.short || key}{' '}
-                <span className={diff > 0 ? 'text-emerald-100' : 'text-pink-100'}>
+                <span className={diff > 0 ? 'text-emerald-700' : 'text-pink-700'}>
                   {diff > 0 ? '+' : ''}{diff}
                 </span>
               </span>
@@ -246,7 +246,7 @@ export default function CorePersonality({ cards = [] }) {
 
       {/* ALL FIFTEEN — opt-in, and shown one family at a time so a phone gets
           five rows rather than fifteen. */}
-      <div className="relative mt-8 border-t border-white/10 pt-6">
+      <div className="relative mt-8 border-t border-line pt-6">
         <button
           type="button"
           onClick={() => setShowAll((current) => !current)}
@@ -268,8 +268,8 @@ export default function CorePersonality({ cards = [] }) {
                   onClick={() => setFamily(item.key)}
                   className={`min-h-[40px] rounded-sm border px-4 text-xs transition ${
                     item.key === family
-                      ? 'border-violet-200/50 bg-violet-300/15 text-bone'
-                      : 'border-white/12 bg-white/[0.04] text-smoke hover:text-bone'
+                      ? 'border-violet-200 bg-violet-50 text-bone'
+                      : 'border-line bg-paper text-smoke hover:text-bone'
                   }`}
                 >
                   {item.label}
@@ -278,7 +278,7 @@ export default function CorePersonality({ cards = [] }) {
             </div>
 
             <p className="mt-4 text-xs leading-6 text-ash">{activeFamily.blurb}</p>
-            <div className="mt-1 divide-y divide-white/8">
+            <div className="mt-1 divide-y divide-line">
               {activeFamily.traits.map((meta) => (
                 <TraitBar key={meta.key} trait={byKey[meta.key]} delta={deltas[meta.key]} />
               ))}
@@ -286,7 +286,7 @@ export default function CorePersonality({ cards = [] }) {
 
             <div className="mt-5 flex flex-wrap gap-2">
               {['Strong Pattern', 'Repeated Pattern', 'Early Signal'].map((level) => (
-                <span key={level} className={`rounded-sm border px-2.5 py-1 font-mono text-[0.58rem] uppercase tracking-[0.1em] ${CONFIDENCE_TONE[level]}`}>
+                <span key={level} className={`rounded-sm border px-2.5 py-1 text-xs ${CONFIDENCE_TONE[level]}`}>
                   {level}
                 </span>
               ))}

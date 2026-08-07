@@ -1,4 +1,3 @@
-import ParticleBackground from '../components/ParticleBackground.jsx';
 
 const updated = new Intl.DateTimeFormat('en-IN', { dateStyle: 'long' }).format(new Date());
 
@@ -27,12 +26,11 @@ const policySections = [
 export default function PrivacyPage() {
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
-      <ParticleBackground className="opacity-45" />
       <div className="relative mx-auto max-w-[1320px]">
         <div className="corner-frame accent-panel p-6 sm:p-12">
           <p className="tech-label text-smoke">Privacy Policy</p>
           <h1 className="serif-title mt-5 max-w-4xl text-5xl leading-tight sm:text-7xl">Privacy is central to ThirdPerson AI.</h1>
-          <p className="mt-3 font-mono text-xs uppercase tracking-[0.14em] text-purple-200/80">Last updated: {updated}</p>
+          <p className="mt-3 text-xs text-purple-700">Last updated: {updated}</p>
           <p className="mt-6 max-w-3xl text-sm leading-8 text-smoke">
             Conversations can contain deeply personal information, including messages from people who are not using the app. This Privacy Policy explains what information may be processed, how it is used, how we protect it, and what choices users have.
           </p>
@@ -41,13 +39,13 @@ export default function PrivacyPage() {
         <div className="mt-6 grid gap-4 md:grid-cols-4">
           {['Private by design', 'Chats treated as sensitive', 'AI insights are interpretive', 'Human judgment matters'].map((item) => (
             <div key={item} className="thin-panel p-5">
-              <p className="tech-label text-purple-200">{item}</p>
+              <p className="tech-label text-purple-700">{item}</p>
             </div>
           ))}
         </div>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[280px_1fr]">
-          <aside className="hidden h-fit border border-purple-300/15 bg-black/45 p-5 lg:sticky lg:top-28 lg:block">
+          <aside className="hidden h-fit border border-purple-200 bg-well p-5 lg:sticky lg:top-28 lg:block">
             <p className="tech-label mb-4 text-smoke">Policy sections</p>
             <div className="space-y-2">
               {policySections.map(([title], index) => (
@@ -60,7 +58,7 @@ export default function PrivacyPage() {
           <div className="space-y-5">
             {policySections.map(([title, body], index) => (
               <section id={`privacy-${index}`} key={title} className="thin-panel scroll-mt-28 p-6">
-                <p className="tech-label text-purple-200">{String(index + 1).padStart(2, '0')}</p>
+                <p className="tech-label text-purple-700">{String(index + 1).padStart(2, '0')}</p>
                 <h2 className="serif-title mt-3 text-3xl">{title}</h2>
                 <p className="mt-4 text-sm leading-8 text-smoke">{body}</p>
               </section>

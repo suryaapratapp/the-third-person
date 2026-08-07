@@ -1,53 +1,75 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;500;600&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ==================================================================== *
+ * ThirdPerson AI — light product theme
+ *
+ * Replaces a dark "sci-fi HUD" system: particle canvases, aurora orbs,
+ * glow borders, corner ticks, scan lines, backdrop blur, a Didone
+ * display face and uppercase letter-spaced mono labels on every
+ * section. It looked engineered. It did not look easy to use, and it
+ * cost a webfont request plus a compositor layer on every scroll.
+ *
+ * Three rules replace all of it:
+ *   1. Contrast comes from the ink, not from glow.
+ *   2. Structure comes from whitespace and hairlines, not from cards
+ *      floating on cards.
+ *   3. Nothing paints that isn't information.
+ *
+ * There is no webfont. The system UI stack renders on the first frame
+ * with no network request and no layout shift, and on the phones this
+ * product actually runs on it is the face people already read all day.
+ * ==================================================================== */
+
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Editorial ground. Three distinct depths so the page is not one flat
-     colour — page, panel, and inset well each sit apart without needing a
-     border to be legible. */
-  --ink: #05070e;
-  --surface: #0b0e17;
-  --well: #11151f;
-  --rule: rgba(233, 230, 245, 0.09);
-  --rule-strong: rgba(233, 230, 245, 0.16);
+  /* Ground, in three steps. Page → section band → inset well. */
+  --paper: #ffffff;
+  --canvas: #f6f6f8;
+  --well: #f0f0f3;
 
-  --paper: #f2f0f6;
-  --muted: #9c98ae;
-  --faint: #625e74;
+  --line: #e5e5ea;
+  --line-strong: #d2d2da;
+
+  /* Text, in three steps. Anything below `muted` fails contrast on
+     white and has no business being on the page. */
+  --ink: #15151a;
+  --graphite: #46464f;
+  --muted: #6e6e7a;
 
   /* PER-PERSON IDENTITY.
-     The single most useful thing in a two-person report: one colour per
-     participant, held constant across every chart, so "who is who" is learned
-     once and never re-read from a legend. */
-  --you: #ff4d8d;
-  --them: #38a0ff;
+     One colour per participant, constant across every chart in the
+     report, so "who is who" is learned once and never re-read from a
+     legend. Both are darkened from the old dark-theme values to clear
+     4.5:1 on white. */
+  --you: #c62a63;
+  --them: #1263c4;
 
-  /* Semantic, deliberately separate from the two person colours so a chart
-     can show sentiment and identity at the same time without collision. */
-  --good: #34d399;
-  --warn: #f5b940;
-  --risk: #fb7185;
+  /* Semantic, deliberately distinct from the two person colours so a
+     chart can show sentiment and identity at once without collision. */
+  --good: #0a8055;
+  --warn: #9a6410;
+  --risk: #c8392f;
 
-  /* Brand accent, kept for identity moments only. */
-  --violet: #a78bfa;
+  /* Single brand accent. One accent, used for actions only. */
+  --accent: #5546d6;
+  --accent-ink: #4136ad;
+  --accent-wash: #f0eefc;
 
-  /* Legacy aliases so existing markup keeps rendering while pages migrate. */
-  --glass-border: var(--rule);
-  --glass-border-strong: var(--rule-strong);
-  --glass-bg: var(--surface);
-  --neon-cyan: var(--them);
-  --neon-edge: var(--rule-strong);
-  --hud-line: rgba(255, 255, 255, 0.03);
+  --radius: 4px;
+  --radius-lg: 6px;
 
-  background: var(--ink);
-  color: var(--paper);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  /* One elevation. A product with five shadow depths has none. */
+  --lift: 0 1px 2px rgba(21, 21, 26, 0.05), 0 4px 12px rgba(21, 21, 26, 0.04);
+
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  background: var(--paper);
+  color: var(--graphite);
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -65,28 +87,10 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
-  /* One vertical gradient. The old ground stacked five radial gradients plus
-     two fixed pseudo-element layers, which the compositor repainted on every
-     scroll for a effect nobody could name. */
-  background: linear-gradient(180deg, #070a12 0%, var(--ink) 40%, #070912 100%);
-  background-attachment: fixed;
-}
-
-body::before { content: none; }
-
-/* Dynamic HUD grid — a faint tech lattice that drifts slowly upward, giving
-   the whole site the "inside a machine" backdrop the sci-fi direction asks
-   for. It sits behind everything, never intercepts input, and holds still for
-   reduced-motion users. */
-body::after { content: none; }
-
-@keyframes hudDrift {
-  from { transform: translateY(0); }
-  to { transform: translateY(46px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  body::after { animation: none; }
+  background: var(--paper);
+  color: var(--graphite);
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 button,
@@ -94,17 +98,18 @@ input,
 textarea,
 select {
   font: inherit;
+  color: inherit;
 }
 
 input,
 textarea,
 select {
-  color: #fffaff;
+  color: var(--ink);
 }
 
 ::placeholder {
-  color: #aea7c2;
-  opacity: 0.88;
+  color: var(--muted);
+  opacity: 1;
 }
 
 button {
@@ -117,464 +122,280 @@ a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid rgba(196,181,253,0.40);
-  outline-offset: 3px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 ::selection {
-  background: rgba(196,181,253,0.24);
+  background: var(--accent-wash);
+  color: var(--ink);
 }
 
+/* -------------------------------------------------------------------- *
+ * Type
+ *
+ * `serif-title` keeps its name because 66 call sites use it, but it is
+ * no longer a serif. A high-contrast Didone at display size is a
+ * magazine gesture; this is a tool people open when they are anxious
+ * about a relationship, and it should read as calm and plain.
+ * -------------------------------------------------------------------- */
 .serif-title {
-  /* High-contrast Didone. Carries the editorial voice; the old old-style face
-     read softer and less like a masthead. */
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
-  letter-spacing: -0.015em;
+  font-family: var(--font-ui);
+  font-weight: 660;
+  letter-spacing: -0.022em;
+  line-height: 1.12;
+  color: var(--ink);
 }
 
+/* Section eyebrow. Was uppercase mono at 0.18em tracking — the single
+   loudest tell of the old theme, repeated 121 times. Now it is just a
+   small, quiet label. */
 .tech-label {
-  /* System monospace: identical role, zero bytes over the wire. */
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--muted);
 }
 
-/* Mobile readability floor.
-   The design uses a lot of very small uppercase mono labels (down to 0.5rem),
-   which are legible on a desktop monitor but genuinely hard to read on a phone.
-   Rather than hand-editing dozens of utility classes, raise the minimum on
-   small screens and loosen the tracking so the caps stay readable. */
-@media (max-width: 640px) {
-  .tech-label {
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-  }
-
-  main .font-mono {
-    font-size: max(0.72rem, 1em);
-  }
+.eyebrow {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
 }
 
-.thin-panel {
-  border: 1px solid var(--rule);
-  background: var(--surface);
-  border-radius: 2px;
+/* -------------------------------------------------------------------- *
+ * Surfaces
+ *
+ * One card. Not a glass card and a thin panel and an accent panel and a
+ * HUD frame — those were four names for the same rectangle with
+ * different amounts of glow. The legacy names are kept as aliases so
+ * nothing has to be renamed at 300 call sites; they all resolve here.
+ * -------------------------------------------------------------------- */
+.card,
+.glass-card,
+.thin-panel,
+.accent-panel,
+.sticky-glass {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
 }
 
-.grid-bg {
-  background-image:
-    linear-gradient(rgba(216,180,254,0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(216,180,254,0.055) 1px, transparent 1px);
-  background-size: 80px 80px;
-}
-
-.dot-field {
-  background-image: radial-gradient(rgba(225,216,255,0.25) 0.85px, transparent 0.9px);
-  background-size: 10px 10px;
-}
-
-.decorative-label {
-  color: rgba(225,216,255,0.18);
-}
-
+/* The one panel that is allowed to stand out: a left rule in the brand
+   accent. Cheaper than a gradient border and it reads as emphasis
+   rather than as decoration. */
 .accent-panel {
-  position: relative;
-  border: 1px solid var(--rule);
-  border-left: 2px solid transparent;
-  /* The only gradient left on a panel, and it is a 2px edge rather than a
-     full-surface wash — it marks the panel without repainting its area. */
-  background:
-    linear-gradient(var(--panel-fill), var(--panel-fill)) padding-box,
-    linear-gradient(180deg, var(--edge-a), var(--edge-b)) border-box;
-  border-radius: 2px;
+  border-left: 3px solid var(--accent);
 }
 
-/* ------------------------------------------------------------------ *
- * Section tones
- *
- * Four accent panels stacked down a page were, until now, four copies of
- * the same grey rectangle with the same violet edge — the page had one
- * colour and no rhythm. A tone sets the panel's fill and its edge as CSS
- * variables, so it can be applied to a WRAPPER and every panel inside
- * inherits it. Sections get their own identity without a single
- * component learning about colour.
- *
- * Fills stay within a few percent of the page ground: enough that two
- * adjacent sections are visibly different, not so much that the page
- * turns into a set of coloured boxes.
- * ------------------------------------------------------------------ */
-:root,
-.tone-violet {
-  --panel-fill: #0c0a17;
-  --edge-a: var(--violet);
-  --edge-b: #6d8bff;
+/* Panels nest — a page section can contain cards that also carry the class.
+   Two parallel accent rules an inch apart read as a rendering fault, so only
+   the outermost one keeps it. */
+.accent-panel .accent-panel {
+  border-left: 1px solid var(--line);
 }
 
-.tone-rose   { --panel-fill: #120a12; --edge-a: var(--you);  --edge-b: #ff9ec4; }
-.tone-cyan   { --panel-fill: #070f19; --edge-a: var(--them); --edge-b: #8be9ff; }
-.tone-green  { --panel-fill: #06120f; --edge-a: var(--good); --edge-b: #8be9ff; }
-.tone-amber  { --panel-fill: #140f08; --edge-a: var(--warn); --edge-b: var(--you); }
+.well {
+  background: var(--well);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
 
-/* Full-bleed ground bands. Alternating these gives the page a pulse on a
-   phone, where sections arrive one at a time and a constant background
-   makes a long scroll feel like one endless section. */
+.lift {
+  box-shadow: var(--lift);
+}
+
+.rule-top { border-top: 1px solid var(--line); }
+.rule-bottom { border-bottom: 1px solid var(--line); }
+
+/* Alternating full-bleed section grounds. The only device giving a long
+   scroll a rhythm now that sections are not coloured boxes. */
 .band-alt {
-  background: #080b14;
-  border-top: 1px solid var(--rule);
-  border-bottom: 1px solid var(--rule);
+  background: var(--canvas);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
-.accent-text {
-  color: #c9b8ff;
-}
-
-.accent-gradient {
-  background: linear-gradient(90deg, #a78bfa, #fb7ba6);
-}
-
-/* ------------------------------------------------------------------ *
- * Sci-fi HUD kit
- * Reusable pieces for the "high-tech + gamified but professional" look.
- * ------------------------------------------------------------------ */
-
-/* A panel that reads like a heads-up display: neon top rail, cyan corner
-   ticks, faint grid wash. Layer over .accent-panel / .thin-panel. */
-.hud-frame {
-  position: relative;
-}
-.hud-frame::before {
-  content: '';
-  position: absolute;
-  left: 12%;
-  right: 12%;
-  top: -1px;
-  height: 1px;
-  pointer-events: none;
-  background: linear-gradient(90deg, transparent, var(--neon-edge), transparent);
-}
-.hud-frame > .hud-corner {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  pointer-events: none;
-  opacity: 0.55;
-}
-.hud-frame > .hud-corner-tl { left: 10px; top: 10px; border-left: 1.5px solid var(--neon-edge); border-top: 1.5px solid var(--neon-edge); }
-.hud-frame > .hud-corner-tr { right: 10px; top: 10px; border-right: 1.5px solid var(--neon-edge); border-top: 1.5px solid var(--neon-edge); }
-.hud-frame > .hud-corner-bl { left: 10px; bottom: 10px; border-left: 1.5px solid var(--neon-edge); border-bottom: 1.5px solid var(--neon-edge); }
-.hud-frame > .hud-corner-br { right: 10px; bottom: 10px; border-right: 1.5px solid var(--neon-edge); border-bottom: 1.5px solid var(--neon-edge); }
-
-/* Gamified stat/level chip. */
-.neon-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border-radius: 2px;
-  border: 1px solid var(--neon-edge);
-  background: rgba(139,233,255,0.06);
-  padding: 0.25rem 0.7rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  /* 0.6rem rendered at 9.6px, below the readable floor on a phone. */
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #cdefff;
-  box-shadow: inset 0 0 12px rgba(139,233,255,0.08);
-}
-
-/* Animated neon meter fill for XP/score-style bars. */
-.neon-meter {
-  position: relative;
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.08);
-  overflow: hidden;
-}
-.neon-meter > span {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #a78bfa, var(--neon-cyan));
-  box-shadow: 0 0 12px rgba(139,233,255,0.5);
-}
-
-/* Cyan scan sweep for loading / "processing" states. */
-.neon-scan {
-  position: relative;
-  overflow: hidden;
-}
-.neon-scan::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(139,233,255,0.14), transparent);
-  transform: translateX(-100%);
-  animation: neonSweep 2.4s ease-in-out infinite;
-}
-@keyframes neonSweep {
-  to { transform: translateX(100%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .neon-scan::after { animation: none; opacity: 0; }
-}
-
-.corner-frame::before,
-.corner-frame::after {
-  content: '';
-  position: absolute;
-  width: 42px;
-  height: 42px;
-  pointer-events: none;
-}
-
-.corner-frame::before {
-  left: 18px;
-  top: 18px;
-  border-left: 1px solid rgba(255,255,255,0.22);
-  border-top: 1px solid rgba(255,255,255,0.22);
-}
-
-.corner-frame::after {
-  right: 18px;
-  bottom: 18px;
-  border-right: 1px solid rgba(196,181,253,0.22);
-  border-bottom: 1px solid rgba(196,181,253,0.22);
-}
-
-.noise {
-  position: relative;
-}
-
-.noise::after {
-  content: none;
-}
-
-.glass-button {
-  border: 1px solid rgba(167,139,250,0.24);
-  background:
-    radial-gradient(circle at 10% 0%, rgba(251,123,166,0.11), transparent 10rem),
-    linear-gradient(135deg, rgba(45,38,65,0.78), rgba(32,29,51,0.74), rgba(45,32,54,0.68));
-  box-shadow: 0 10px 28px rgba(3,5,18,0.22);
-  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
-}
-
-.glass-button:hover,
-.glass-button:focus-visible {
-  border-color: var(--neon-edge);
-  background: linear-gradient(135deg, rgba(74,56,105,0.82), rgba(58,42,72,0.78), rgba(74,45,66,0.70));
-  box-shadow: 0 14px 38px rgba(3,5,18,0.28), 0 0 18px rgba(139,233,255,0.12);
-  outline: none;
-}
-
-.glass-button:active {
-  transform: translateY(1px);
-}
-
-/* Button primitives live in @layer components so plain Tailwind utilities beat
-   them. Outside a layer these rules sit after `@tailwind utilities` in source
-   order, and at equal specificity that meant `.btn` won: a `hidden md:inline-flex`
-   button stayed visible on mobile because `.btn { display: inline-flex }`
-   overrode `hidden`. */
+/* -------------------------------------------------------------------- *
+ * Controls
+ *
+ * In `@layer components` so plain utilities still beat them — `.btn`
+ * used to be defined after `@tailwind utilities`, which meant its
+ * `display: inline-flex` overrode `hidden` and a header CTA that was
+ * supposed to disappear on mobile did not.
+ *
+ * Sentence case, not uppercase mono. "Analyse a chat" is a sentence a
+ * person reads; "A N A L Y S E   A   C H A T" is a thing a person
+ * decodes.
+ * -------------------------------------------------------------------- */
 @layer components {
   .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    /* Squared, like every other edge in the theme. A pill button next to a
-       2px-cornered panel is the single loudest leftover of the old look. */
-    border-radius: 2px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
-    padding: 1rem 1.6rem;
-    transition: border-color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease, color 180ms ease;
-    cursor: pointer;
-  }
-
-  .btn:active {
-    transform: translateY(1px);
+    border-radius: var(--radius);
+    font-size: 0.9375rem;
+    font-weight: 560;
+    letter-spacing: -0.006em;
+    text-transform: none;
+    padding: 0.75rem 1.25rem;
+    min-height: 44px;
+    border: 1px solid transparent;
+    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
   }
 
   .btn-primary {
-    border: 1px solid rgba(255,255,255,0.14);
-    color: #17122a;
-    background: linear-gradient(120deg, #cbb8ff 0%, #e3b0c8 55%, #fbc89a 100%);
-    box-shadow: 0 16px 42px rgba(167,139,250,0.28), 0 4px 14px rgba(251,123,166,0.18);
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
   }
 
-  .btn-primary:hover,
-  .btn-primary:focus-visible {
-    transform: translateY(-1px);
-    box-shadow: 0 20px 54px rgba(167,139,250,0.36), 0 6px 18px rgba(251,123,166,0.22);
-    outline: none;
+  .btn-primary:hover {
+    background: var(--accent-ink);
+    border-color: var(--accent-ink);
+  }
+
+  .btn-secondary,
+  .glass-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: var(--paper);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    color: var(--ink);
+    font-size: 0.9375rem;
+    font-weight: 560;
+    text-transform: none;
+    letter-spacing: -0.006em;
+    min-height: 44px;
+    padding: 0.75rem 1.25rem;
+    transition: background-color 140ms ease, border-color 140ms ease;
+  }
+
+  .btn-secondary:hover,
+  .glass-button:hover {
+    background: var(--well);
+    border-color: var(--muted);
   }
 
   .btn-ghost {
-    border: 1px solid rgba(216,202,255,0.16);
-    color: #ddd6ee;
     background: transparent;
+    border-color: transparent;
+    color: var(--graphite);
   }
 
-  .btn-ghost:hover,
-  .btn-ghost:focus-visible {
-    border-color: rgba(167,139,250,0.42);
-    color: #fffaff;
-    background: rgba(167,139,250,0.08);
-    outline: none;
+  .btn-ghost:hover {
+    background: var(--well);
+    color: var(--ink);
   }
 }
 
-.glass-card {
-  border: 1px solid var(--rule);
-  background: var(--surface);
-  border-radius: 2px;
-}
+/* -------------------------------------------------------------------- *
+ * Data marks
+ *
+ * Shared by every chart in the report so a bar, a dot and a line all
+ * mean the same thing wherever they appear.
+ * -------------------------------------------------------------------- */
+.ink-you { color: var(--you); }
+.ink-them { color: var(--them); }
+.bg-you { background-color: var(--you); }
+.bg-them { background-color: var(--them); }
 
-.glass-card:hover {
-  border-color: var(--rule-strong);
-}
-
-.glow-border {
-  position: relative;
-}
-
-.glow-border::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(167,139,250,0.36), rgba(251,123,166,0.32), rgba(251,146,60,0.20));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0.65;
-}
-
-.aurora-orb {
-  position: absolute;
-  width: 28rem;
-  height: 28rem;
-  border-radius: 999px;
-  filter: blur(28px);
-  opacity: 0.13;
-}
-
-.aurora-orb-pink {
-  background: radial-gradient(circle, rgba(251,123,166,0.38), transparent 68%);
-}
-
-.aurora-orb-purple {
-  background: radial-gradient(circle, rgba(167,139,250,0.40), transparent 70%);
-  animation-delay: -8s;
-}
-
-.aurora-ring {
-  position: absolute;
-  width: 26rem;
-  height: 26rem;
-  border-radius: 999px;
-  border: 1px solid rgba(196,181,253,0.13);
-  box-shadow: 0 0 42px rgba(139,92,246,0.10), inset 0 0 36px rgba(14,165,233,0.05);
-  opacity: 0.24;
-  transform: rotate(16deg) scaleY(0.68);
-}
-
-.jelly-blob {
-  position: absolute;
-  width: 18rem;
-  height: 12rem;
-  border-radius: 45% 55% 60% 40%;
-  background: linear-gradient(135deg, rgba(196,181,253,0.22), rgba(251,207,232,0.20), rgba(186,230,253,0.20));
-  filter: blur(18px);
-  opacity: 0.26;
-}
-
-.sticky-glass {
-  border: 1px solid var(--rule);
+.bar-track {
   background: var(--well);
   border-radius: 2px;
-}
-
-@keyframes floatGlow {
-  from { transform: translate3d(0, 0, 0) scale(0.94); }
-  to { transform: translate3d(28px, -22px, 0) scale(1.08); }
-}
-
-@keyframes auroraSpin {
-  to { transform: rotate(376deg) scaleY(0.68); }
-}
-
-@keyframes blobMorph {
-  from { border-radius: 42% 58% 62% 38%; transform: translateY(0) rotate(-4deg); }
-  to { border-radius: 62% 38% 42% 58%; transform: translateY(-18px) rotate(5deg); }
-}
-
-.scan-line {
-  position: relative;
   overflow: hidden;
 }
 
-.scan-line::before {
-  content: none;
-}
-
-@keyframes scan {
-  from { transform: translateX(0); }
-  to { transform: translateX(440%); }
-}
-
-@keyframes pulseDot {
-  0%, 100% { opacity: 0.35; transform: scale(0.92); }
-  50% { opacity: 1; transform: scale(1.08); }
-}
-
-/* Legacy hardcoded chrome colours, remapped onto the current surface tokens.
+/* -------------------------------------------------------------------- *
+ * Decoration removal
  *
- * An earlier version of this block also flattened every `bg-white/[0.0x]` and
- * `border-white/1x` in the app to one value. That was the wrong instinct: it
- * made every panel on every page the identical shade, which is exactly the
- * monotony this theme is meant to break. Panels now keep the alpha the
- * component asked for, and separation comes from the per-section accents.
- *
- * Only the opaque bars are pinned, because they sit over scrolling content and
- * there is no backdrop-filter left to hide a mismatch. */
-.bg-\[\#090817\],
-.bg-\[\#05050a\],
-.bg-\[\#050505\] {
-  background-color: var(--ink) !important;
+ * These classes are still referenced across the app. Rather than touch
+ * every call site, they are neutralised here: the markup stays valid
+ * and paints nothing. Deleting the call sites is a separate, safer
+ * change than deleting them mid-theme-swap.
+ * -------------------------------------------------------------------- */
+.aurora-orb,
+.aurora-ring,
+.hud-frame::before,
+.hud-frame > .hud-corner,
+.corner-frame::before,
+.corner-frame::after,
+.scan-line::before,
+.noise::before,
+.glow-border::after {
+  content: none !important;
+  display: none !important;
 }
 
-.bg-\[\#17111f\]\/95,
-.bg-\[\#171523\]\/82,
-.bg-\[\#171523\]\/92,
-.bg-\[\#141220\],
-.bg-\[\#12101f\]\/95,
-.bg-\[\#20172d\]\/86,
-.bg-\[\#221322\]\/86 {
-  background-color: var(--surface) !important;
+.grid-bg,
+.dot-field,
+.noise {
+  background-image: none;
 }
 
-/* Full-screen scrims read as ink, not as a grey wash over it. */
-.fixed.inset-0.bg-black\/70,
-.fixed.inset-0.bg-black\/75,
-.fixed.inset-0.bg-black\/80,
-.fixed.inset-0.bg-black\/85 {
-  background-color: rgba(5, 7, 14, 0.82) !important;
+.neon-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--well);
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 560;
+  color: var(--graphite);
 }
 
-/* Decorative glows are the most expensive paint on the page. One radius for
- * all of them keeps the compositor layers small and uniform. */
-.blur-2xl,
-.blur-3xl {
-  --tw-blur: blur(22px) !important;
+.neon-meter {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--well);
+  overflow: hidden;
 }
+
+.neon-meter > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.accent-gradient {
+  background: var(--accent);
+}
+
+.accent-text {
+  color: var(--accent-ink);
+}
+
+.decorative-label {
+  color: var(--muted);
+}
+
+/* -------------------------------------------------------------------- *
+ * CoachBot mascot
+ * The one piece of character that survives. Motion only, no glow.
+ * -------------------------------------------------------------------- */
+.coachbot { line-height: 0; }
+.coachbot-float { animation: cbBob 4.2s ease-in-out infinite; }
+.coachbot-heart { transform-box: fill-box; transform-origin: center; animation: cbHeart 1.9s ease-in-out infinite; }
+.coachbot-eyes { transform-box: fill-box; transform-origin: center; animation: cbBlink 5.4s steps(1, end) infinite; }
+.coachbot-aura,
+.coachbot-shadow { display: none; }
+.coachbot[data-mood='thinking'] .coachbot-heart { animation-duration: 0.9s; }
+.coachbot-scan { animation: cbScan 1.1s ease-in-out infinite; }
+
+@keyframes cbBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes cbHeart { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.18); } }
+@keyframes cbBlink { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+@keyframes cbScan { 0%, 100% { opacity: 0.4; transform: translateX(-2px); } 50% { opacity: 1; transform: translateX(2px); } }
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -582,275 +403,7 @@ select:focus-visible {
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
-
-.text-purple-100,
-.text-purple-200 {
-  color: #e7d6ff !important;
-}
-
-.text-pink-100,
-.text-pink-200 {
-  color: #ffc4e2 !important;
-}
-
-.text-blue-100,
-.text-blue-200,
-.text-cyan-100,
-.text-cyan-200 {
-  color: #d9cfff !important;
-}
-
-.text-orange-100,
-.text-orange-200 {
-  color: #ffd09a !important;
-}
-
-.text-emerald-100,
-.text-emerald-200 {
-  color: #b5f7ca !important;
-}
-
-.text-bone {
-  color: #fffaff !important;
-}
-
-.text-smoke {
-  color: #ddd6ee !important;
-}
-
-.text-ash {
-  color: #aea7c2 !important;
-}
-
-.placeholder\:text-ash::placeholder {
-  color: #aea7c2 !important;
-  opacity: 0.88;
-}
-
-@media (max-width: 640px) {
-  .corner-frame::before,
-  .corner-frame::after {
-    width: 28px;
-    height: 28px;
-  }
-}
-
-/* Indeterminate bar for the analysis overlay: there is no real per-step
-   progress to report, so it sweeps rather than pretending to fill. */
-@keyframes analysisSweep {
-  0% { transform: translateX(-120%); }
-  100% { transform: translateX(420%); }
-}
-
-.analysis-progress {
-  animation: analysisSweep 1.6s ease-in-out infinite;
-}
-
-/* ------------------------------------------------------------------ *
- * Per-page identity
- *
- * The two paid destinations should not feel like the same page with
- * different words on it. Each gets its own ground and accent, scoped to a
- * wrapper class so nothing global shifts and every shared component
- * (buttons, panels, chips) inherits the page it happens to be on.
- *
- * Coach  — warm rose/amber. It is a conversation with something that has a
- *          heart for an antenna; cool cyan would fight the mascot.
- * Self   — deep cosmic indigo/cyan. It is a constellation of who you are,
- *          so the page should read like looking up, not like a dashboard.
- * ------------------------------------------------------------------ */
-.page-coach {
-  --page-accent: #ffb0c8;
-  --page-accent-soft: rgba(255, 150, 185, 0.12);
-  --page-edge: rgba(255, 176, 200, 0.30);
-  background:
-    radial-gradient(circle at 12% -8%, rgba(255, 138, 174, 0.20), transparent 30rem),
-    radial-gradient(circle at 88% 8%, rgba(255, 186, 130, 0.13), transparent 28rem),
-    radial-gradient(circle at 50% 108%, rgba(190, 120, 255, 0.12), transparent 30rem);
-}
-
-.page-self {
-  --page-accent: #8be9ff;
-  --page-accent-soft: rgba(139, 233, 255, 0.10);
-  --page-edge: rgba(139, 233, 255, 0.30);
-  background:
-    radial-gradient(circle at 50% -12%, rgba(105, 190, 255, 0.20), transparent 34rem),
-    radial-gradient(circle at 8% 40%, rgba(150, 110, 255, 0.14), transparent 30rem),
-    radial-gradient(circle at 92% 62%, rgba(90, 220, 235, 0.10), transparent 28rem);
-}
-
-/* Shared components pick up whichever page they are sitting inside. */
-.page-coach .tech-label,
-.page-self .tech-label { color: var(--page-accent); }
-
-.page-coach .accent-panel,
-.page-self .accent-panel { border-color: var(--page-edge); }
-
-.page-coach .neon-chip,
-.page-self .neon-chip {
-  border-color: var(--page-edge);
-  background: var(--page-accent-soft);
-  color: var(--page-accent);
-}
-
-/* Trait constellation.
-   The shape draws itself in and the stars settle after it, so the profile
-   arrives as one composed moment rather than appearing fully formed. Purely
-   decorative — the SVG is complete and readable with every animation off. */
-.tc-shape {
-  animation: tcShape 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  transform-origin: center;
-}
-.tc-star {
-  animation: tcStar 520ms ease-out both;
-  animation-delay: 620ms;
-}
-
-@keyframes tcShape {
-  from { transform: scale(0.82); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-@keyframes tcStar {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* On a phone the constellation renders around 190px wide, which scales the
-   10.5px axis labels down to roughly 4px — present but unreadable. Drop them
-   there and let the shape speak; every trait is named in the bars underneath,
-   so no information is lost. */
-@media (max-width: 640px) {
-  .tc-root text { display: none; }
-}
-
-/* Trait score delta, shown when a new analysis moves the core self. */
-.trait-delta {
-  animation: deltaRise 640ms ease-out both;
-}
-@keyframes deltaRise {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tc-shape, .tc-star, .trait-delta { animation: none !important; }
-}
-
-/* Mobile tab bar.
-   iOS puts a home indicator across the bottom ~34px of the screen in gesture
-   mode; without the safe-area inset the last row of tab labels sits underneath
-   it and the taps get swallowed. `viewport-fit=cover` in index.html is what
-   makes env() resolve to a non-zero value. */
-.bottom-nav {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-.marquee-row {
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
-  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
-}
-
-.marquee-track {
-  display: flex;
-  width: max-content;
-  animation: marqueeScroll 52s linear infinite;
-}
-
-.marquee-row:hover .marquee-track,
-.marquee-row:focus-within .marquee-track {
-  animation-play-state: paused;
-}
-
-@keyframes marqueeScroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-
-/* Product tour animations. Reduced-motion users get no auto-advance (handled
-   in JS) and no fade, so the tour becomes a plain click-through. */
-@keyframes tourProgress {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-
-@keyframes tourFade {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [style*="tourFade"], [style*="tourProgress"] { animation: none !important; }
-}
-
-/* ------------------------------------------------------------------ *
- * CoachBot mascot
- * The relationship-coach robot. Motion is layered so each part has its
- * own life: the whole bot bobs, the heart antenna pulses, the eyes
- * blink, and the hover shadow breathes in counter-time.
- * ------------------------------------------------------------------ */
-.coachbot { line-height: 0; }
-
-.coachbot-float { animation: cbBob 4.2s ease-in-out infinite; }
-
-.coachbot-heart { transform-box: fill-box; transform-origin: center; animation: cbHeart 1.9s ease-in-out infinite; }
-.coachbot-aura { transform-box: fill-box; transform-origin: center; animation: cbAura 4.2s ease-in-out infinite; }
-.coachbot-shadow { transform-box: fill-box; transform-origin: center; animation: cbShadow 4.2s ease-in-out infinite; }
-.coachbot-eyes { transform-box: fill-box; transform-origin: center; animation: cbBlink 5.4s steps(1, end) infinite; }
-.coachbot[data-mood="thinking"] .coachbot-heart { animation-duration: 0.9s; }
-.coachbot-scan { animation: cbScan 1.1s ease-in-out infinite; }
-
-@keyframes cbBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-@keyframes cbHeart { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.22); } }
-@keyframes cbAura { 0%, 100% { opacity: 0.75; transform: scale(1); } 50% { opacity: 1; transform: scale(1.06); } }
-@keyframes cbShadow { 0%, 100% { transform: scaleX(1); opacity: 0.28; } 50% { transform: scaleX(0.82); opacity: 0.18; } }
-@keyframes cbBlink { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
-@keyframes cbScan { 0%, 100% { opacity: 0.4; transform: translateX(-2px); } 50% { opacity: 1; transform: translateX(2px); } }
-
-@media (prefers-reduced-motion: reduce) {
-  .coachbot-float, .coachbot-heart, .coachbot-aura, .coachbot-shadow, .coachbot-eyes, .coachbot-scan {
-    animation: none !important;
-  }
-}
-
-
-/* ------------------------------------------------------------------ *
- * Editorial layer
- * Hairline rules and wide-tracked labels do the structural work that
- * rounded translucent cards used to do — cheaper to paint and it reads
- * like a printed page rather than a dashboard.
- * ------------------------------------------------------------------ */
-.rule-top { border-top: 1px solid var(--rule); }
-.rule-bottom { border-bottom: 1px solid var(--rule); }
-
-/* Small caps eyebrow. */
-.eyebrow {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-
-/* Person identity. One colour per participant, held across every chart. */
-.ink-you { color: var(--you); }
-.ink-them { color: var(--them); }
-.bg-you { background: var(--you); }
-.bg-them { background: var(--them); }
-
-/* Flat data bar — replaces gradient-filled meters. */
-.bar-track {
-  height: 6px;
-  background: rgba(255, 255, 255, 0.07);
-  overflow: hidden;
-}
-.bar-track > span { display: block; height: 100%; }
-
-/* Corners are square by default now. A handful of genuinely circular things
-   (avatars, the mascot) opt back in with rounded-full, which is untouched. */
-.sq { border-radius: 2px !important; }

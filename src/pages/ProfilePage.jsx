@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import ParticleBackground from '../components/ParticleBackground.jsx';
 import { emptyProfile, getInitials, getUserProfile, saveUserProfile } from '../lib/profileStore.js';
 import { deleteAllMyAnalysisData, fetchRemoteProfile, remoteProfileToLocal, upsertRemoteProfile } from '../lib/supabaseDataService.js';
 import { getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
@@ -110,7 +109,6 @@ export default function ProfilePage() {
 
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
-      <ParticleBackground className="opacity-45" />
       <div className="relative mx-auto max-w-5xl">
         <div className="accent-panel p-6 sm:p-10">
           <div className="flex flex-wrap items-start justify-between gap-6">
@@ -122,10 +120,10 @@ export default function ProfilePage() {
               </p>
             </div>
             <div className="flex flex-col items-center gap-3">
-              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-purple-200/40 bg-gradient-to-br from-purple-300/20 via-pink-300/15 to-orange-300/15 text-3xl text-bone">
+              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-purple-200 bg-signal text-3xl text-bone">
                 {profile.profileImage ? <img src={profile.profileImage} alt="Profile preview" className="h-full w-full object-cover" /> : getInitials(profile)}
               </div>
-              {zodiac && <span className="font-mono text-xs uppercase tracking-[0.13em] text-purple-100">{getZodiacGlyph(zodiac)} {zodiac}</span>}
+              {zodiac && <span className=" text-xs text-purple-700">{getZodiacGlyph(zodiac)} {zodiac}</span>}
             </div>
           </div>
 
@@ -144,18 +142,18 @@ export default function ProfilePage() {
                   value={profile[field]}
                   onChange={(event) => update(field, event.target.value)}
                   placeholder={label}
-                  className="mt-2 w-full border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none focus:border-purple-200/60"
+                  className="mt-2 w-full border border-line bg-well px-4 py-3 text-sm outline-none focus:border-purple-200"
                 />
               </label>
             ))}
             <label>
               <span className="tech-label text-ash">Gender / identity</span>
-              <select value={profile.genderIdentity} onChange={(event) => update('genderIdentity', event.target.value)} className="mt-2 w-full border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none">
+              <select value={profile.genderIdentity} onChange={(event) => update('genderIdentity', event.target.value)} className="mt-2 w-full border border-line bg-well px-4 py-3 text-sm outline-none">
                 {identityOptions.map((option) => <option key={option}>{option}</option>)}
               </select>
             </label>
-            <div className="sm:col-span-2 rounded-sm border border-white/10 bg-white/[0.035] p-5">
-              <p className="tech-label text-purple-100">Preferred analysis languages</p>
+            <div className="sm:col-span-2 rounded-sm border border-line bg-paper p-5">
+              <p className="tech-label text-purple-700">Preferred analysis languages</p>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-smoke">
                 Select the languages that commonly appear in your conversations. ThirdPerson AI will try to match the tone and language style in your reports and coach replies.
               </p>
@@ -167,7 +165,7 @@ export default function ProfilePage() {
                       key={language}
                       type="button"
                       onClick={() => toggleLanguage(language)}
-                      className={`rounded-sm border px-3 py-2 font-mono text-[0.65rem] uppercase tracking-[0.11em] transition ${active ? 'border-purple-200/60 bg-purple-300/15 text-bone' : 'border-white/10 bg-black/25 text-ash hover:border-purple-200/40 hover:text-bone'}`}
+                      className={`rounded-sm border px-3 py-2 text-xs transition ${active ? 'border-purple-200 bg-purple-50 text-bone' : 'border-line bg-well text-ash hover:border-purple-200 hover:text-bone'}`}
                     >
                       {language}
                     </button>
@@ -178,7 +176,7 @@ export default function ProfilePage() {
                 Selected: {(profile.preferredAnalysisLanguages || []).join(', ') || 'None yet'}
               </p>
             </div>
-            <label className="sm:col-span-2 flex cursor-pointer flex-col border border-dashed border-white/18 bg-black/35 p-5 transition hover:border-purple-200/50">
+            <label className="sm:col-span-2 flex cursor-pointer flex-col border border-dashed border-line bg-well p-5 transition hover:border-purple-200">
               <span className="tech-label text-smoke">Profile image</span>
               <span className="mt-3 text-sm text-ash">Upload JPG, PNG, or WebP under 2MB.</span>
               <input className="sr-only" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={handleImage} />
@@ -186,28 +184,28 @@ export default function ProfilePage() {
           </div>
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
-            <button onClick={save} className="glass-button px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">Save profile</button>
+            <button onClick={save} className="glass-button px-5 py-4 text-xs text-bone">Save profile</button>
             {message && <p className="text-sm text-smoke">{message}</p>}
           </div>
         </div>
 
         <div className="thin-panel mt-6 p-6 sm:p-8">
-          <p className="tech-label text-rose-100">Your data</p>
+          <p className="tech-label text-rose-700">Your data</p>
           <h2 className="serif-title mt-3 text-4xl leading-tight">Delete your analysis data.</h2>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-smoke">
             This permanently removes every Relationship Report, the personality cards and profile built from them,
             your evolution history, and all AI Relationship Coach messages. It cannot be undone.
           </p>
-          <div className="mt-5 grid gap-2 rounded-sm border border-white/10 bg-white/[0.035] p-4 text-sm leading-7 text-smoke">
+          <div className="mt-5 grid gap-2 rounded-sm border border-line bg-paper p-4 text-sm leading-7 text-smoke">
             <p><span className="text-bone">Kept:</span> any unused paid credits, so a cleanup never burns what you bought.</p>
             <p><span className="text-bone">Kept:</span> payment receipts, which we retain as financial records.</p>
             <p><span className="text-bone">Kept:</span> your profile details above — edit or clear those directly if you want them changed.</p>
           </div>
 
           {wipeResult ? (
-            <p className="mt-5 rounded-2xl border border-emerald-200/25 bg-emerald-300/[0.06] p-4 text-sm leading-7 text-smoke">{wipeResult}</p>
+            <p className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-7 text-smoke">{wipeResult}</p>
           ) : confirmWipe ? (
-            <div className="mt-5 rounded-sm border border-rose-200/30 bg-rose-300/[0.07] p-5">
+            <div className="mt-5 rounded-sm border border-rose-200 bg-rose-50 p-5">
               <p className="text-sm leading-7 text-bone">
                 Delete all analysis data permanently? Your reports, personality profile, and coach history will be gone for good.
               </p>
@@ -215,14 +213,14 @@ export default function ProfilePage() {
                 <button
                   onClick={wipeData}
                   disabled={wiping}
-                  className="rounded-sm border border-rose-200/40 bg-rose-300/15 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-rose-100 transition hover:border-rose-200/80 disabled:opacity-60"
+                  className="rounded-sm border border-rose-200 bg-rose-50 px-5 py-3 text-xs text-rose-700 transition hover:border-rose-200 disabled:opacity-60"
                 >
                   {wiping ? 'Deleting…' : 'Yes, delete everything'}
                 </button>
                 <button
                   onClick={() => setConfirmWipe(false)}
                   disabled={wiping}
-                  className="rounded-sm border border-white/14 bg-white/[0.05] px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-smoke transition hover:border-white/35 disabled:opacity-60"
+                  className="rounded-sm border border-line bg-paper px-5 py-3 text-xs text-smoke transition hover:border-lineStrong disabled:opacity-60"
                 >
                   Keep my data
                 </button>
@@ -231,7 +229,7 @@ export default function ProfilePage() {
           ) : (
             <button
               onClick={() => setConfirmWipe(true)}
-              className="mt-5 rounded-sm border border-rose-200/30 bg-rose-300/[0.08] px-5 py-4 font-mono text-xs uppercase tracking-[0.14em] text-rose-100 transition hover:border-rose-200/60"
+              className="mt-5 rounded-sm border border-rose-200 bg-rose-50 px-5 py-4 text-xs text-rose-700 transition hover:border-rose-200"
             >
               Delete all my analysis data
             </button>

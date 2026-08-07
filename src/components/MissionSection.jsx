@@ -36,11 +36,9 @@ const STEPS = [
 export default function MissionSection() {
   return (
     <section className="accent-panel relative overflow-hidden p-5 sm:p-9">
-      <div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-violet-400/16 blur-2xl" />
-      <div className="pointer-events-none absolute -right-20 -bottom-24 h-72 w-72 rounded-full bg-pink-400/14 blur-2xl" />
 
       <div className="relative">
-        <p className="tech-label text-violet-100">Where this is going</p>
+        <p className="tech-label text-violet-700">Where this is going</p>
         <h2 className="serif-title mt-4 max-w-3xl text-4xl leading-tight sm:text-6xl">
           Most people don’t know who they really are.
         </h2>
@@ -61,15 +59,15 @@ export default function MissionSection() {
               key={item.step}
               className={`relative rounded-sm border p-4 sm:rounded-sm sm:p-5 ${
                 item.upcoming
-                  ? 'border-pink-200/30 bg-pink-300/[0.07]'
-                  : 'border-white/12 bg-white/[0.05]'
+                  ? 'border-pink-200 bg-pink-50'
+                  : 'border-line bg-paper'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <span className="font-mono text-[0.66rem] uppercase tracking-[0.14em] text-ash">{item.step}</span>
+                <span className=" text-xs text-ash">{item.step}</span>
                 <h3 className="flex-1 text-base leading-5 text-bone sm:text-lg sm:leading-6">{item.title}</h3>
                 {item.upcoming && (
-                  <span className="shrink-0 rounded-sm border border-pink-200/35 bg-pink-300/12 px-2 py-0.5 font-mono text-[0.55rem] uppercase tracking-[0.1em] text-pink-100">
+                  <span className="shrink-0 rounded-sm border border-pink-200 bg-pink-50 px-2 py-0.5 text-xs text-pink-700">
                     Coming
                   </span>
                 )}
@@ -79,10 +77,10 @@ export default function MissionSection() {
           ))}
         </ol>
 
-        <div className="mt-5 rounded-sm border border-violet-200/25 bg-violet-300/[0.07] p-4 sm:p-6">
+        <div className="mt-5 rounded-sm border border-violet-200 bg-violet-50 p-4 sm:p-6">
           <p className="text-sm leading-7 text-bone sm:text-base sm:leading-8">
             The goal: a friendship and dating platform where you are matched on{' '}
-            <span className="text-violet-100">who you really are — not who you say you are.</span>
+            <span className="text-violet-700">who you really are — not who you say you are.</span>
           </p>
           <p className="mt-2.5 text-sm leading-6 text-smoke sm:leading-7">
             Every report you run makes that profile sharper.

@@ -5,7 +5,6 @@ import RelationshipSelector from '../components/RelationshipSelector.jsx';
 import PersonDetailsForm from '../components/PersonDetailsForm.jsx';
 import UploadOrPasteChat from '../components/UploadOrPasteChat.jsx';
 import ReviewAnalysisStep from '../components/ReviewAnalysisStep.jsx';
-import ParticleBackground from '../components/ParticleBackground.jsx';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
@@ -87,7 +86,6 @@ export default function NewAnalysisPage() {
 
   return (
     <section className="relative min-h-screen overflow-hidden pb-32 pt-24 sm:pt-28">
-      <ParticleBackground className="opacity-70" />
 
       {/* The page heading sits ABOVE the sticky bar on mobile so it scrolls
           away cleanly. Ordered after it, the heading slid underneath the
@@ -99,10 +97,10 @@ export default function NewAnalysisPage() {
           Pinned to the header's exact height: leave a gap and page content
           shows through the strip between the two bars. Fully opaque, not
           translucent — content scrolling under a bar reads as a glitch. */}
-      <div className="sticky top-[65px] z-30 mb-5 border-y border-white/10 bg-well px-4 py-3 lg:hidden">
+      <div className="sticky top-[65px] z-30 mb-5 border-y border-line bg-well px-4 py-3 lg:hidden">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-sm text-bone">{steps[step].label}</p>
-          <p className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-ash">
+          <p className=" text-xs text-ash">
             {step + 1} / {steps.length}
           </p>
         </div>
@@ -115,7 +113,7 @@ export default function NewAnalysisPage() {
               disabled={index >= step}
               aria-label={`Step ${index + 1}: ${item.label}`}
               className={`h-1.5 flex-1 rounded-full transition ${
-                index < step ? 'accent-gradient' : index === step ? 'bg-violet-200' : 'bg-white/12'
+                index < step ? 'bg-signal' : index === step ? 'bg-signal/45' : 'bg-well'
               } ${index < step ? 'cursor-pointer' : 'cursor-default'}`}
             />
           ))}
@@ -135,10 +133,10 @@ export default function NewAnalysisPage() {
                 <button
                   key={item.label}
                   onClick={() => setStep(index)}
-                  className={`flex w-full items-center gap-4 border-b border-white/10 py-4 text-left last:border-b-0 ${index === step ? 'text-bone' : 'text-ash'}`}
+                  className={`flex w-full items-center gap-4 border-b border-line py-4 text-left last:border-b-0 ${index === step ? 'text-bone' : 'text-ash'}`}
                 >
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center border font-mono text-xs ${index === step ? 'border-white/70' : 'border-white/15'}`}>
-                    {done ? <PiCheck className="text-violet-100" aria-hidden="true" /> : String(index + 1).padStart(2, '0')}
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center border font-mono text-xs ${index === step ? 'border-line' : 'border-line'}`}>
+                    {done ? <PiCheck className="text-violet-700" aria-hidden="true" /> : String(index + 1).padStart(2, '0')}
                   </span>
                   <span className="text-sm">{item.label}</span>
                 </button>
@@ -153,7 +151,7 @@ export default function NewAnalysisPage() {
                 <h2 className="serif-title mt-3 text-4xl leading-tight sm:text-5xl">{steps[step].label}</h2>
               </div>
               <div className="w-44 pt-3">
-                <div className="h-px bg-white/12">
+                <div className="h-px bg-well">
                   <div className="h-px accent-gradient transition-all" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
                 </div>
               </div>
@@ -164,7 +162,7 @@ export default function NewAnalysisPage() {
       </div>
 
       {step < 4 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/12 bg-[#12101f]/95 px-4 py-3  sm:px-8 sm:py-4">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-well px-4 py-3  sm:px-8 sm:py-4">
           <div className="mx-auto flex max-w-[1320px] items-center gap-3">
             <button
               onClick={() => setStep((current) => Math.max(0, current - 1))}

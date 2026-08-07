@@ -1,4 +1,3 @@
-import ParticleBackground from '../components/ParticleBackground.jsx';
 
 const updated = new Intl.DateTimeFormat('en-IN', { dateStyle: 'long' }).format(new Date());
 
@@ -23,19 +22,18 @@ const termsSections = [
 export default function TermsPage() {
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
-      <ParticleBackground className="opacity-45" />
       <div className="relative mx-auto max-w-[1320px]">
         <div className="corner-frame accent-panel p-6 sm:p-12">
           <p className="tech-label text-smoke">Terms of Service</p>
           <h1 className="serif-title mt-5 max-w-4xl text-5xl leading-tight sm:text-7xl">The agreement behind ThirdPerson AI.</h1>
-          <p className="mt-3 font-mono text-xs uppercase tracking-[0.14em] text-purple-200/80">Last updated: {updated}</p>
+          <p className="mt-3 text-xs text-purple-700">Last updated: {updated}</p>
           <p className="mt-6 max-w-3xl text-sm leading-8 text-smoke">
             These Terms explain what you can expect from ThirdPerson AI, what we expect from you, and how paid credits, refunds, and account use work.
           </p>
         </div>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[280px_1fr]">
-          <aside className="hidden h-fit border border-purple-300/15 bg-black/45 p-5 lg:sticky lg:top-28 lg:block">
+          <aside className="hidden h-fit border border-purple-200 bg-well p-5 lg:sticky lg:top-28 lg:block">
             <p className="tech-label mb-4 text-smoke">Sections</p>
             <div className="space-y-2">
               {termsSections.map(([title], index) => (
@@ -48,7 +46,7 @@ export default function TermsPage() {
           <div className="space-y-5">
             {termsSections.map(([title, body], index) => (
               <section id={`terms-${index}`} key={title} className="thin-panel scroll-mt-28 p-6">
-                <p className="tech-label text-purple-200">{String(index + 1).padStart(2, '0')}</p>
+                <p className="tech-label text-purple-700">{String(index + 1).padStart(2, '0')}</p>
                 <h2 className="serif-title mt-3 text-3xl">{title}</h2>
                 <p className="mt-4 text-sm leading-8 text-smoke">{body}</p>
               </section>

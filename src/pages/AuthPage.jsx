@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import HCaptcha from '../components/HCaptcha.jsx';
-import ParticleBackground from '../components/ParticleBackground.jsx';
 import { defaultAnalysisLanguages } from '../lib/languages.js';
 import { emptyProfile, saveUserProfile } from '../lib/profileStore.js';
 import { supabase } from '../lib/supabaseClient.js';
@@ -102,17 +101,16 @@ export default function AuthPage() {
 
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
-      <ParticleBackground className="opacity-45" />
       <div className="relative mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_420px]">
         <div className="accent-panel p-7 sm:p-10">
-          <p className="tech-label text-purple-200">Private access</p>
+          <p className="tech-label text-purple-700">Private access</p>
           <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Welcome to ThirdPerson AI.</h1>
           <p className="mt-6 max-w-2xl text-sm leading-8 text-smoke">
             Sign in to keep your reports, relationship chains, coach chats, and personality insights connected to you.
           </p>
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             {['Private reports', 'Coach chat', 'Personality card'].map((item) => (
-              <div key={item} className="rounded-3xl border border-white/10 bg-white/[0.045] p-4 font-mono text-xs uppercase tracking-[0.13em] text-smoke">
+              <div key={item} className="rounded-3xl border border-line bg-paper p-4 text-xs text-smoke">
                 {item}
               </div>
             ))}
@@ -131,18 +129,18 @@ export default function AuthPage() {
                 type="button"
                 onClick={handleGoogle}
                 disabled={busy}
-                className="mt-6 w-full rounded-sm border border-violet-200/25 bg-violet-300/10 px-5 py-4 text-sm text-bone transition hover:border-violet-100/60 disabled:opacity-50"
+                className="mt-6 w-full rounded-sm border border-violet-200 bg-violet-50 px-5 py-4 text-sm text-bone transition hover:border-violet-200 disabled:opacity-50"
               >
                 Continue with Google
               </button>
-              <div className="my-6 h-px bg-white/10" />
+              <div className="my-6 h-px bg-well" />
               <label className="block">
                 <span className="tech-label text-ash">Email</span>
-                <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required className="mt-2 w-full border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none focus:border-purple-200/60" />
+                <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required className="mt-2 w-full border border-line bg-well px-4 py-3 text-sm outline-none focus:border-purple-200" />
               </label>
               <label className="mt-4 block">
                 <span className="tech-label text-ash">Password</span>
-                <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={6} required className="mt-2 w-full border border-white/12 bg-black/45 px-4 py-3 text-sm outline-none focus:border-purple-200/60" />
+                <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={6} required className="mt-2 w-full border border-line bg-well px-4 py-3 text-sm outline-none focus:border-purple-200" />
               </label>
               {mode === 'sign-up' && (
                 <p className="mt-4 text-xs leading-6 text-ash">
@@ -150,7 +148,7 @@ export default function AuthPage() {
                 </p>
               )}
               {captchaRequired ? (
-                <div className="mt-5 rounded-3xl border border-white/10 bg-white/[0.035] p-4">
+                <div className="mt-5 rounded-3xl border border-line bg-paper p-4">
                   <p className="tech-label text-ash">Security check</p>
                   <div className="mt-3">
                     <HCaptcha
@@ -160,12 +158,12 @@ export default function AuthPage() {
                   </div>
                 </div>
               ) : (
-                <div className="mt-5 rounded-3xl border border-white/10 bg-white/[0.035] p-4">
+                <div className="mt-5 rounded-3xl border border-line bg-paper p-4">
                   <p className="tech-label text-ash">Security check</p>
                   <p className="mt-2 text-sm leading-6 text-smoke">Security verification is available in the production environment.</p>
                 </div>
               )}
-              <button disabled={busy} className="glass-button mt-6 w-full px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone disabled:opacity-50">
+              <button disabled={busy} className="glass-button mt-6 w-full px-5 py-4 text-xs text-bone disabled:opacity-50">
                 {busy ? 'Working…' : mode === 'sign-up' ? 'Create account' : 'Sign in'}
               </button>
               <button type="button" onClick={() => setMode(mode === 'sign-up' ? 'sign-in' : 'sign-up')} className="mt-4 text-sm text-smoke hover:text-bone">

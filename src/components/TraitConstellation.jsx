@@ -26,9 +26,9 @@ const OUTER = 150;
 const LABEL_R = 178;
 
 const FAMILY_COLOR = {
-  core: '#b3a0ff',
-  relational: '#ff9ec4',
-  expressive: '#8be9ff',
+  core: '#5546d6',
+  relational: '#c62a63',
+  expressive: '#1263c4',
 };
 
 const pointFor = (index, count, radius) => {
@@ -65,8 +65,8 @@ export default function TraitConstellation({ view = [], size = 340, showLabels =
     >
       <defs>
         <radialGradient id={fillId} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#b3a0ff" stopOpacity="0.42" />
-          <stop offset="100%" stopColor="#ff9ec4" stopOpacity="0.12" />
+          <stop offset="0%" stopColor="#5546d6" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#c62a63" stopOpacity="0.08" />
         </radialGradient>
         <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="3.2" result="blur" />
@@ -86,7 +86,7 @@ export default function TraitConstellation({ view = [], size = 340, showLabels =
           cy={CENTER}
           r={INNER + step * (OUTER - INNER)}
           fill="none"
-          stroke="#8be9ff"
+          stroke="var(--line-strong)"
           strokeOpacity={step === 0.5 ? 0.22 : 0.09}
           strokeDasharray={step === 0.5 ? '3 4' : undefined}
         />
@@ -96,12 +96,12 @@ export default function TraitConstellation({ view = [], size = 340, showLabels =
       {nodes.map((node, index) => {
         const [ax, ay] = pointFor(index, count, OUTER);
         return (
-          <line key={node.key} x1={CENTER} y1={CENTER} x2={ax} y2={ay} stroke="#ffffff" strokeOpacity="0.07" />
+          <line key={node.key} x1={CENTER} y1={CENTER} x2={ax} y2={ay} stroke="var(--line)" strokeOpacity="1" />
         );
       })}
 
       {/* The shape itself */}
-      <polygon points={polygon} fill={`url(#${fillId})`} stroke="#c9b8ff" strokeOpacity="0.75" strokeWidth="1.6" className="tc-shape" />
+      <polygon points={polygon} fill={`url(#${fillId})`} stroke="#5546d6" strokeOpacity="0.85" strokeWidth="1.6" className="tc-shape" />
 
       {/* Stars */}
       {nodes.map((node) => (
@@ -110,7 +110,7 @@ export default function TraitConstellation({ view = [], size = 340, showLabels =
             cx={node.x}
             cy={node.y}
             r={node.known ? 4.2 : 2.4}
-            fill={FAMILY_COLOR[node.family] || '#c9b8ff'}
+            fill={FAMILY_COLOR[node.family] || '#5546d6'}
             opacity={node.known ? 1 : 0.3}
           />
           {node.known && node.spread !== null && node.spread > 25 && (
@@ -130,10 +130,11 @@ export default function TraitConstellation({ view = [], size = 340, showLabels =
             y={node.ly}
             textAnchor={anchor}
             dominantBaseline="middle"
-            fontSize="10.5"
+            fontSize="12"
+            fontWeight="500"
             fontFamily="ui-monospace, monospace"
             letterSpacing="0.06em"
-            fill={node.known ? '#ddd6ee' : '#6f6885'}
+            fill={node.known ? '#15151a' : '#9a97a5'}
           >
             {node.short || node.label}
           </text>

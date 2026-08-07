@@ -6,6 +6,13 @@
 // at, so we compute them once and both display them AND feed them to the model
 // as ground truth so it interprets facts instead of guessing at them.
 
+import {
+  computeMilestones,
+  computeQuickStats,
+  computeRhythm,
+  computeToneSeries,
+} from './conversationRhythm.js';
+
 const SESSION_GAP_MINUTES = 360; // 6h without a message starts a new conversation
 const MAX_REPLY_GAP_MINUTES = 60 * 24 * 3; // ignore 3-day+ gaps when averaging
 
@@ -266,10 +273,22 @@ export function computeEffortMetrics(messages = []) {
 }
 
 // One compact object: displayed in the report AND sent to the model as facts.
+//
+// This survives the transcript — `localMetrics` is on the retained allowlist in
+// retainedConversation.js — so everything in it must be counts, dates and
+// labels. Nothing here may carry message text.
 export function computeLocalMetrics({ messages = [], rawText = '' } = {}) {
+  const emojis = computeEmojiUsage(rawText);
+  const effort = computeEffortMetrics(messages);
+  const milestones = computeMilestones(messages);
+
   return {
-    emojis: computeEmojiUsage(rawText),
+    emojis,
     activity: computeActivitySeries(messages),
-    effort: computeEffortMetrics(messages),
+    effort,
+    rhythm: computeRhythm(messages),
+    tone: computeToneSeries(messages),
+    milestones,
+    quickStats: computeQuickStats({ messages, effort, milestones, emojis }),
   };
 }

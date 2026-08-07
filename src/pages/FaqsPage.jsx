@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { PiMinus, PiPlus } from 'react-icons/pi';
-import ParticleBackground from '../components/ParticleBackground.jsx';
 
 // One answer here used to end "...partners, exes, crushes, friends, family
 // members, colleagues, and more" — colleagues stopped being an option when the
@@ -40,11 +39,10 @@ export default function FaqsPage() {
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-24 sm:px-8 sm:pt-28">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-      <ParticleBackground className="opacity-45" />
 
       <div className="relative mx-auto max-w-[720px]">
         <div className="text-center">
-          <p className="tech-label text-purple-200">FAQs</p>
+          <p className="tech-label text-purple-700">FAQs</p>
           <h1 className="serif-title mt-4 text-4xl leading-tight sm:text-6xl">Questions worth asking.</h1>
         </div>
 
@@ -55,7 +53,7 @@ export default function FaqsPage() {
               <div
                 key={question}
                 className={`overflow-hidden rounded-sm border transition ${
-                  isOpen ? 'border-purple-200/30 bg-purple-300/[0.06]' : 'border-white/12 bg-white/[0.03]'
+                  isOpen ? 'border-purple-200 bg-purple-50' : 'border-line bg-paper'
                 }`}
               >
                 <button
@@ -64,12 +62,12 @@ export default function FaqsPage() {
                   className="flex min-h-[60px] w-full items-center justify-between gap-4 p-4 text-left sm:p-5"
                 >
                   <span className="text-base leading-6 text-bone sm:text-lg">{question}</span>
-                  <span className="shrink-0 text-purple-200" aria-hidden="true">
+                  <span className="shrink-0 text-purple-700" aria-hidden="true">
                     {isOpen ? <PiMinus /> : <PiPlus />}
                   </span>
                 </button>
                 {isOpen && (
-                  <p className="border-t border-white/10 px-4 pb-4 pt-3.5 text-sm leading-7 text-smoke sm:px-5 sm:pb-5">
+                  <p className="border-t border-line px-4 pb-4 pt-3.5 text-sm leading-7 text-smoke sm:px-5 sm:pb-5">
                     {answer}
                   </p>
                 )}

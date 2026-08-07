@@ -1,5 +1,4 @@
 import { PiArrowRight } from 'react-icons/pi';
-import ParticleBackground from '../components/ParticleBackground.jsx';
 import ExportStepVisual from '../components/ExportStepVisual.jsx';
 import RouteLink from '../components/RouteLink.jsx';
 import { getBlogContentBySlug } from '../lib/blogContent.js';
@@ -28,14 +27,14 @@ function Block({ block }) {
       );
     case 'step':
       return (
-        <div className="mt-5 rounded-sm border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+        <div className="mt-5 rounded-sm border border-line bg-paper p-4 sm:p-5">
           <div className="flex gap-3">
-            <span className="font-mono text-purple-200">{String(block.number).padStart(2, '0')}</span>
+            <span className="font-mono text-purple-700">{String(block.number).padStart(2, '0')}</span>
             <p className="text-sm leading-7 text-smoke sm:text-base">{block.instruction}</p>
           </div>
           {block.visual && <ExportStepVisual spec={block.visual} alt={block.visual.alt} />}
           {block.tip && (
-            <p className="mt-2 rounded-xl border border-purple-300/15 bg-purple-300/[0.05] p-3 text-xs leading-6 text-ash">
+            <p className="mt-2 rounded-xl border border-purple-200 bg-purple-50 p-3 text-xs leading-6 text-ash">
               Tip: {block.tip}
             </p>
           )}
@@ -43,10 +42,10 @@ function Block({ block }) {
       );
     case 'callout': {
       const toneClass = block.tone === 'privacy'
-        ? 'border-emerald-300/20 bg-emerald-300/[0.05]'
+        ? 'border-emerald-200 bg-emerald-50'
         : block.tone === 'tip'
-          ? 'border-purple-300/20 bg-purple-300/[0.05]'
-          : 'border-orange-300/20 bg-orange-300/[0.05]';
+          ? 'border-purple-200 bg-purple-50'
+          : 'border-orange-200 bg-orange-50';
       return (
         <div className={`mt-5 rounded-2xl border p-4 text-sm leading-6 text-smoke ${toneClass}`}>
           {block.text}
@@ -67,12 +66,11 @@ export default function BlogPostPage({ slug }) {
   if (!post || !content) {
     return (
       <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 text-center sm:px-8">
-        <ParticleBackground className="opacity-45" />
         <div className="relative mx-auto max-w-2xl">
           <div className="accent-panel p-10">
             <p className="tech-label text-smoke">Blog</p>
             <h1 className="serif-title mt-4 text-5xl leading-tight">We couldn’t find that post.</h1>
-            <button onClick={() => navigate('/blog')} className="glass-button mt-8 px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
+            <button onClick={() => navigate('/blog')} className="glass-button mt-8 px-5 py-4 text-xs text-bone">
               Back to Blog
             </button>
           </div>
@@ -83,14 +81,13 @@ export default function BlogPostPage({ slug }) {
 
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
-      <ParticleBackground className="opacity-45" />
       <article className="relative mx-auto max-w-[860px]">
-        <RouteLink to="/blog" className="font-mono text-xs uppercase tracking-[0.14em] text-purple-200 hover:text-bone">
+        <RouteLink to="/blog" className=" text-xs text-purple-700 hover:text-bone">
           ← Back to Blog
         </RouteLink>
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <span className="rounded-sm border border-white/15 px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.12em] text-smoke">{post.category}</span>
-          <span className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-ash">{post.readTime}</span>
+          <span className="rounded-sm border border-line px-3 py-1 text-xs text-smoke">{post.category}</span>
+          <span className=" text-xs text-ash">{post.readTime}</span>
         </div>
         <h1 className="serif-title mt-4 text-4xl leading-tight sm:text-6xl">{post.title}</h1>
         <p className="mt-5 text-base leading-8 text-smoke">{post.excerpt}</p>
@@ -122,7 +119,7 @@ export default function BlogPostPage({ slug }) {
                   to={`/blog/${item.slug}`}
                   className="thin-panel block p-4 no-underline transition hover:-translate-y-0.5"
                 >
-                  <span className="font-mono text-[0.6rem] uppercase tracking-[0.1em] text-ash">{item.category}</span>
+                  <span className=" text-xs text-ash">{item.category}</span>
                   <span className="mt-2 block text-base leading-6 text-bone">{item.title}</span>
                 </RouteLink>
               ))}

@@ -1,4 +1,3 @@
-import ParticleBackground from '../components/ParticleBackground.jsx';
 
 const beliefs = ['Relationships need context', 'AI should support reflection, not control', 'Privacy must come first', 'Human judgment matters', 'Emotional clarity should be accessible'];
 const work = ['Conversation analysis', 'Emotional timeline mapping', 'Compatibility insights', 'Communication pattern detection', 'Personality card generation', 'Multi-language support', 'Privacy-first relationship intelligence'];
@@ -6,7 +5,6 @@ const work = ['Conversation analysis', 'Emotional timeline mapping', 'Compatibil
 export default function CompanyPage() {
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
-      <ParticleBackground className="opacity-45" />
       <div className="relative mx-auto max-w-[1320px] space-y-8">
         <section className="corner-frame accent-panel p-6 sm:p-12">
           <p className="tech-label text-smoke">About ThirdPerson AI</p>
@@ -34,7 +32,7 @@ export default function CompanyPage() {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             {work.map((item) => (
-              <span key={item} className="border border-purple-300/15 bg-purple-300/5 px-3 py-2 font-mono text-xs uppercase tracking-[0.13em] text-smoke">{item}</span>
+              <span key={item} className="border border-purple-200 bg-purple-50 px-3 py-2 text-xs text-smoke">{item}</span>
             ))}
           </div>
         </section>
@@ -43,15 +41,15 @@ export default function CompanyPage() {
           <div id="contact" className="thin-panel scroll-mt-28 p-6">
             <p className="tech-label text-smoke">Contact us</p>
             <div className="mt-5 space-y-4 text-sm text-smoke">
-              <p>Email: <a className="text-purple-200" href="mailto:legal@thethirdperson.ai">legal@thethirdperson.ai</a></p>
-              <p>Support: <a className="text-purple-200" href="mailto:support@thethirdperson.ai">support@thethirdperson.ai</a></p>
-              <p>Business: <a className="text-purple-200" href="mailto:hello@thethirdperson.ai">hello@thethirdperson.ai</a></p>
+              <p>Email: <a className="text-purple-700" href="mailto:legal@thethirdperson.ai">legal@thethirdperson.ai</a></p>
+              <p>Support: <a className="text-purple-700" href="mailto:support@thethirdperson.ai">support@thethirdperson.ai</a></p>
+              <p>Business: <a className="text-purple-700" href="mailto:hello@thethirdperson.ai">hello@thethirdperson.ai</a></p>
             </div>
             <div className="mt-6">
               <p className="tech-label mb-3 text-ash">Follow us — coming soon</p>
               <div className="flex flex-wrap gap-3">
                 {['Instagram', 'LinkedIn', 'X / Twitter'].map((item) => (
-                  <span key={item} className="rounded-sm border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-ash">{item}</span>
+                  <span key={item} className="rounded-sm border border-line bg-paper px-4 py-3 text-sm text-ash">{item}</span>
                 ))}
               </div>
             </div>

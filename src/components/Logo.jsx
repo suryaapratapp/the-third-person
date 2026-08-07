@@ -20,7 +20,7 @@ import { useId } from 'react';
 // `pupil` must match whatever sits behind the mark — it is a hole punched in
 // the lens, not a dot drawn on top, so on a light surface it has to be light or
 // it turns into a solid blob.
-export default function Logo({ size = 28, withWordmark = false, className = '', pupil = '#12101f' }) {
+export default function Logo({ size = 28, withWordmark = false, className = '', pupil = '#ffffff' }) {
   const id = useId();
   const lensId = `lens-${id}`;
   const clipId = `clip-${id}`;
@@ -37,16 +37,16 @@ export default function Logo({ size = 28, withWordmark = false, className = '', 
     >
       <defs>
         <linearGradient id={lensId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#cbb8ff" />
-          <stop offset="55%" stopColor="#e3b0c8" />
-          <stop offset="100%" stopColor="#fbc89a" />
+          <stop offset="0%" stopColor="#5546d6" />
+          <stop offset="55%" stopColor="#8d3fc0" />
+          <stop offset="100%" stopColor="#c62a63" />
         </linearGradient>
         <clipPath id={clipId}>
           <circle cx="24" cy="32" r="17" />
         </clipPath>
       </defs>
-      <circle cx="24" cy="32" r="17" fill="none" stroke="#a78bfa" strokeWidth="2.4" opacity="0.85" />
-      <circle cx="40" cy="32" r="17" fill="none" stroke="#fb7ba6" strokeWidth="2.4" opacity="0.85" />
+      <circle cx="24" cy="32" r="17" fill="none" stroke="#5546d6" strokeWidth="2.4" opacity="0.85" />
+      <circle cx="40" cy="32" r="17" fill="none" stroke="#c62a63" strokeWidth="2.4" opacity="0.85" />
       <g clipPath={`url(#${clipId})`}>
         <circle cx="40" cy="32" r="17" fill={`url(#${lensId})`} />
       </g>
@@ -59,7 +59,7 @@ export default function Logo({ size = 28, withWordmark = false, className = '', 
   return (
     <span className={`flex items-center gap-2.5 ${className}`}>
       {mark}
-      <span className="whitespace-nowrap font-mono text-[0.68rem] uppercase tracking-[0.22em] text-bone sm:text-sm sm:tracking-[0.26em]">
+      <span className="whitespace-nowrap text-base font-semibold tracking-tight text-ink">
         ThirdPerson AI
       </span>
     </span>

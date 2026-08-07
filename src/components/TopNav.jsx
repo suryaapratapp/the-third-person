@@ -57,10 +57,10 @@ function DropdownItem({ label, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center justify-between border-b border-white/10 px-4 py-3 text-left text-sm text-smoke transition last:border-b-0 hover:bg-purple-300/10 hover:text-bone"
+      className="flex w-full items-center justify-between border-b border-line px-4 py-3 text-left text-sm text-smoke transition last:border-b-0 hover:bg-purple-50 hover:text-bone"
     >
       <span>{label}</span>
-      <PiArrowRight className="text-purple-200/60" aria-hidden="true" />
+      <PiArrowRight className="text-purple-700" aria-hidden="true" />
     </button>
   );
 }
@@ -127,7 +127,7 @@ export default function TopNav() {
   // content sliding through it, and a rounded card hovering over the content
   // was the last piece of chrome still reading as the old look.
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-surface">
+    <header className="fixed left-0 right-0 top-0 z-50 border-b border-line bg-surface">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <button onClick={() => navigate('/')} aria-label="ThirdPerson AI — home">
           <Logo size={26} withWordmark />
@@ -141,13 +141,13 @@ export default function TopNav() {
             <button
               onClick={() => { setProductOpen((current) => !current); setCompanyOpen(false); }}
               aria-expanded={productOpen}
-              className="flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-smoke transition hover:text-bone"
+              className="flex items-center gap-1.5 text-xs text-smoke transition hover:text-bone"
             >
               Product
               <PiCaretDown className={`text-xs transition-transform duration-200 ${productOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
             {productOpen && (
-              <div className="absolute left-0 top-8 w-64 rounded-sm border border-purple-300/18 bg-surface p-2 shadow-glow ">
+              <div className="absolute left-0 top-8 w-64 rounded-sm border border-purple-200 bg-surface p-2 shadow-glow ">
                 {PRODUCT_LINKS.map(([label, href]) => (
                   <DropdownItem key={label} label={label} onClick={() => menuNavigate(href)} />
                 ))}
@@ -157,21 +157,21 @@ export default function TopNav() {
 
           <button
             onClick={() => menuNavigate('/pricing')}
-            className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-smoke transition hover:text-bone"
+            className=" text-xs text-smoke transition hover:text-bone"
           >
             Pricing
           </button>
 
           <button
             onClick={() => menuNavigate('/vision')}
-            className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-smoke transition hover:text-bone"
+            className=" text-xs text-smoke transition hover:text-bone"
           >
             Vision
           </button>
 
           <button
             onClick={() => menuNavigate('/blog')}
-            className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-smoke transition hover:text-bone"
+            className=" text-xs text-smoke transition hover:text-bone"
           >
             Blog
           </button>
@@ -180,13 +180,13 @@ export default function TopNav() {
             <button
               onClick={() => { setCompanyOpen((current) => !current); setProductOpen(false); }}
               aria-expanded={companyOpen}
-              className="flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-smoke transition hover:text-bone"
+              className="flex items-center gap-1.5 text-xs text-smoke transition hover:text-bone"
             >
               Company
               <PiCaretDown className={`text-xs transition-transform duration-200 ${companyOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
             {companyOpen && (
-              <div className="absolute right-0 top-8 w-56 rounded-sm border border-purple-300/18 bg-surface p-2 shadow-glow ">
+              <div className="absolute right-0 top-8 w-56 rounded-sm border border-purple-200 bg-surface p-2 shadow-glow ">
                 {COMPANY_LINKS.map(([label, href]) => (
                   <DropdownItem key={label} label={label} onClick={() => menuNavigate(href)} />
                 ))}
@@ -198,13 +198,13 @@ export default function TopNav() {
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={handleAuthClick}
-            className="hidden whitespace-nowrap font-mono text-[0.65rem] uppercase tracking-[0.18em] text-smoke transition hover:text-bone md:block"
+            className="hidden whitespace-nowrap text-xs text-smoke transition hover:text-bone md:block"
           >
             {user ? 'Sign out' : 'Sign in'}
           </button>
           <button
             onClick={() => navigate('/analysis/new')}
-            className="btn btn-primary hidden whitespace-nowrap !px-4 !py-0 !text-[0.62rem] !leading-none md:inline-flex md:h-[38px]"
+            className="btn btn-primary hidden whitespace-nowrap !px-4 !py-2 !text-sm md:inline-flex"
           >
             Analyse a chat
           </button>
@@ -213,7 +213,7 @@ export default function TopNav() {
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
             aria-expanded={menuOpen}
-            className="flex min-h-[40px] items-center gap-2 rounded-sm border border-purple-300/25 px-3 py-2 font-mono text-[0.6rem] uppercase tracking-[0.14em] text-smoke transition hover:border-purple-300/60 hover:text-bone md:hidden"
+            className="flex min-h-[44px] items-center gap-2 rounded-sm border border-lineStrong px-3 py-2 text-sm font-medium text-ink transition hover:bg-well md:hidden"
           >
             <PiList className="text-base" aria-hidden="true" />
             Menu
@@ -222,14 +222,14 @@ export default function TopNav() {
       </div>
 
       {menuOpen && (
-        <div className="fixed inset-0 z-[60] bg-ink  md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+        <div className="fixed inset-0 z-[60] bg-paper md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="flex h-full flex-col">
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-              <p className="font-mono text-[0.68rem] uppercase tracking-[0.22em] text-bone">Menu</p>
+            <div className="flex items-center justify-between border-b border-line px-5 py-4">
+              <p className="text-sm font-semibold text-ink">Menu</p>
               <button
                 onClick={() => setMenuOpen(false)}
                 aria-label="Close menu"
-                className="grid h-11 w-11 place-items-center rounded-full border border-white/15 text-bone"
+                className="grid h-11 w-11 place-items-center rounded-full border border-lineStrong text-ink"
               >
                 <PiX className="text-lg" aria-hidden="true" />
               </button>
@@ -249,17 +249,17 @@ export default function TopNav() {
                   <li key={label}>
                     <button
                       onClick={() => menuNavigate(href)}
-                      className="flex min-h-[52px] w-full items-center justify-between border-b border-white/10 text-left text-base text-smoke transition active:text-bone"
+                      className="flex min-h-[52px] w-full items-center justify-between border-b border-line text-left text-base text-smoke transition active:text-bone"
                     >
                       <span>{label}</span>
-                      <PiArrowRight className="text-purple-200/50" aria-hidden="true" />
+                      <PiArrowRight className="text-purple-700" aria-hidden="true" />
                     </button>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="border-t border-white/10 px-5 py-4">
+            <div className="border-t border-line px-5 py-4">
               <button onClick={handleAuthClick} className="btn btn-ghost w-full text-xs">
                 {user ? 'Sign out' : 'Sign in'}
               </button>

@@ -37,27 +37,25 @@ export default function UsageWarningModal({ status = 'exhausted', feature = 'rep
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 px-4 "
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-well px-4 "
       role="dialog"
       aria-modal="true"
       aria-labelledby="usage-warning-heading"
       onKeyDown={(event) => { if (event.key === 'Escape') (status === 'exhausted' ? onBack : onContinue)?.(); }}
     >
-      <div className="relative max-w-xl overflow-hidden rounded-sm border border-purple-200/25 bg-[#110d18] p-6 shadow-[0_0_80px_rgba(168,85,247,0.18)] sm:p-8">
-        <div className="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-pink-300/15 blur-2xl" />
-        <div className="absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-purple-300/12 blur-2xl" />
+      <div className="relative max-w-xl overflow-hidden rounded-sm border border-purple-200 bg-paper p-6 shadow-glow sm:p-8">
         <div className="relative">
-          <p className="tech-label text-orange-200">ThirdPerson AI</p>
+          <p className="tech-label text-orange-700">ThirdPerson AI</p>
           <h2 id="usage-warning-heading" className="serif-title mt-4 text-4xl leading-tight text-bone sm:text-5xl">{copy.title}</h2>
           <p className="mt-5 text-sm leading-8 text-smoke">{copy.body}</p>
-          <p className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs leading-6 text-ash">
+          <p className="mt-4 rounded-2xl border border-line bg-paper p-4 text-xs leading-6 text-ash">
             One price per report — ₹249 gets you 1 Relationship Report and 5 Coach Chats together. There is no separate chats-only top-up.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <button onClick={onPlans} className="rounded-sm border border-purple-200/40 bg-purple-300/14 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone hover:border-purple-100/80">
+            <button onClick={onPlans} className="rounded-sm border border-purple-200 bg-purple-50 px-5 py-3 text-xs text-bone hover:border-purple-200">
               {copy.primary}
             </button>
-            <button onClick={status === 'exhausted' ? onBack : onContinue} className="rounded-sm border border-white/12 bg-white/[0.04] px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-smoke hover:border-pink-200/50 hover:text-bone">
+            <button onClick={status === 'exhausted' ? onBack : onContinue} className="rounded-sm border border-line bg-paper px-5 py-3 text-xs text-smoke hover:border-pink-200 hover:text-bone">
               {copy.secondary}
             </button>
           </div>

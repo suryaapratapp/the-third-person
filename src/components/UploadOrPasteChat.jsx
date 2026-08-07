@@ -121,14 +121,14 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
 
   return (
     <div>
-      <div className="mb-5 grid grid-cols-2 gap-1.5 rounded-full border border-white/12 bg-white/[0.03] p-1.5">
+      <div className="mb-5 grid grid-cols-2 gap-1.5 rounded-full border border-line bg-paper p-1.5">
         {['upload', 'paste'].map((tab) => (
           <button
             key={tab}
             onClick={() => onChange({ sourceMode: tab })}
             aria-pressed={mode === tab}
-            className={`min-h-[44px] rounded-full font-mono text-[0.62rem] uppercase tracking-[0.12em] transition ${
-              mode === tab ? 'bg-white/[0.10] text-bone' : 'text-ash hover:text-smoke'
+            className={`min-h-[44px] rounded-full text-xs transition ${
+              mode === tab ? 'bg-paper text-bone' : 'text-ash hover:text-smoke'
             }`}
           >
             {tab === 'upload' ? 'Upload file' : 'Paste text'}
@@ -143,27 +143,27 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
             onDrop={handleDrop}
             className={`flex min-h-52 cursor-pointer flex-col items-center justify-center rounded-sm border border-dashed p-6 text-center transition sm:min-h-64 ${
               dragging
-                ? 'border-purple-200/70 bg-purple-300/[0.10]'
-                : 'border-white/24 bg-black/30 hover:border-purple-200/50 hover:bg-white/[0.04]'
+                ? 'border-purple-200 bg-purple-50'
+                : 'border-line bg-well hover:border-purple-200 hover:bg-well'
             }`}
           >
-            <PiUploadSimple className={`text-3xl transition ${dragging ? 'text-purple-100' : 'text-smoke'}`} aria-hidden="true" />
+            <PiUploadSimple className={`text-3xl transition ${dragging ? 'text-purple-700' : 'text-smoke'}`} aria-hidden="true" />
             <span className="mt-4 text-lg text-bone sm:text-xl">
               {dragging ? 'Drop it here' : 'Choose your chat export'}
             </span>
             <span className="mt-2 text-sm leading-6 text-smoke">
               Tap to browse<span className="hidden sm:inline">, or drag the file in</span>
             </span>
-            <span className="mt-3 font-mono text-[0.6rem] uppercase tracking-[0.1em] text-ash">
+            <span className="mt-3 text-xs text-ash">
               .txt · .json · .csv · .zip
             </span>
             <input className="sr-only" type="file" accept=".txt,.json,.csv,.zip,.html,text/plain,application/json,text/csv,application/zip" onChange={handleFile} />
           </label>
 
           {(fileName || readError) && (
-            <div className="rounded-sm border border-white/12 bg-white/[0.04] p-4">
+            <div className="rounded-sm border border-line bg-paper p-4">
               <div className="flex items-start gap-3">
-                <PiFile className="mt-0.5 shrink-0 text-lg text-purple-200" aria-hidden="true" />
+                <PiFile className="mt-0.5 shrink-0 text-lg text-purple-700" aria-hidden="true" />
                 <div className="min-w-0 flex-1">
                   <p className="break-all text-sm text-bone">{fileName || 'No file selected'}</p>
                   <p className="mt-1 font-mono text-xs text-ash">
@@ -174,7 +174,7 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
                   </p>
                 </div>
               </div>
-              {readError && <p className="mt-3 text-sm leading-6 text-orange-100">{readError}</p>}
+              {readError && <p className="mt-3 text-sm leading-6 text-orange-700">{readError}</p>}
             </div>
           )}
         </div>
@@ -184,9 +184,9 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
             value={text}
             onChange={(event) => onChange({ chatText: event.target.value, sourceMode: 'paste' })}
             placeholder="[12/04/26, 9:21 PM] You: I just want to understand what changed..."
-            className="min-h-64 w-full resize-y rounded-sm border border-white/18 bg-black/45 p-4 font-mono text-sm leading-7 text-bone outline-none placeholder:text-ash focus:border-purple-200/70 sm:min-h-80 sm:p-5"
+            className="min-h-64 w-full resize-y rounded-sm border border-line bg-well p-4 font-mono text-sm leading-7 text-bone outline-none placeholder:text-ash focus:border-purple-200 sm:min-h-80 sm:p-5"
           />
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs uppercase tracking-[0.12em] text-ash">
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ash">
             <span>{text.length.toLocaleString()} characters</span>
             <span>{estimatedMessages.toLocaleString()} estimated messages</span>
           </div>
@@ -195,8 +195,8 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
       {prep && (
         <div className="mt-5 accent-panel p-4 sm:p-5">
           <div className="flex items-center gap-2.5">
-            <PiCheckCircle className="shrink-0 text-lg text-emerald-200" aria-hidden="true" />
-            <p className="tech-label text-emerald-100">Conversation read</p>
+            <PiCheckCircle className="shrink-0 text-lg text-emerald-700" aria-hidden="true" />
+            <p className="tech-label text-emerald-700">Conversation read</p>
           </div>
 
           {/* Four facts in a row, replacing five stacked cards and a progress
@@ -208,15 +208,15 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
               ['Date range', prep.parsed.dateRange || 'Unknown'],
               ['Details hidden', `${prep.sensitive.findings.totalProtectedItems}`],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-sm border border-white/10 bg-black/30 p-3">
-                <p className="font-mono text-[0.58rem] uppercase tracking-[0.1em] text-ash">{label}</p>
+              <div key={label} className="rounded-sm border border-line bg-well p-3">
+                <p className=" text-xs text-ash">{label}</p>
                 <p className="mt-1.5 break-words text-sm leading-5 text-bone">{value}</p>
               </div>
             ))}
           </div>
 
-          <div className="mt-4 rounded-sm border border-pink-200/15 bg-pink-300/[0.045] p-4">
-            <p className="tech-label text-pink-100">Sensitive details removed</p>
+          <div className="mt-4 rounded-sm border border-pink-200 bg-pink-50 p-4">
+            <p className="tech-label text-pink-700">Sensitive details removed</p>
             <p className="mt-2 text-sm leading-6 text-smoke">
               {prep.sensitive.protectionSummary} Still worth a look yourself if the chat holds anything
               you would rather not have analysed.
@@ -224,17 +224,17 @@ export default function UploadOrPasteChat({ mode, fileName, fileSize, text, onCh
             <button
               onClick={() => setShowSensitive((current) => !current)}
               aria-expanded={showSensitive}
-              className="mt-3 min-h-[44px] font-mono text-[0.62rem] uppercase tracking-[0.12em] text-smoke underline decoration-white/25 underline-offset-4 transition hover:text-bone"
+              className="mt-3 min-h-[44px] text-xs text-smoke underline decoration-white/25 underline-offset-4 transition hover:text-bone"
             >
               {showSensitive ? 'Hide what was removed' : 'Show what was removed'}
             </button>
             {showSensitive && (
-              <div className="mt-2 max-h-64 overflow-y-auto rounded-sm border border-white/10 bg-black/30 p-2.5">
+              <div className="mt-2 max-h-64 overflow-y-auto rounded-sm border border-line bg-well p-2.5">
                 {prep.sensitive.protectedItems?.length ? (
                   <div className="grid gap-2">
                     {prep.sensitive.protectedItems.slice(0, 40).map((item, index) => (
-                      <div key={`${item.type}-${item.value}-${index}`} className="grid gap-1 rounded-sm border border-white/10 bg-white/[0.035] p-2.5 text-xs sm:grid-cols-[110px_1fr_150px] sm:gap-2">
-                        <span className="font-mono uppercase tracking-[0.1em] text-pink-100">{item.type}</span>
+                      <div key={`${item.type}-${item.value}-${index}`} className="grid gap-1 rounded-sm border border-line bg-paper p-2.5 text-xs sm:grid-cols-[110px_1fr_150px] sm:gap-2">
+                        <span className=" text-pink-700">{item.type}</span>
                         <span className="break-all text-smoke">{item.value}</span>
                         <span className="font-mono text-ash">{item.replacement}</span>
                       </div>

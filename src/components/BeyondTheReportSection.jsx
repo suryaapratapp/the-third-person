@@ -17,8 +17,8 @@ const FEATURES = [
     title: 'Ask the coach about it',
     body: 'Once a report exists you can talk to it. “Is he actually interested?” “What do I reply to this?” The coach answers from your report — not generic advice — and always hands a question back to you.',
     points: ['Reads your specific report', 'Replies in your language', 'Honest, not flattering'],
-    accent: 'border-pink-200/30 bg-pink-300/[0.06]',
-    labelClass: 'text-pink-100',
+    accent: 'border-pink-200 bg-pink-50',
+    labelClass: 'text-pink-700',
   },
   {
     Icon: PiUserFocus,
@@ -26,8 +26,8 @@ const FEATURES = [
     title: 'Know Yourself',
     body: 'Every analysis adds to a profile of how you communicate — how you open, repair, argue, go quiet. You are not the same with a partner as with your mother, and what repeats across all of them is the part that is actually you.',
     points: ['Accumulates across reports', 'Separated by relationship type', 'Yours alone, never shared'],
-    accent: 'border-violet-200/30 bg-violet-300/[0.06]',
-    labelClass: 'text-violet-100',
+    accent: 'border-violet-200 bg-violet-50',
+    labelClass: 'text-violet-700',
   },
 ];
 
@@ -60,7 +60,7 @@ export default function BeyondTheReportSection() {
               <ul className="mt-5 grid gap-2">
                 {points.map((point) => (
                   <li key={point} className="flex items-start gap-2.5 text-sm leading-6 text-bone">
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-white/40" aria-hidden="true" />
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-well" aria-hidden="true" />
                     {point}
                   </li>
                 ))}
