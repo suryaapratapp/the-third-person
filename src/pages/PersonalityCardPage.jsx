@@ -415,30 +415,30 @@ export default function PersonalityCardPage() {
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <ParticleBackground className="opacity-52" />
       <div id="personality-page-export" data-export-bg="#090817" className="relative mx-auto max-w-[1440px]">
-        <header className="accent-panel relative mb-7 overflow-hidden p-6 sm:p-9">
+        <header className="accent-panel relative mb-6 overflow-hidden p-5 sm:p-9">
           <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-pink-300/12 blur-3xl" />
           <div className="relative flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-4xl">
               <p className="tech-label text-pink-100">Know Yourself</p>
-              <h1 className="serif-title mt-4 text-5xl leading-tight text-bone sm:text-7xl">{profileName} People Personality Map</h1>
-              <p className="mt-5 max-w-3xl text-base leading-8 text-smoke">
-                Know Yourself combines how you show up with partners, exes, friends and family — finding the constant underneath every version of you.
+              <h1 className="serif-title mt-3 text-3xl leading-tight text-bone sm:text-6xl">{profileName} People Personality Map</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-smoke sm:text-base sm:leading-8">
+                The constant underneath every version of you.
               </p>
-              <div className="mt-6 flex flex-wrap gap-2">
-                <span className="rounded-full border border-purple-200/20 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-purple-100">{relationshipCards.length} relationship cards saved</span>
-                <span className="rounded-full border border-orange-200/20 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-orange-100">{hasPaidAccess ? 'Paid access active' : 'Paid profile locked'}</span>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-full border border-purple-200/20 px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-purple-100">{relationshipCards.length} cards</span>
+                <span className="rounded-full border border-orange-200/20 px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-orange-100">{hasPaidAccess ? 'Paid access' : 'Locked'}</span>
               </div>
             </div>
-            <div data-export-ignore className="grid gap-3 sm:min-w-[260px]">
+            <div data-export-ignore className="flex w-full flex-wrap gap-2 sm:w-auto sm:min-w-[240px] sm:flex-col">
               <button
                 onClick={generateUnderstandYourself}
                 disabled={loading || generating || (!relationshipCards.length)}
-                className="glass-button rounded-full px-6 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone disabled:cursor-not-allowed disabled:opacity-50"
+                className="glass-button min-h-[44px] flex-1 rounded-full px-4 py-3 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-bone disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-6 sm:text-xs"
               >
-                {hasPaidAccess ? (generating ? 'Generating...' : 'Generate Know Yourself') : 'Unlock Know Yourself'}
+                {hasPaidAccess ? (generating ? 'Generating…' : 'Generate') : 'Unlock'}
               </button>
-              <button onClick={exportWholeProfile} className="glass-button rounded-full px-6 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone">
-                Download Full Card
+              <button onClick={exportWholeProfile} className="glass-button min-h-[44px] flex-1 rounded-full px-4 py-3 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-bone sm:flex-none sm:px-6 sm:text-xs">
+                Download Card
               </button>
               {message && <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs leading-6 text-smoke">{message}</p>}
             </div>

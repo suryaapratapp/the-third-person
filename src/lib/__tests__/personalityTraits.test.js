@@ -8,7 +8,10 @@ import {
   emptyProfile,
   observationWeight,
   profileView,
+  shiftStory,
+  standoutTraits,
   traitConfidence,
+  traitReading,
 } from '../personalityTraits.js';
 
 const analysis = (scores, extra = {}) => ({
@@ -187,5 +190,58 @@ describe('compatibilityBetween', () => {
     const result = compatibilityBetween(extremeA, extremeB);
     expect(result.score).toBeGreaterThanOrEqual(0);
     expect(result.score).toBeLessThanOrEqual(100);
+  });
+});
+
+describe('page selectors', () => {
+  const build = (perRelationship) => perRelationship.reduce((acc, [relationshipType, scores]) =>
+    accumulateTraits(acc, { scores, relationshipType, messageCount: 800, parseConfidence: 'high' }),
+  emptyProfile());
+
+  const full = (overrides = {}) => Object.fromEntries(TRAIT_KEYS.map((k) => [k, 50])).constructor === Object
+    ? { ...Object.fromEntries(TRAIT_KEYS.map((k) => [k, 50])), ...overrides }
+    : {};
+
+  it('standouts surface only traits far enough from neutral', () => {
+    const profile = build([['partner', full({ warmth: 92, humour: 20, openness: 53 })]]);
+    const keys = standoutTraits(profileView(profile)).map((t) => t.key);
+    expect(keys).toContain('warmth');
+    expect(keys).toContain('humour');
+    expect(keys).not.toContain('openness'); // 53 is noise, not a finding
+  });
+
+  it('standouts rank by distance from neutral, not raw score', () => {
+    const profile = build([['partner', full({ warmth: 70, humour: 5 })]]);
+    expect(standoutTraits(profileView(profile))[0].key).toBe('humour');
+  });
+
+  it('standouts stay empty when nothing stands out', () => {
+    const profile = build([['partner', full({ warmth: 52, humour: 48 })]]);
+    expect(standoutTraits(profileView(profile))).toHaveLength(0);
+  });
+
+  it('traitReading picks the pole and grades the strength', () => {
+    const profile = build([['partner', full({ warmth: 95 })]]);
+    const warmth = profileView(profile).find((t) => t.key === 'warmth');
+    const reading = traitReading(warmth);
+    expect(reading.high).toBe(true);
+    expect(reading.pole).toBe('Affectionate');
+    expect(reading.strength).toBe('strongly');
+  });
+
+  it('shiftStory names the relationship at each end', () => {
+    const profile = build([
+      ['friend', full({ warmth: 92 })],
+      ['mom', full({ warmth: 18 })],
+    ]);
+    const [top] = shiftStory(profileView(profile));
+    expect(top.key).toBe('warmth');
+    expect(top.highest.relationship).toBe('friend');
+    expect(top.lowest.relationship).toBe('mom');
+  });
+
+  it('shiftStory ignores traits seen in only one relationship', () => {
+    const profile = build([['partner', full({ warmth: 95 })]]);
+    expect(shiftStory(profileView(profile))).toHaveLength(0);
   });
 });

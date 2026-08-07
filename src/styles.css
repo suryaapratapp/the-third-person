@@ -242,8 +242,9 @@ select:focus-visible {
   background: rgba(139,233,255,0.06);
   padding: 0.25rem 0.7rem;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.12em;
+  /* 0.6rem rendered at 9.6px, below the readable floor on a phone. */
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #cdefff;
   box-shadow: inset 0 0 12px rgba(139,233,255,0.08);

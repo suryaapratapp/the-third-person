@@ -197,6 +197,48 @@ export function profileView(profile) {
   });
 }
 
+// The traits that actually say something about this person.
+//
+// Showing all fifteen equally is the same as showing none: a score of 52 is
+// noise, and burying the 88 next to it costs the reader the finding. These are
+// the ones far enough from neutral to be worth a sentence, which is what the
+// page leads with — the full list stays available, just not first.
+export function standoutTraits(view, limit = 4) {
+  return view
+    .filter((trait) => trait.observations > 0 && trait.confidence !== 'Not Enough Evidence')
+    .map((trait) => ({ ...trait, distance: Math.abs(trait.score - 50) }))
+    .filter((trait) => trait.distance >= 12)
+    .sort((a, b) => b.distance - a.distance)
+    .slice(0, limit);
+}
+
+// Which pole a trait sits on, and how strongly — used to turn a number into a
+// sentence a person can recognise themselves in.
+export function traitReading(trait) {
+  const high = trait.score >= 50;
+  const distance = Math.abs(trait.score - 50);
+  const strength = distance >= 30 ? 'strongly' : distance >= 18 ? 'clearly' : 'slightly';
+  return { pole: high ? trait.high : trait.low, high, strength, distance };
+}
+
+// The traits that change most depending on who someone is talking to, with the
+// relationship at each end. This is the finding a questionnaire structurally
+// cannot produce, so it earns its own place on the page rather than being a
+// badge on a bar.
+export function shiftStory(view, limit = 3) {
+  return view
+    .filter((trait) => trait.spread !== null && trait.spread >= 20)
+    .sort((a, b) => b.spread - a.spread)
+    .slice(0, limit)
+    .map((trait) => {
+      const entries = Object.entries(trait.byRelationship)
+        .map(([relationship, bucket]) => ({ relationship, score: bucket.score }))
+        .sort((a, b) => b.score - a.score);
+      return { ...trait, highest: entries[0], lowest: entries[entries.length - 1] };
+    })
+    .filter((trait) => trait.highest && trait.lowest && trait.highest.relationship !== trait.lowest.relationship);
+}
+
 // A shareable archetype derived from the trait vector.
 //
 // Deliberately NOT an MBTI-style four-letter code: those imply a validated
