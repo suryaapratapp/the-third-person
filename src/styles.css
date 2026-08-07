@@ -653,6 +653,53 @@ select:focus-visible {
   animation: analysisSweep 1.6s ease-in-out infinite;
 }
 
+/* ------------------------------------------------------------------ *
+ * Per-page identity
+ *
+ * The two paid destinations should not feel like the same page with
+ * different words on it. Each gets its own ground and accent, scoped to a
+ * wrapper class so nothing global shifts and every shared component
+ * (buttons, panels, chips) inherits the page it happens to be on.
+ *
+ * Coach  — warm rose/amber. It is a conversation with something that has a
+ *          heart for an antenna; cool cyan would fight the mascot.
+ * Self   — deep cosmic indigo/cyan. It is a constellation of who you are,
+ *          so the page should read like looking up, not like a dashboard.
+ * ------------------------------------------------------------------ */
+.page-coach {
+  --page-accent: #ffb0c8;
+  --page-accent-soft: rgba(255, 150, 185, 0.12);
+  --page-edge: rgba(255, 176, 200, 0.30);
+  background:
+    radial-gradient(circle at 12% -8%, rgba(255, 138, 174, 0.20), transparent 30rem),
+    radial-gradient(circle at 88% 8%, rgba(255, 186, 130, 0.13), transparent 28rem),
+    radial-gradient(circle at 50% 108%, rgba(190, 120, 255, 0.12), transparent 30rem);
+}
+
+.page-self {
+  --page-accent: #8be9ff;
+  --page-accent-soft: rgba(139, 233, 255, 0.10);
+  --page-edge: rgba(139, 233, 255, 0.30);
+  background:
+    radial-gradient(circle at 50% -12%, rgba(105, 190, 255, 0.20), transparent 34rem),
+    radial-gradient(circle at 8% 40%, rgba(150, 110, 255, 0.14), transparent 30rem),
+    radial-gradient(circle at 92% 62%, rgba(90, 220, 235, 0.10), transparent 28rem);
+}
+
+/* Shared components pick up whichever page they are sitting inside. */
+.page-coach .tech-label,
+.page-self .tech-label { color: var(--page-accent); }
+
+.page-coach .accent-panel,
+.page-self .accent-panel { border-color: var(--page-edge); }
+
+.page-coach .neon-chip,
+.page-self .neon-chip {
+  border-color: var(--page-edge);
+  background: var(--page-accent-soft);
+  color: var(--page-accent);
+}
+
 /* Trait constellation.
    The shape draws itself in and the stars settle after it, so the profile
    arrives as one composed moment rather than appearing fully formed. Purely

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import CardActions from '../components/CardActions.jsx';
 import { formatDuration } from '../lib/conversationMetrics.js';
+import AfterReportActions from '../components/AfterReportActions.jsx';
 import { buildZodiacMatch } from '../lib/zodiac.js';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { exportElementAsImage, shareCardSummary } from '../lib/exportElementAsImage.js';
@@ -330,6 +331,7 @@ export default function ResultPage({ reportId = '' }) {
       platform: flow.platform,
       analysisError: flow.analysisError,
       cacheNotice: flow.cacheNotice,
+      chainId: flow.chainId || null,
     }
     : fetchedReport
       ? {
@@ -340,6 +342,7 @@ export default function ResultPage({ reportId = '' }) {
         platform: fetchedReport.platform,
         analysisError: '',
         cacheNotice: '',
+        chainId: fetchedReport.chainId || null,
       }
       : null;
 
@@ -1009,11 +1012,12 @@ export default function ResultPage({ reportId = '' }) {
               </div>
             </div>
             <div data-export-ignore className="mt-6 flex flex-wrap gap-3">
-              <button onClick={() => navigate('/reports')} className="glass-button rounded-full px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Open AI Relationship Coach</button>
               <button onClick={exportFullReport} className="glass-button rounded-full px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Download Report Card</button>
               <button onClick={shareSummary} className="glass-button rounded-full px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Share Summary</button>
             </div>
           </CardShell>
+
+          <AfterReportActions chainId={source?.chainId} />
 
           <section className="glass-card p-5">
             <p className="text-sm leading-7 text-smoke">

@@ -172,7 +172,7 @@ export default function BestieBotPage({ chainId }) {
 
   if (!context) {
     return (
-      <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
+      <section className="page-coach relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
         <ParticleBackground className="opacity-45" />
         <div className="relative mx-auto max-w-4xl text-center">
           <div className="accent-panel p-8 sm:p-12">
@@ -189,7 +189,7 @@ export default function BestieBotPage({ chainId }) {
   }
 
   return (
-    <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
+    <section className="page-coach relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       {creditBlock && (
         <UsageWarningModal
           feature="bestie"

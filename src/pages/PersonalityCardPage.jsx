@@ -21,6 +21,7 @@ const emptyText = 'Not enough evidence yet.';
 const worldSlots = [
   {
     key: 'friends',
+    tileClass: 'border-yellow-200/45 bg-gradient-to-br from-yellow-300/25 to-orange-300/12',
     label: 'With Friends',
     match: /friend/i,
     icon: '♊',
@@ -32,6 +33,7 @@ const worldSlots = [
   },
   {
     key: 'family',
+    tileClass: 'border-rose-200/45 bg-gradient-to-br from-rose-300/25 to-orange-300/12',
     label: 'With Family',
     match: /family|mom|dad|brother|sister|cousin/i,
     icon: '⌂',
@@ -43,6 +45,7 @@ const worldSlots = [
   },
   {
     key: 'partner',
+    tileClass: 'border-pink-200/50 bg-gradient-to-br from-pink-300/28 to-purple-300/12',
     label: 'With Partner',
     match: /partner|dating|crush|love|boyfriend|girlfriend|wife|husband|spouse/i,
     icon: '♡',
@@ -54,6 +57,7 @@ const worldSlots = [
   },
   {
     key: 'ex',
+    tileClass: 'border-fuchsia-200/45 bg-gradient-to-br from-fuchsia-300/25 to-indigo-300/12',
     label: 'With Ex',
     match: /ex/i,
     icon: '↺',
@@ -147,40 +151,47 @@ function ProfileAvatar({ profile }) {
   );
 }
 
+// Compact relationship tile.
+//
+// These were 248px-tall cards in a 3-column grid, which put four related
+// worlds on two rows and buried the one thing they exist to answer — "have I
+// analysed this world yet, and how did it read?" — under a keyword list that
+// repeated words already in the summary.
+//
+// Now a small tile: strong colour per world so they read as a set at a glance,
+// the state (analysed vs waiting) as the primary signal, and all four on one
+// row from `sm` up.
 function PeopleMapCard({ item, onSelect }) {
+  const analysed = item.analysedCount > 0;
   return (
     <button
       type="button"
       onClick={() => onSelect(item)}
-      className="glass-card glow-border group relative min-h-[248px] w-full overflow-hidden p-5 text-left transition duration-200 hover:-translate-y-0.5"
+      className={`group relative overflow-hidden rounded-[22px] border p-4 text-left transition duration-200 hover:-translate-y-0.5 ${
+        analysed ? item.tileClass : 'border-white/10 bg-white/[0.03]'
+      }`}
     >
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accentClass} opacity-95 transition duration-300 group-hover:opacity-100`} />
-      <div className="relative flex items-start justify-between">
-        <span className={`flex h-11 w-11 items-center justify-center rounded-2xl border px-2 py-2 text-2xl leading-none ${item.iconClass}`}>{item.icon}</span>
-        <span className="flex items-center gap-2">
-          {item.analysedCount > 1 && (
-            <span className="rounded-full border border-purple-200/25 bg-purple-300/12 px-2.5 py-1 font-mono text-[0.6rem] uppercase tracking-[0.1em] text-purple-100">
-              {item.analysedCount} chats
-            </span>
-          )}
-          <span className="rounded-full border border-white/12 bg-white/[0.06] px-2.5 py-1 font-mono text-[0.65rem] font-semibold tracking-[0.12em] text-smoke">{item.number}</span>
+      <div className="flex items-start justify-between gap-2">
+        <span className={`flex h-9 w-9 items-center justify-center rounded-xl border text-lg leading-none ${item.iconClass}`}>
+          {item.icon}
         </span>
+        {analysed ? (
+          <span className="whitespace-nowrap rounded-full border border-white/15 bg-black/30 px-2 py-0.5 font-mono text-[0.55rem] uppercase tracking-[0.06em] text-smoke">
+            {item.analysedCount}×
+          </span>
+        ) : (
+          <span className="whitespace-nowrap rounded-full border border-white/10 px-2 py-0.5 font-mono text-[0.55rem] uppercase tracking-[0.06em] text-ash">
+            —
+          </span>
+        )}
       </div>
-      <h3 className="relative mt-6 text-2xl font-semibold tracking-tight text-bone">{item.label}</h3>
-      <div className="relative mt-3 h-px w-16 bg-gradient-to-r from-white/70 to-white/0" />
-      <p className="relative mt-4 max-w-[17rem] font-mono text-xs leading-5 text-smoke">{compact(item.summary, item.fallback, 155)}</p>
-      <div className="relative mt-5 border-t border-white/12 pt-3">
-        <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-bone">Keywords</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {item.keywords.slice(0, 4).map((keyword) => (
-            <span key={keyword} className="rounded-full border border-white/12 bg-white/[0.06] px-2.5 py-1 font-mono text-[0.63rem] uppercase tracking-[0.09em] text-smoke">
-              {keyword}
-            </span>
-          ))}
-        </div>
-      </div>
-      <div className="absolute right-5 top-24 rounded-full border border-white/12 bg-white/[0.07] px-4 py-3 text-xl text-bone">•••</div>
-      <span className="absolute bottom-4 right-5 rounded-full border border-white/12 bg-black/20 px-2.5 py-1 font-mono text-[0.58rem] uppercase tracking-[0.10em] text-smoke">{item.confidence}</span>
+
+      <h3 className="mt-3 text-base leading-5 text-bone">{item.label}</h3>
+      {/* Clamped rather than truncated by character count: in a narrow column
+          72 characters still ran to four lines and put the tiles back at ~200px. */}
+      <p className={`mt-1.5 line-clamp-2 text-xs leading-5 ${analysed ? 'text-smoke' : 'text-ash'}`}>
+        {analysed ? compact(item.summary, item.fallback, 90) : 'Not analysed yet'}
+      </p>
     </button>
   );
 }
@@ -397,7 +408,6 @@ export default function PersonalityCardPage() {
     }
   }
 
-  const profileName = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Your';
   const fallbackOverall = understandYourself || {
     summaryParagraph: relationshipCards.length
       ? 'Your deeper personality profile is ready to be generated from your saved relationship personality cards. It will combine concise summaries only, not old raw chats.'
@@ -412,7 +422,7 @@ export default function PersonalityCardPage() {
   };
 
   return (
-    <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
+    <section className="page-self relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <ParticleBackground className="opacity-52" />
       <div id="personality-page-export" data-export-bg="#090817" className="relative mx-auto max-w-[1440px]">
         <header className="accent-panel relative mb-6 overflow-hidden p-5 sm:p-9">
@@ -420,9 +430,9 @@ export default function PersonalityCardPage() {
           <div className="relative flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-4xl">
               <p className="tech-label text-pink-100">Know Yourself</p>
-              <h1 className="serif-title mt-3 text-3xl leading-tight text-bone sm:text-6xl">{profileName} People Personality Map</h1>
+              <h1 className="serif-title mt-3 text-4xl leading-[1.05] text-bone sm:text-6xl">Who You Actually Are</h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-smoke sm:text-base sm:leading-8">
-                The constant underneath every version of you.
+                Fifteen traits, read from how you really talk — and how they shift from person to person.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="rounded-full border border-purple-200/20 px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-purple-100">{relationshipCards.length} cards</span>
@@ -457,16 +467,16 @@ export default function PersonalityCardPage() {
           <div className="relative flex flex-wrap items-start justify-between gap-6">
             <div>
               <p className="tech-label text-purple-100">Relationship Worlds</p>
-              <h2 className="serif-title mt-4 max-w-3xl text-5xl leading-tight text-bone sm:text-7xl">Your People Personality Map</h2>
-              <p className="mt-4 max-w-2xl text-base leading-8 text-smoke">Different people, different sides. This is how you show up in their world.</p>
+              <h2 className="serif-title mt-3 max-w-3xl text-3xl leading-tight text-bone sm:text-5xl">Who you are with each of them</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-smoke">Tap a world to see how you show up there.</p>
             </div>
-            <p className="mt-5 rounded-full border border-white/12 bg-white/[0.05] px-5 py-3 font-mono text-xs uppercase tracking-[0.16em] text-pink-100 backdrop-blur">You, in relationships ✧</p>
+            
           </div>
-          <div className="relative mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {peopleMap.map((item) => <PeopleMapCard key={item.key} item={item} onSelect={setSelectedItem} />)}
           </div>
           <div className="relative mt-8 flex flex-wrap items-center justify-between gap-4 font-mono text-sm text-smoke">
-            <p>✧ One person, many personalities. All authentic, all you.</p>
+            <p>One person, many sides. All of them you.</p>
             <p className="rounded-full border border-white/12 bg-white/[0.04] px-5 py-3 text-bone">Keep growing, keep glowing</p>
           </div>
         </section>
