@@ -652,6 +652,49 @@ select:focus-visible {
   animation: analysisSweep 1.6s ease-in-out infinite;
 }
 
+/* Trait constellation.
+   The shape draws itself in and the stars settle after it, so the profile
+   arrives as one composed moment rather than appearing fully formed. Purely
+   decorative — the SVG is complete and readable with every animation off. */
+.tc-shape {
+  animation: tcShape 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center;
+}
+.tc-star {
+  animation: tcStar 520ms ease-out both;
+  animation-delay: 620ms;
+}
+
+@keyframes tcShape {
+  from { transform: scale(0.82); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes tcStar {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* On a phone the constellation renders around 190px wide, which scales the
+   10.5px axis labels down to roughly 4px — present but unreadable. Drop them
+   there and let the shape speak; every trait is named in the bars underneath,
+   so no information is lost. */
+@media (max-width: 640px) {
+  .tc-root text { display: none; }
+}
+
+/* Trait score delta, shown when a new analysis moves the core self. */
+.trait-delta {
+  animation: deltaRise 640ms ease-out both;
+}
+@keyframes deltaRise {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tc-shape, .tc-star, .trait-delta { animation: none !important; }
+}
+
 /* Mobile tab bar.
    iOS puts a home indicator across the bottom ~34px of the screen in gesture
    mode; without the safe-area inset the last row of tab labels sits underneath

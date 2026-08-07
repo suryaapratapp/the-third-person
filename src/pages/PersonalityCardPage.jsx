@@ -313,7 +313,13 @@ export default function PersonalityCardPage() {
         fetchPersonalityHistory(),
       ]);
       if (!mounted) return;
-      setRelationshipCards(cards || []);
+      // Dev-only: with no real analyses there is nothing to render, which makes
+      // this page impossible to check for layout regressions. Stripped from
+      // production builds — import.meta.env.DEV is statically false there.
+      const previewCards = import.meta.env.DEV && import.meta.env.VITE_PREVIEW_UNLOCK === '1' && !(cards || []).length
+        ? (await import('../lib/previewFixtures.js')).PREVIEW_PERSONALITY_CARDS
+        : null;
+      setRelationshipCards(previewCards || cards || []);
       setUnderstandYourself(profileRow?.overallProfileJson || null);
       setCredits(balance);
       setPersonalityHistory(history || []);
@@ -416,7 +422,7 @@ export default function PersonalityCardPage() {
               <p className="tech-label text-pink-100">Know Yourself</p>
               <h1 className="serif-title mt-4 text-5xl leading-tight text-bone sm:text-7xl">{profileName} People Personality Map</h1>
               <p className="mt-5 max-w-3xl text-base leading-8 text-smoke">
-                Know Yourself combines how you show up with friends, family, love, exes, colleagues, and more — creating a deeper personality map from your relationship patterns.
+                Know Yourself combines how you show up with partners, exes, friends and family — finding the constant underneath every version of you.
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
                 <span className="rounded-full border border-purple-200/20 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-purple-100">{relationshipCards.length} relationship cards saved</span>
