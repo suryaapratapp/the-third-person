@@ -51,7 +51,7 @@ export default function CompanyPage() {
               <p className="tech-label mb-3 text-ash">Follow us — coming soon</p>
               <div className="flex flex-wrap gap-3">
                 {['Instagram', 'LinkedIn', 'X / Twitter'].map((item) => (
-                  <span key={item} className="rounded-full border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-ash">{item}</span>
+                  <span key={item} className="rounded-sm border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-ash">{item}</span>
                 ))}
               </div>
             </div>

@@ -4,6 +4,7 @@ import WhenItHelpsSection from '../components/WhenItHelpsSection.jsx';
 import PrivacyAssurance from '../components/PrivacyAssurance.jsx';
 import BeyondTheReportSection from '../components/BeyondTheReportSection.jsx';
 import MissionSection from '../components/MissionSection.jsx';
+import MatchmakingPitch from '../components/MatchmakingPitch.jsx';
 import HonestLimitsStrip from '../components/HonestLimitsStrip.jsx';
 
 // Homepage order, chosen for a first-time visitor on a phone.
@@ -19,11 +20,18 @@ import HonestLimitsStrip from '../components/HonestLimitsStrip.jsx';
 // Privacy sits high on purpose. It is the objection that stops people, and it
 // has to be answered before the page asks anyone to hand over a real
 // conversation.
+//
+// Each band carries a tone and alternate bands sit on a slightly lifted
+// ground. Both are pure CSS variables inherited by whatever renders inside, so
+// no section component knows what colour it is — the page decides, and the
+// scroll gets a rhythm instead of running as one unbroken dark column.
 
-function Band({ children }) {
+function Band({ children, tone = 'tone-violet', alt = false, className = '' }) {
   return (
-    <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-8">
-      {children}
+    <div className={`${tone} ${alt ? 'band-alt' : ''} ${className}`}>
+      <div className="mx-auto w-full max-w-[1180px] px-4 py-12 sm:px-8 sm:py-16">
+        {children}
+      </div>
     </div>
   );
 }
@@ -33,25 +41,30 @@ export default function HomePage() {
     <>
       <HeroSection />
 
-      <Band>
+      <Band tone="tone-cyan" alt>
         <ProductTour />
       </Band>
 
-      <WhenItHelpsSection />
+      <Band tone="tone-amber">
+        <WhenItHelpsSection />
+      </Band>
 
-      <Band>
+      <Band tone="tone-green" alt>
         <PrivacyAssurance />
       </Band>
 
-      <BeyondTheReportSection />
-
-      <Band>
-        <MissionSection />
+      <Band tone="tone-rose">
+        <BeyondTheReportSection />
       </Band>
 
-      <div className="mx-auto w-full max-w-[1180px] px-4 pb-14 pt-12 sm:px-8 sm:pb-20">
+      <Band tone="tone-violet" alt>
+        <MissionSection />
+        <MatchmakingPitch className="mt-6" />
+      </Band>
+
+      <Band tone="tone-cyan">
         <HonestLimitsStrip />
-      </div>
+      </Band>
     </>
   );
 }

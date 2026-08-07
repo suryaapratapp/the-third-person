@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import CardActions from '../components/CardActions.jsx';
 import { formatDuration } from '../lib/conversationMetrics.js';
 import AfterReportActions from '../components/AfterReportActions.jsx';
+import FloatingCoach from '../components/FloatingCoach.jsx';
 import { buildZodiacMatch } from '../lib/zodiac.js';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import { exportElementAsImage, shareCardSummary } from '../lib/exportElementAsImage.js';
@@ -93,7 +94,7 @@ function Badge({ children, tone = 'purple' }) {
     orange: 'border-orange-200/25 bg-orange-300/10 text-orange-100',
     green: 'border-emerald-200/25 bg-emerald-300/10 text-emerald-100',
   };
-  return <span className={`rounded-full border px-3 py-1.5 font-mono text-[0.66rem] uppercase tracking-[0.13em] ${colors[tone]}`}>{children}</span>;
+  return <span className={`rounded-sm border px-3 py-1.5 font-mono text-[0.66rem] uppercase tracking-[0.13em] ${colors[tone]}`}>{children}</span>;
 }
 
 function ScoreBubble({ item }) {
@@ -245,7 +246,7 @@ function EffortBar({ value, personName = 'Them' }) {
 function TimelinePhaseDetail({ phase = {}, personName }) {
   const hasEffort = phase.effortBalance !== undefined && phase.effortBalance !== null && phase.effortBalance !== '';
   return (
-    <div className="mt-6 grid gap-5 rounded-[26px] border border-white/10 bg-white/[0.045] p-5 lg:grid-cols-[1.1fr_.9fr]">
+    <div className="mt-6 grid gap-5 rounded-sm border border-white/10 bg-white/[0.045] p-5 lg:grid-cols-[1.1fr_.9fr]">
       <div className="grid content-start gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <h3 className="serif-title text-3xl leading-tight">{safe(phase.title, 'This phase')}</h3>
@@ -450,7 +451,7 @@ export default function ResultPage({ reportId = '' }) {
                 </p>
                 <button
                   onClick={() => navigate(notFound ? '/reports' : '/analysis/new')}
-                  className="glass-button mt-8 rounded-full px-6 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone"
+                  className="glass-button mt-8 rounded-sm px-6 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone"
                 >
                   {notFound ? 'Go to your reports' : 'Start a conversation analysis'}
                 </button>
@@ -517,10 +518,12 @@ export default function ResultPage({ reportId = '' }) {
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <ParticleBackground className="opacity-80" />
-      <div id="relationship-report-export" data-export-bg="#090817" className="relative mx-auto max-w-[1560px] rounded-[38px] bg-[#090817]/70 p-2 sm:p-4">
+      {/* Rides the top-right corner once the reader is past the header. */}
+      <FloatingCoach chainId={source?.chainId} />
+      <div id="relationship-report-export" data-export-bg="#090817" className="relative mx-auto max-w-[1560px] rounded-sm bg-[#090817]/70 p-2 sm:p-4">
         <header className="accent-panel glow-border relative mb-6 overflow-hidden p-6 sm:p-8">
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-purple-400/25 blur-3xl" />
-          <div className="absolute -bottom-20 left-1/4 h-64 w-64 rounded-full bg-pink-400/18 blur-3xl" />
+          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-purple-400/25 blur-2xl" />
+          <div className="absolute -bottom-20 left-1/4 h-64 w-64 rounded-full bg-pink-400/18 blur-2xl" />
           <div className="relative flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-4xl">
               <p className="tech-label text-purple-100">Relationship Intelligence Report</p>
@@ -535,7 +538,7 @@ export default function ResultPage({ reportId = '' }) {
                 <Badge tone="orange">{(prepared.messageCount || 0).toLocaleString()} messages</Badge>
               </div>
             </div>
-            <div className="grid min-w-[260px] gap-3 rounded-[28px] border border-white/14 bg-white/[0.06] p-4 backdrop-blur">
+            <div className="grid min-w-[260px] gap-3 rounded-sm border border-white/14 bg-white/[0.06] p-4 ">
               {[
                 ['Participants', list(prepared.participants || prepared.participantNames || analysis.participants?.detectedParticipants).join(', ')],
                 ['Language style', detectedLanguage],
@@ -547,13 +550,13 @@ export default function ResultPage({ reportId = '' }) {
                   <p className="mt-1 text-sm leading-6 text-bone">{safe(value)}</p>
                 </div>
               ))}
-              <button data-export-ignore onClick={exportFullReport} className="glass-button mt-2 rounded-full px-4 py-3 font-mono text-xs uppercase tracking-[0.15em] text-bone">
+              <button data-export-ignore onClick={exportFullReport} className="glass-button mt-2 rounded-sm px-4 py-3 font-mono text-xs uppercase tracking-[0.15em] text-bone">
                 Download Report
               </button>
             </div>
           </div>
           {evidenceStrength && (
-            <div className={`relative mt-5 rounded-[24px] border p-4 ${evidenceStrength.className}`}>
+            <div className={`relative mt-5 rounded-sm border p-4 ${evidenceStrength.className}`}>
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-xl">{evidenceStrength.icon}</span>
                 <p className="tech-label text-bone">{evidenceStrength.title}</p>
@@ -651,7 +654,7 @@ export default function ResultPage({ reportId = '' }) {
                         >
                           <p className="h-12 font-mono text-[0.67rem] uppercase tracking-[0.13em] text-ash">{compactPeriod(item.period, index)}</p>
                           <span className={`relative z-10 block h-7 w-7 rounded-full border ${active ? 'border-violet-100 bg-violet-200 shadow-[0_0_34px_rgba(167,139,250,0.55)]' : 'border-white/35 bg-white/10'} transition group-hover:border-pink-200`} />
-                          <div className={`mt-5 rounded-2xl border p-4 backdrop-blur transition ${active ? 'border-violet-200/45 bg-white/[0.08]' : 'border-white/12 bg-white/[0.05]'}`}>
+                          <div className={`mt-5 rounded-2xl border p-4  transition ${active ? 'border-violet-200/45 bg-white/[0.08]' : 'border-white/12 bg-white/[0.05]'}`}>
                             <p className="text-sm font-semibold text-bone">{safe(item.title, `Phase ${index + 1}`)}</p>
                             <p className="mt-2 text-xs leading-5 text-smoke">{phaseSentiment} • {item.compatibility || scores.compatibility || 50}/100</p>
                             {item.confidence && <p className="mt-2 font-mono text-[0.58rem] uppercase tracking-[0.1em] text-ash">{item.confidence}</p>}
@@ -678,7 +681,7 @@ export default function ResultPage({ reportId = '' }) {
               </p>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 {personFactGroups.map(([category, items]) => (
-                  <div key={category} className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5">
+                  <div key={category} className="rounded-sm border border-white/10 bg-white/[0.05] p-5">
                     <p className="tech-label text-purple-100">{FACT_CATEGORY_LABELS[category] || category.replace(/_/g, ' ')}</p>
                     <ul className="mt-4 space-y-4">
                       {items.map((item, index) => (
@@ -720,7 +723,7 @@ export default function ResultPage({ reportId = '' }) {
                   {signatureMetrics.map((metric) => {
                     const score = Math.max(0, Math.min(100, Number(metric.score) || 0));
                     return (
-                      <div key={metric.key || metric.label} className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5">
+                      <div key={metric.key || metric.label} className="rounded-sm border border-white/10 bg-white/[0.05] p-5">
                         <div className="flex flex-wrap items-baseline justify-between gap-2">
                           <h3 className="text-lg leading-6 text-bone">{metric.label || metric.key}</h3>
                           <span className="font-mono text-xl tabular-nums text-bone">{score}</span>
@@ -755,7 +758,7 @@ export default function ResultPage({ reportId = '' }) {
               </p>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 {effortPeople.map((person) => (
-                  <div key={person.sender} className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5">
+                  <div key={person.sender} className="rounded-sm border border-white/10 bg-white/[0.05] p-5">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h3 className="text-xl text-bone">{person.sender}</h3>
                       <Badge tone="purple">{person.messageShare}% of messages</Badge>
@@ -780,7 +783,7 @@ export default function ResultPage({ reportId = '' }) {
                 ))}
               </div>
               {trend && (
-                <div className="mt-4 grid gap-3 rounded-[24px] border border-white/10 bg-black/15 p-5 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 rounded-sm border border-white/10 bg-black/15 p-5 sm:grid-cols-2">
                   <div>
                     <p className="tech-label text-ash">Reply speed, then vs now</p>
                     <p className="mt-2 text-sm leading-7 text-smoke">
@@ -813,7 +816,7 @@ export default function ResultPage({ reportId = '' }) {
               <p className="max-w-2xl text-sm leading-7 text-smoke">Counted directly from the uploaded chat.</p>
               <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
                 {emojis.map((item) => (
-                  <div key={item.emoji} className="rounded-[20px] border border-white/10 bg-white/[0.05] p-3 text-center">
+                  <div key={item.emoji} className="rounded-sm border border-white/10 bg-white/[0.05] p-3 text-center">
                     <p className="text-3xl leading-none">{item.emoji}</p>
                     <p className="mt-2 font-mono text-xs text-bone">{item.count}×</p>
                   </div>
@@ -825,7 +828,7 @@ export default function ResultPage({ reportId = '' }) {
           {zodiacMatch && (
             <CardShell id="zodiac-match" title="Zodiac Layer" emoji="✨" summary={`${zodiacMatch.userSign} + ${zodiacMatch.otherSign}: ${zodiacMatch.label}`} accent="purple">
               <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-                <div className="rounded-[26px] border border-purple-200/20 bg-purple-300/[0.06] p-5 text-center">
+                <div className="rounded-sm border border-purple-200/20 bg-purple-300/[0.06] p-5 text-center">
                   <div className="flex items-center justify-center gap-4">
                     <div>
                       <p className="text-4xl leading-none text-bone">{zodiacMatch.userGlyph}</p>
@@ -870,7 +873,7 @@ export default function ResultPage({ reportId = '' }) {
             {topWords.length ? (
               <div className="mt-5 grid gap-3 sm:grid-cols-5">
                 {topWords.map((item, index) => (
-                  <div key={item.word} className="rounded-[24px] border border-white/10 bg-white/[0.05] p-4 text-center">
+                  <div key={item.word} className="rounded-sm border border-white/10 bg-white/[0.05] p-4 text-center">
                     <p className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-ash">#{index + 1}</p>
                     <p className="mt-2 break-words text-xl text-bone">{item.word}</p>
                     <p className="mt-2 font-mono text-xs text-smoke">{item.count}×</p>
@@ -886,7 +889,7 @@ export default function ResultPage({ reportId = '' }) {
             <CardShell id="red-flags" title="Red Flags" emoji="🚩" summary="Gentle red flag reflections." accent="pink">
               <div className="grid gap-4">
                 {flags.red.length ? flags.red.map((flag, index) => (
-                  <div key={`${flag.label}-${index}`} className="rounded-[24px] border border-pink-200/16 bg-pink-300/[0.055] p-4">
+                  <div key={`${flag.label}-${index}`} className="rounded-sm border border-pink-200/16 bg-pink-300/[0.055] p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <h3 className="text-xl text-bone">{safe(flag.label || flag.title, 'Pattern worth noticing')}</h3>
                       <div className="flex flex-wrap gap-2">
@@ -913,7 +916,7 @@ export default function ResultPage({ reportId = '' }) {
             <CardShell id="green-flags" title="Green Flags" emoji="🟢" summary="Positive signals from this conversation." accent="green">
               <div className="grid gap-4">
                 {flags.green.length ? flags.green.map((flag, index) => (
-                  <div key={`${flag.label}-${index}`} className="rounded-[24px] border border-emerald-200/16 bg-emerald-300/[0.045] p-4">
+                  <div key={`${flag.label}-${index}`} className="rounded-sm border border-emerald-200/16 bg-emerald-300/[0.045] p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <h3 className="text-xl text-bone">{safe(flag.label || flag.title, 'Promising signal')}</h3>
                       {flag.confidence && <Badge tone="green">{flag.confidence}</Badge>}
@@ -937,7 +940,7 @@ export default function ResultPage({ reportId = '' }) {
 
           <CardShell id="energy-match" title="Energy Match Score" emoji="⚡" summary={energy.explanation} accent="orange">
             <div className="grid gap-5 xl:grid-cols-[.75fr_1.25fr]">
-              <div className="flex flex-col justify-between rounded-[28px] border border-orange-200/16 bg-orange-300/[0.055] p-5">
+              <div className="flex flex-col justify-between rounded-sm border border-orange-200/16 bg-orange-300/[0.055] p-5">
                 <div>
                   <p className="tech-label text-orange-100">Overall energy match</p>
                   <p className="serif-title mt-3 text-7xl">{Number(energy.score ?? scores.effortBalance) || 50}</p>
@@ -956,13 +959,13 @@ export default function ResultPage({ reportId = '' }) {
                     ['Emotional availability', energy.emotionalAvailability],
                     ['Consistency', energy.consistency],
                   ].map(([label, value]) => (
-                    <div key={label} className="rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
+                    <div key={label} className="rounded-sm border border-white/10 bg-white/[0.045] p-4">
                       <p className="tech-label text-ash">{label}</p>
                       <p className="mt-3 text-sm leading-7 text-bone">{safe(value)}</p>
                     </div>
                   ))}
                 </div>
-                <div className="rounded-[26px] border border-white/10 bg-black/15 p-4">
+                <div className="rounded-sm border border-white/10 bg-black/15 p-4">
                   <RadarPentagon data={radarData} />
                 </div>
               </div>
@@ -980,7 +983,7 @@ export default function ResultPage({ reportId = '' }) {
                   const tone = /^new:/i.test(text) ? 'purple' : /^softened:/i.test(text) ? 'orange' : 'green';
                   const kind = /^new:/i.test(text) ? 'New' : /^softened:/i.test(text) ? 'Softened' : 'Reinforced';
                   return (
-                    <div key={`${text}-${index}`} className="rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
+                    <div key={`${text}-${index}`} className="rounded-sm border border-white/10 bg-white/[0.045] p-4">
                       <Badge tone={tone}>{kind}</Badge>
                       <p className="mt-3 text-sm leading-7 text-bone">{text.replace(/^(new|reinforced|softened):\s*/i, '')}</p>
                     </div>
@@ -1012,8 +1015,8 @@ export default function ResultPage({ reportId = '' }) {
               </div>
             </div>
             <div data-export-ignore className="mt-6 flex flex-wrap gap-3">
-              <button onClick={exportFullReport} className="glass-button rounded-full px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Download Report Card</button>
-              <button onClick={shareSummary} className="glass-button rounded-full px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Share Summary</button>
+              <button onClick={exportFullReport} className="glass-button rounded-sm px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Download Report Card</button>
+              <button onClick={shareSummary} className="glass-button rounded-sm px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-bone">Share Summary</button>
             </div>
           </CardShell>
 

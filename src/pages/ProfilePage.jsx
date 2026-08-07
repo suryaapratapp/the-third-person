@@ -154,7 +154,7 @@ export default function ProfilePage() {
                 {identityOptions.map((option) => <option key={option}>{option}</option>)}
               </select>
             </label>
-            <div className="sm:col-span-2 rounded-[28px] border border-white/10 bg-white/[0.035] p-5">
+            <div className="sm:col-span-2 rounded-sm border border-white/10 bg-white/[0.035] p-5">
               <p className="tech-label text-purple-100">Preferred analysis languages</p>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-smoke">
                 Select the languages that commonly appear in your conversations. ThirdPerson AI will try to match the tone and language style in your reports and coach replies.
@@ -167,7 +167,7 @@ export default function ProfilePage() {
                       key={language}
                       type="button"
                       onClick={() => toggleLanguage(language)}
-                      className={`rounded-full border px-3 py-2 font-mono text-[0.65rem] uppercase tracking-[0.11em] transition ${active ? 'border-purple-200/60 bg-purple-300/15 text-bone' : 'border-white/10 bg-black/25 text-ash hover:border-purple-200/40 hover:text-bone'}`}
+                      className={`rounded-sm border px-3 py-2 font-mono text-[0.65rem] uppercase tracking-[0.11em] transition ${active ? 'border-purple-200/60 bg-purple-300/15 text-bone' : 'border-white/10 bg-black/25 text-ash hover:border-purple-200/40 hover:text-bone'}`}
                     >
                       {language}
                     </button>
@@ -198,7 +198,7 @@ export default function ProfilePage() {
             This permanently removes every Relationship Report, the personality cards and profile built from them,
             your evolution history, and all AI Relationship Coach messages. It cannot be undone.
           </p>
-          <div className="mt-5 grid gap-2 rounded-[24px] border border-white/10 bg-white/[0.035] p-4 text-sm leading-7 text-smoke">
+          <div className="mt-5 grid gap-2 rounded-sm border border-white/10 bg-white/[0.035] p-4 text-sm leading-7 text-smoke">
             <p><span className="text-bone">Kept:</span> any unused paid credits, so a cleanup never burns what you bought.</p>
             <p><span className="text-bone">Kept:</span> payment receipts, which we retain as financial records.</p>
             <p><span className="text-bone">Kept:</span> your profile details above — edit or clear those directly if you want them changed.</p>
@@ -207,7 +207,7 @@ export default function ProfilePage() {
           {wipeResult ? (
             <p className="mt-5 rounded-2xl border border-emerald-200/25 bg-emerald-300/[0.06] p-4 text-sm leading-7 text-smoke">{wipeResult}</p>
           ) : confirmWipe ? (
-            <div className="mt-5 rounded-[24px] border border-rose-200/30 bg-rose-300/[0.07] p-5">
+            <div className="mt-5 rounded-sm border border-rose-200/30 bg-rose-300/[0.07] p-5">
               <p className="text-sm leading-7 text-bone">
                 Delete all analysis data permanently? Your reports, personality profile, and coach history will be gone for good.
               </p>
@@ -215,14 +215,14 @@ export default function ProfilePage() {
                 <button
                   onClick={wipeData}
                   disabled={wiping}
-                  className="rounded-full border border-rose-200/40 bg-rose-300/15 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-rose-100 transition hover:border-rose-200/80 disabled:opacity-60"
+                  className="rounded-sm border border-rose-200/40 bg-rose-300/15 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-rose-100 transition hover:border-rose-200/80 disabled:opacity-60"
                 >
                   {wiping ? 'Deleting…' : 'Yes, delete everything'}
                 </button>
                 <button
                   onClick={() => setConfirmWipe(false)}
                   disabled={wiping}
-                  className="rounded-full border border-white/14 bg-white/[0.05] px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-smoke transition hover:border-white/35 disabled:opacity-60"
+                  className="rounded-sm border border-white/14 bg-white/[0.05] px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-smoke transition hover:border-white/35 disabled:opacity-60"
                 >
                   Keep my data
                 </button>
@@ -231,7 +231,7 @@ export default function ProfilePage() {
           ) : (
             <button
               onClick={() => setConfirmWipe(true)}
-              className="mt-5 rounded-full border border-rose-200/30 bg-rose-300/[0.08] px-5 py-4 font-mono text-xs uppercase tracking-[0.14em] text-rose-100 transition hover:border-rose-200/60"
+              className="mt-5 rounded-sm border border-rose-200/30 bg-rose-300/[0.08] px-5 py-4 font-mono text-xs uppercase tracking-[0.14em] text-rose-100 transition hover:border-rose-200/60"
             >
               Delete all my analysis data
             </button>

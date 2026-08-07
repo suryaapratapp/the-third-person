@@ -131,7 +131,7 @@ export default function AuthPage() {
                 type="button"
                 onClick={handleGoogle}
                 disabled={busy}
-                className="mt-6 w-full rounded-full border border-violet-200/25 bg-violet-300/10 px-5 py-4 text-sm text-bone transition hover:border-violet-100/60 disabled:opacity-50"
+                className="mt-6 w-full rounded-sm border border-violet-200/25 bg-violet-300/10 px-5 py-4 text-sm text-bone transition hover:border-violet-100/60 disabled:opacity-50"
               >
                 Continue with Google
               </button>

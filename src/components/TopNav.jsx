@@ -122,9 +122,13 @@ export default function TopNav() {
     navigate('/auth');
   }
 
+  // A full-bleed opaque rail, not a floating translucent pill. Two reasons:
+  // the theme has no backdrop-filter left, so a translucent bar showed page
+  // content sliding through it, and a rounded card hovering over the content
+  // was the last piece of chrome still reading as the old look.
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 px-3 py-3 sm:px-6">
-      <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 rounded-[24px] border border-purple-200/15 bg-[#171523]/82 px-4 py-2.5 shadow-[0_18px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:px-6 sm:py-3">
+    <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-surface">
+      <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <button onClick={() => navigate('/')} aria-label="ThirdPerson AI — home">
           <Logo size={26} withWordmark />
         </button>
@@ -143,7 +147,7 @@ export default function TopNav() {
               <PiCaretDown className={`text-xs transition-transform duration-200 ${productOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
             {productOpen && (
-              <div className="absolute left-0 top-8 w-64 rounded-3xl border border-purple-300/18 bg-[#171523]/95 p-2 shadow-glow backdrop-blur-xl">
+              <div className="absolute left-0 top-8 w-64 rounded-sm border border-purple-300/18 bg-surface p-2 shadow-glow ">
                 {PRODUCT_LINKS.map(([label, href]) => (
                   <DropdownItem key={label} label={label} onClick={() => menuNavigate(href)} />
                 ))}
@@ -182,7 +186,7 @@ export default function TopNav() {
               <PiCaretDown className={`text-xs transition-transform duration-200 ${companyOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
             {companyOpen && (
-              <div className="absolute right-0 top-8 w-56 rounded-3xl border border-purple-300/18 bg-[#171523]/95 p-2 shadow-glow backdrop-blur-xl">
+              <div className="absolute right-0 top-8 w-56 rounded-sm border border-purple-300/18 bg-surface p-2 shadow-glow ">
                 {COMPANY_LINKS.map(([label, href]) => (
                   <DropdownItem key={label} label={label} onClick={() => menuNavigate(href)} />
                 ))}
@@ -209,7 +213,7 @@ export default function TopNav() {
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
             aria-expanded={menuOpen}
-            className="flex min-h-[40px] items-center gap-2 rounded-full border border-purple-300/25 px-3 py-2 font-mono text-[0.6rem] uppercase tracking-[0.14em] text-smoke transition hover:border-purple-300/60 hover:text-bone md:hidden"
+            className="flex min-h-[40px] items-center gap-2 rounded-sm border border-purple-300/25 px-3 py-2 font-mono text-[0.6rem] uppercase tracking-[0.14em] text-smoke transition hover:border-purple-300/60 hover:text-bone md:hidden"
           >
             <PiList className="text-base" aria-hidden="true" />
             Menu
@@ -218,7 +222,7 @@ export default function TopNav() {
       </div>
 
       {menuOpen && (
-        <div className="fixed inset-0 z-[60] bg-[#12101f]/97 backdrop-blur-xl md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+        <div className="fixed inset-0 z-[60] bg-ink  md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="flex h-full flex-col">
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
               <p className="font-mono text-[0.68rem] uppercase tracking-[0.22em] text-bone">Menu</p>

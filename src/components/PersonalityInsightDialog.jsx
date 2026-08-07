@@ -50,7 +50,7 @@ export default function PersonalityInsightDialog({ item, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[95] flex items-center justify-center bg-black/75 px-4 py-8 backdrop-blur"
+      className="fixed inset-0 z-[95] flex items-center justify-center bg-black/75 px-4 py-8 "
       role="dialog"
       aria-modal="true"
       aria-labelledby="personality-dialog-heading"
@@ -89,7 +89,7 @@ export default function PersonalityInsightDialog({ item, onClose }) {
 
             <div className="mt-6 flex flex-wrap gap-2">
               {item.keywords.slice(0, 5).map((keyword) => (
-                <span key={keyword} className="rounded-full border border-white/12 bg-white/[0.05] px-3 py-1.5 font-mono text-[0.63rem] uppercase tracking-[0.1em] text-smoke">
+                <span key={keyword} className="rounded-sm border border-white/12 bg-white/[0.05] px-3 py-1.5 font-mono text-[0.63rem] uppercase tracking-[0.1em] text-smoke">
                   {keyword}
                 </span>
               ))}

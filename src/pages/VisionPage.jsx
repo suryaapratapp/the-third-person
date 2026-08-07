@@ -1,5 +1,6 @@
 import { PiArrowRight } from 'react-icons/pi';
 import ParticleBackground from '../components/ParticleBackground.jsx';
+import MatchmakingPitch from '../components/MatchmakingPitch.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
 // The vision page, rebuilt around one idea instead of fourteen.
@@ -72,7 +73,7 @@ export default function VisionPage() {
           </div>
           <div className="mt-5 grid gap-3 sm:gap-4 md:grid-cols-3">
             {NEXT.map(([title, body], index) => (
-              <article key={title} className="rounded-[26px] border border-pink-200/25 bg-pink-300/[0.05] p-5 sm:p-6">
+              <article key={title} className="rounded-sm border border-pink-200/25 bg-pink-300/[0.05] p-5 sm:p-6">
                 <p className="font-mono text-[0.66rem] uppercase tracking-[0.14em] text-ash">
                   {String(index + 1).padStart(2, '0')}
                 </p>
@@ -87,7 +88,9 @@ export default function VisionPage() {
           </p>
         </div>
 
-        <div className="mt-10 rounded-[28px] border border-violet-200/25 bg-violet-300/[0.06] p-5 text-center sm:p-8">
+        <MatchmakingPitch className="mt-10" />
+
+        <div className="mt-6 rounded-sm border border-violet-200/25 bg-violet-300/[0.06] p-5 text-center sm:p-8">
           <p className="text-base leading-7 text-bone sm:text-lg">
             Every report you run makes that profile sharper.
           </p>

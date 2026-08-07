@@ -16,8 +16,8 @@ const useCases = [
 
 export default function WhenItHelpsSection() {
   return (
-    <section className="px-4 py-14 sm:px-8 sm:py-20">
-      <div className="mx-auto max-w-[1180px]">
+    <section>
+      <div>
         <p className="tech-label text-smoke">What it reads</p>
         <h2 className="serif-title mt-4 max-w-2xl text-4xl leading-tight sm:text-6xl">
           Analysis that changes with the relationship.

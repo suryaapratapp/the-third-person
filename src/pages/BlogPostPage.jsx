@@ -28,7 +28,7 @@ function Block({ block }) {
       );
     case 'step':
       return (
-        <div className="mt-5 rounded-[20px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+        <div className="mt-5 rounded-sm border border-white/10 bg-white/[0.03] p-4 sm:p-5">
           <div className="flex gap-3">
             <span className="font-mono text-purple-200">{String(block.number).padStart(2, '0')}</span>
             <p className="text-sm leading-7 text-smoke sm:text-base">{block.instruction}</p>
@@ -89,7 +89,7 @@ export default function BlogPostPage({ slug }) {
           ← Back to Blog
         </RouteLink>
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <span className="rounded-full border border-white/15 px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.12em] text-smoke">{post.category}</span>
+          <span className="rounded-sm border border-white/15 px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.12em] text-smoke">{post.category}</span>
           <span className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-ash">{post.readTime}</span>
         </div>
         <h1 className="serif-title mt-4 text-4xl leading-tight sm:text-6xl">{post.title}</h1>

@@ -37,7 +37,7 @@ const POINTS = [
 export default function PrivacyAssurance({ compact = false, className = '' }) {
   if (compact) {
     return (
-      <div className={`rounded-[24px] border border-emerald-200/20 bg-emerald-300/[0.05] p-4 ${className}`}>
+      <div className={`rounded-sm border border-emerald-200/20 bg-emerald-300/[0.05] p-4 ${className}`}>
         <p className="tech-label text-emerald-100">Your privacy</p>
         <ul className="mt-3 grid gap-2 text-sm leading-6 text-smoke">
           <li>🔒 Locked to your account — no other user can see it</li>
@@ -53,7 +53,7 @@ export default function PrivacyAssurance({ compact = false, className = '' }) {
   // stacked cards on a phone, and that one change is most of a screen back.
   return (
     <section className={`accent-panel relative overflow-hidden p-5 sm:p-8 ${className}`}>
-      <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-emerald-300/10 blur-3xl" />
+      <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-emerald-300/10 blur-2xl" />
       <div className="relative">
         <p className="tech-label text-emerald-100">Privacy first</p>
         <h2 className="serif-title mt-3 text-4xl leading-tight sm:text-5xl">
@@ -64,7 +64,7 @@ export default function PrivacyAssurance({ compact = false, className = '' }) {
         </p>
         <div className="mt-6 grid gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
           {POINTS.map((point) => (
-            <div key={point.title} className="rounded-[22px] border border-white/10 bg-white/[0.05] p-4 sm:p-5">
+            <div key={point.title} className="rounded-sm border border-white/10 bg-white/[0.05] p-4 sm:p-5">
               <h3 className="flex items-center gap-2.5 text-base leading-6 text-bone sm:text-lg">
                 <span className="text-xl leading-none" aria-hidden="true">{point.icon}</span>
                 {point.title}

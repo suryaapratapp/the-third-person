@@ -37,7 +37,10 @@ export default function HeroSection() {
       <div className="corner-frame noise relative mx-auto flex max-w-[1180px] flex-col items-center border border-white/15 px-4 py-10 text-center shadow-glow sm:px-8 sm:py-16">
         <p className="tech-label text-purple-100/80">ThirdPerson AI</p>
 
-        <h1 className="serif-title mt-5 max-w-4xl text-[2.6rem] font-medium leading-[1.06] text-bone sm:text-6xl lg:text-7xl">
+        {/* Sized for Playfair, which sets far wider than the old face did: at
+            the previous 2.6rem this headline ran five lines and took the whole
+            first screen of a phone on its own. */}
+        <h1 className="serif-title mt-5 max-w-3xl text-[2.05rem] font-medium leading-[1.08] text-bone sm:text-5xl lg:text-6xl">
           Understand any relationship from the chat you already have.
         </h1>
 

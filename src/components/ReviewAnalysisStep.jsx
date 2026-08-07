@@ -361,7 +361,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       )}
       {isGenerating && (
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 px-4 backdrop-blur"
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 px-4 "
           role="dialog"
           aria-modal="true"
           aria-labelledby="analysis-progress-heading"
@@ -408,7 +408,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
 
       <div className="grid gap-4">
         {sampleWarning && (
-          <div className="flex gap-3 rounded-[20px] border border-orange-200/25 bg-orange-300/[0.07] p-4">
+          <div className="flex gap-3 rounded-sm border border-orange-200/25 bg-orange-300/[0.07] p-4">
             <PiWarning className="mt-0.5 shrink-0 text-lg text-orange-100" aria-hidden="true" />
             <p className="text-sm leading-6 text-smoke">{sampleWarning}</p>
           </div>
@@ -416,7 +416,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
 
         {/* The price, or the balance, stated plainly right above the button that
             spends it — this used to be one of four small boxes of prose. */}
-        <div className="rounded-[20px] border border-white/12 bg-white/[0.04] p-4">
+        <div className="rounded-sm border border-white/12 bg-white/[0.04] p-4">
           {!entitlements ? (
             <p className="text-sm leading-6 text-smoke">Checking your balance…</p>
           ) : entitlements.relationshipReportsLeft > 0 ? (
@@ -442,7 +442,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         </button>
 
         {analysisError && (
-          <p className="rounded-[16px] border border-orange-200/25 bg-orange-300/[0.07] p-3 text-sm leading-6 text-orange-100">
+          <p className="rounded-sm border border-orange-200/25 bg-orange-300/[0.07] p-3 text-sm leading-6 text-orange-100">
             {analysisError}
           </p>
         )}

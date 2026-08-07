@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import CardActions from '../components/CardActions.jsx';
+import MatchmakingPitch from '../components/MatchmakingPitch.jsx';
 import ParticleBackground from '../components/ParticleBackground.jsx';
 import CorePersonality from '../components/CorePersonality.jsx';
 import { generatePersonalityCardViaSupabase } from '../lib/backendAiService.js';
@@ -167,7 +168,7 @@ function PeopleMapCard({ item, onSelect }) {
     <button
       type="button"
       onClick={() => onSelect(item)}
-      className={`group relative overflow-hidden rounded-[22px] border p-4 text-left transition duration-200 hover:-translate-y-0.5 ${
+      className={`group relative overflow-hidden rounded-sm border p-4 text-left transition duration-200 hover:-translate-y-0.5 ${
         analysed ? item.tileClass : 'border-white/10 bg-white/[0.03]'
       }`}
     >
@@ -176,11 +177,11 @@ function PeopleMapCard({ item, onSelect }) {
           {item.icon}
         </span>
         {analysed ? (
-          <span className="whitespace-nowrap rounded-full border border-white/15 bg-black/30 px-2 py-0.5 font-mono text-[0.55rem] uppercase tracking-[0.06em] text-smoke">
+          <span className="whitespace-nowrap rounded-sm border border-white/15 bg-black/30 px-2 py-0.5 font-mono text-[0.55rem] uppercase tracking-[0.06em] text-smoke">
             {item.analysedCount}×
           </span>
         ) : (
-          <span className="whitespace-nowrap rounded-full border border-white/10 px-2 py-0.5 font-mono text-[0.55rem] uppercase tracking-[0.06em] text-ash">
+          <span className="whitespace-nowrap rounded-sm border border-white/10 px-2 py-0.5 font-mono text-[0.55rem] uppercase tracking-[0.06em] text-ash">
             —
           </span>
         )}
@@ -227,9 +228,9 @@ function OverallReport({ profile, overall }) {
   const keywords = listText(overall.keywords, 'More chats needed').slice(0, 10);
 
   return (
-    <article id="understand-yourself-export" data-export-bg="#05050a" className="relative overflow-hidden rounded-[36px] border border-white/18 bg-[#05050a] p-6 shadow-[0_36px_120px_rgba(0,0,0,0.42)] sm:p-8">
-      <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-purple-300/18 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-12 left-1/2 h-60 w-60 rounded-full bg-pink-300/12 blur-3xl" />
+    <article id="understand-yourself-export" data-export-bg="#05050a" className="relative overflow-hidden rounded-sm border border-white/18 bg-[#05050a] p-6 shadow-[0_36px_120px_rgba(0,0,0,0.42)] sm:p-8">
+      <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-purple-300/18 blur-2xl" />
+      <div className="pointer-events-none absolute bottom-12 left-1/2 h-60 w-60 rounded-full bg-pink-300/12 blur-2xl" />
       <div className="relative grid gap-8 xl:grid-cols-[1.25fr_.75fr]">
         <div className="grid gap-8 lg:grid-cols-[1fr_220px]">
           <div>
@@ -238,8 +239,8 @@ function OverallReport({ profile, overall }) {
             <p className="mt-2 font-serif text-3xl italic text-pink-100">{overall.overallPersonalityLabel || overall.shareableLabel || 'Your personality map is forming'}</p>
             <p className="mt-5 max-w-3xl text-base leading-8 text-smoke">{safe(overall.summaryParagraph, 'Generate Know Yourself after a few relationship personality cards to see a deeper profile.')}</p>
             <div className="mt-6 flex flex-wrap gap-2">
-              <span className="rounded-full border border-white/15 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-bone">{overall.personalityTypeSignal || 'Personality signal forming'}</span>
-              {zodiac && <span className="rounded-full border border-pink-200/20 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-pink-100">{getZodiacGlyph(zodiac)} {zodiac}</span>}
+              <span className="rounded-sm border border-white/15 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-bone">{overall.personalityTypeSignal || 'Personality signal forming'}</span>
+              {zodiac && <span className="rounded-sm border border-pink-200/20 px-4 py-2 font-mono text-xs uppercase tracking-[0.13em] text-pink-100">{getZodiacGlyph(zodiac)} {zodiac}</span>}
             </div>
           </div>
           <div className="flex items-start justify-center lg:justify-end">
@@ -252,13 +253,13 @@ function OverallReport({ profile, overall }) {
           </div>
 
           <div className="grid gap-5 md:grid-cols-2 lg:col-span-2">
-            <div className="rounded-[26px] border border-emerald-200/18 bg-emerald-300/[0.045] p-5">
+            <div className="rounded-sm border border-emerald-200/18 bg-emerald-300/[0.045] p-5">
               <p className="tech-label text-emerald-100">Green flags</p>
               <ul className="mt-4 space-y-2 text-sm leading-7 text-smoke">
                 {greenFlags.map((item) => <li key={item}>• {item}</li>)}
               </ul>
             </div>
-            <div className="rounded-[26px] border border-pink-200/18 bg-pink-300/[0.045] p-5">
+            <div className="rounded-sm border border-pink-200/18 bg-pink-300/[0.045] p-5">
               <p className="tech-label text-pink-100">Red flags, lovingly</p>
               <ul className="mt-4 space-y-2 text-sm leading-7 text-smoke">
                 {redFlags.map((item) => <li key={item}>• {item}</li>)}
@@ -268,7 +269,7 @@ function OverallReport({ profile, overall }) {
         </div>
 
         <aside className="grid gap-5">
-          <div className="rounded-[30px] border border-white/16 bg-white/[0.045] p-6">
+          <div className="rounded-sm border border-white/16 bg-white/[0.045] p-6">
             <p className="tech-label text-orange-100">Best matches</p>
             <div className="mt-5 space-y-4">
               {bestMatches.map((match, index) => (
@@ -278,11 +279,11 @@ function OverallReport({ profile, overall }) {
               ))}
             </div>
           </div>
-          <div className="rounded-[30px] border border-white/16 bg-white/[0.045] p-6">
+          <div className="rounded-sm border border-white/16 bg-white/[0.045] p-6">
             <p className="tech-label text-purple-100">You are...</p>
             <div className="mt-5 flex flex-wrap gap-2">
               {keywords.map((keyword) => (
-                <span key={keyword} className="rounded-full border border-white/15 px-3 py-2 text-sm text-bone">{keyword}</span>
+                <span key={keyword} className="rounded-sm border border-white/15 px-3 py-2 text-sm text-bone">{keyword}</span>
               ))}
             </div>
             <blockquote className="mt-7 border-t border-white/10 pt-6 font-serif text-2xl italic leading-9 text-pink-100">
@@ -426,7 +427,7 @@ export default function PersonalityCardPage() {
       <ParticleBackground className="opacity-52" />
       <div id="personality-page-export" data-export-bg="#090817" className="relative mx-auto max-w-[1440px]">
         <header className="accent-panel relative mb-6 overflow-hidden p-5 sm:p-9">
-          <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-pink-300/12 blur-3xl" />
+          <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-pink-300/12 blur-2xl" />
           <div className="relative flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-4xl">
               <p className="tech-label text-pink-100">Know Yourself</p>
@@ -435,19 +436,19 @@ export default function PersonalityCardPage() {
                 Fifteen traits, read from how you really talk — and how they shift from person to person.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-full border border-purple-200/20 px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-purple-100">{relationshipCards.length} cards</span>
-                <span className="rounded-full border border-orange-200/20 px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-orange-100">{hasPaidAccess ? 'Paid access' : 'Locked'}</span>
+                <span className="rounded-sm border border-purple-200/20 px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-purple-100">{relationshipCards.length} cards</span>
+                <span className="rounded-sm border border-orange-200/20 px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-orange-100">{hasPaidAccess ? 'Paid access' : 'Locked'}</span>
               </div>
             </div>
             <div data-export-ignore className="flex w-full flex-wrap gap-2 sm:w-auto sm:min-w-[240px] sm:flex-col">
               <button
                 onClick={generateUnderstandYourself}
                 disabled={loading || generating || (!relationshipCards.length)}
-                className="glass-button min-h-[44px] flex-1 rounded-full px-4 py-3 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-bone disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-6 sm:text-xs"
+                className="glass-button min-h-[44px] flex-1 rounded-sm px-4 py-3 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-bone disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-6 sm:text-xs"
               >
                 {hasPaidAccess ? (generating ? 'Generating…' : 'Generate') : 'Unlock'}
               </button>
-              <button onClick={exportWholeProfile} className="glass-button min-h-[44px] flex-1 rounded-full px-4 py-3 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-bone sm:flex-none sm:px-6 sm:text-xs">
+              <button onClick={exportWholeProfile} className="glass-button min-h-[44px] flex-1 rounded-sm px-4 py-3 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-bone sm:flex-none sm:px-6 sm:text-xs">
                 Download Card
               </button>
               {message && <p className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs leading-6 text-smoke">{message}</p>}
@@ -456,8 +457,8 @@ export default function PersonalityCardPage() {
         </header>
 
         <section className="accent-panel glow-border relative mb-7 overflow-hidden p-5 sm:p-8">
-          <div className="pointer-events-none absolute -left-16 top-24 h-52 w-52 rounded-full bg-purple-300/12 blur-3xl" />
-          <div className="pointer-events-none absolute -right-20 bottom-10 h-52 w-52 rounded-full bg-pink-300/10 blur-3xl" />
+          <div className="pointer-events-none absolute -left-16 top-24 h-52 w-52 rounded-full bg-purple-300/12 blur-2xl" />
+          <div className="pointer-events-none absolute -right-20 bottom-10 h-52 w-52 rounded-full bg-pink-300/10 blur-2xl" />
           {/* The accumulating core self sits above the per-relationship map:
               the constant first, then how it varies by who you are with. */}
           <div className="relative mb-10">
@@ -477,13 +478,13 @@ export default function PersonalityCardPage() {
           </div>
           <div className="relative mt-8 flex flex-wrap items-center justify-between gap-4 font-mono text-sm text-smoke">
             <p>One person, many sides. All of them you.</p>
-            <p className="rounded-full border border-white/12 bg-white/[0.04] px-5 py-3 text-bone">Keep growing, keep glowing</p>
+            <p className="rounded-sm border border-white/12 bg-white/[0.04] px-5 py-3 text-bone">Keep growing, keep glowing</p>
           </div>
         </section>
 
         {personalityHistory.length > 0 && (
           <section className="accent-panel relative mb-7 overflow-hidden p-5 sm:p-8">
-            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-emerald-300/10 blur-3xl" />
+            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-emerald-300/10 blur-2xl" />
             <div className="relative">
               <p className="tech-label text-emerald-100">Profile evolution</p>
               <h2 className="serif-title mt-3 text-4xl leading-tight text-bone sm:text-5xl">How your profile is evolving</h2>
@@ -492,11 +493,11 @@ export default function PersonalityCardPage() {
               </p>
               <div className="mt-6 grid gap-3">
                 {personalityHistory.slice(0, 6).map((entry) => (
-                  <div key={entry.id} className="rounded-[24px] border border-white/10 bg-white/[0.045] p-4">
+                  <div key={entry.id} className="rounded-sm border border-white/10 bg-white/[0.045] p-4">
                     <div className="flex flex-wrap items-center gap-2 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-ash">
-                      <span className="rounded-full border border-purple-200/25 bg-purple-300/10 px-2.5 py-1 text-purple-100">{entry.relationshipWorld}</span>
+                      <span className="rounded-sm border border-purple-200/25 bg-purple-300/10 px-2.5 py-1 text-purple-100">{entry.relationshipWorld}</span>
                       <span>{new Date(entry.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                      <span className="rounded-full border border-white/12 bg-white/[0.05] px-2.5 py-1">{entry.confidenceLevel}</span>
+                      <span className="rounded-sm border border-white/12 bg-white/[0.05] px-2.5 py-1">{entry.confidenceLevel}</span>
                     </div>
                     {entry.personalityDelta.length ? (
                       <ul className="mt-3 space-y-1.5 text-sm leading-6 text-smoke">
@@ -521,6 +522,9 @@ export default function PersonalityCardPage() {
           <SectionCard id="communication-style" title="Communication style" value={fallbackOverall.communicationStyle || fallbackOverall.howYouAreWithLove || fallbackOverall.howYouAreAtWork} accent="blue" />
           <SectionCard id="growth-areas" title="Growth areas" value={fallbackOverall.growthAreas || fallbackOverall.lovingRedFlags} accent="orange" />
         </div>
+
+        {/* The whole point of scoring traits: eventually, matching on them. */}
+        <MatchmakingPitch className="mt-7" />
 
         <section className="glass-card mt-7 p-5">
           <p className="text-sm leading-7 text-smoke">

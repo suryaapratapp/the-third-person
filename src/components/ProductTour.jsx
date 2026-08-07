@@ -76,7 +76,7 @@ const SCENES = [
         <div className="rounded-2xl border border-pink-200/20 bg-pink-300/[0.06] p-3">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-bone">Perceived imbalance of effort</p>
-            <span className="rounded-full border border-violet-200/25 bg-violet-300/10 px-2 py-0.5 font-mono text-[0.55rem] uppercase text-violet-100">Strong</span>
+            <span className="rounded-sm border border-violet-200/25 bg-violet-300/10 px-2 py-0.5 font-mono text-[0.55rem] uppercase text-violet-100">Strong</span>
           </div>
           <p className="mt-2 border-l-2 border-white/15 pl-2 font-mono text-[0.68rem] leading-4 text-smoke">
             “honestly it feels like im the only one trying here”
@@ -173,8 +173,8 @@ export default function ProductTour() {
 
   return (
     <section ref={containerRef} className="accent-panel relative overflow-hidden p-5 sm:p-8">
-      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-purple-400/18 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 left-1/4 h-64 w-64 rounded-full bg-pink-400/14 blur-3xl" />
+      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-purple-400/18 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-24 left-1/4 h-64 w-64 rounded-full bg-pink-400/14 blur-2xl" />
 
       <div className="relative">
         <p className="tech-label text-purple-100">See it in action</p>
@@ -191,7 +191,7 @@ export default function ProductTour() {
                   key={item.key}
                   onClick={() => { setActive(index); }}
                   aria-current={index === active}
-                  className={`relative min-h-[44px] overflow-hidden rounded-full border px-3.5 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] transition ${
+                  className={`relative min-h-[44px] overflow-hidden rounded-sm border px-3.5 py-1.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] transition ${
                     index === active
                       ? 'border-purple-200/45 bg-purple-300/12 text-bone'
                       : 'border-white/12 bg-white/[0.04] text-smoke hover:border-purple-200/30'
@@ -223,7 +223,7 @@ export default function ProductTour() {
 
           {/* Scene mock — a phone-shaped frame keeps it feeling like the product */}
           <div className="relative mx-auto w-full max-w-sm">
-            <div className="rounded-[30px] border border-white/14 bg-[#0b0918]/85 p-4 shadow-[0_28px_90px_rgba(0,0,0,0.45)] backdrop-blur">
+            <div className="rounded-sm border border-white/14 bg-[#0b0918]/85 p-4 shadow-[0_28px_90px_rgba(0,0,0,0.45)] ">
               <div className="mb-3 flex items-center justify-between">
                 <p className="font-mono text-[0.58rem] uppercase tracking-[0.12em] text-ash">ThirdPerson AI</p>
                 <span className="flex gap-1">

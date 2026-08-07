@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,19 +6,46 @@
 
 :root {
   color-scheme: dark;
-  background: #151323;
-  color: #fffaff;
-  --glass-border: rgba(216,202,255,0.16);
-  --glass-border-strong: rgba(196,181,253,0.30);
-  --glass-bg: rgba(26,22,42,0.66);
-  --glow-signal: rgba(167,139,250,0.20);
-  --glow-bloom: rgba(251,123,166,0.15);
-  --glow-ember: rgba(251,146,60,0.07);
-  /* Sci-fi accent + HUD grid. Cyan is deliberately low-alpha so the
-     high-tech read comes from thin glowing lines, not colour blocks. */
-  --neon-cyan: #8be9ff;
-  --neon-edge: rgba(139,233,255,0.30);
-  --hud-line: rgba(139,233,255,0.06);
+
+  /* Editorial ground. Three distinct depths so the page is not one flat
+     colour — page, panel, and inset well each sit apart without needing a
+     border to be legible. */
+  --ink: #05070e;
+  --surface: #0b0e17;
+  --well: #11151f;
+  --rule: rgba(233, 230, 245, 0.09);
+  --rule-strong: rgba(233, 230, 245, 0.16);
+
+  --paper: #f2f0f6;
+  --muted: #9c98ae;
+  --faint: #625e74;
+
+  /* PER-PERSON IDENTITY.
+     The single most useful thing in a two-person report: one colour per
+     participant, held constant across every chart, so "who is who" is learned
+     once and never re-read from a legend. */
+  --you: #ff4d8d;
+  --them: #38a0ff;
+
+  /* Semantic, deliberately separate from the two person colours so a chart
+     can show sentiment and identity at the same time without collision. */
+  --good: #34d399;
+  --warn: #f5b940;
+  --risk: #fb7185;
+
+  /* Brand accent, kept for identity moments only. */
+  --violet: #a78bfa;
+
+  /* Legacy aliases so existing markup keeps rendering while pages migrate. */
+  --glass-border: var(--rule);
+  --glass-border-strong: var(--rule-strong);
+  --glass-bg: var(--surface);
+  --neon-cyan: var(--them);
+  --neon-edge: var(--rule-strong);
+  --hud-line: rgba(255, 255, 255, 0.03);
+
+  background: var(--ink);
+  color: var(--paper);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -38,45 +65,20 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
-  background:
-    radial-gradient(circle at 50% -12%, rgba(167,139,250,0.26), transparent 33rem),
-    radial-gradient(circle at 14% 22%, rgba(251,123,166,0.16), transparent 28rem),
-    radial-gradient(circle at 88% 20%, rgba(139,92,246,0.14), transparent 28rem),
-    radial-gradient(circle at 68% 90%, rgba(251,146,60,0.07), transparent 22rem),
-    linear-gradient(180deg, #1a1530 0%, #12101f 48%, #160f24 100%);
+  /* One vertical gradient. The old ground stacked five radial gradients plus
+     two fixed pseudo-element layers, which the compositor repainted on every
+     scroll for a effect nobody could name. */
+  background: linear-gradient(180deg, #070a12 0%, var(--ink) 40%, #070912 100%);
+  background-attachment: fixed;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 24% 12%, rgba(167,139,250,0.08), transparent 22rem),
-    radial-gradient(circle at 82% 64%, rgba(251,123,166,0.06), transparent 24rem);
-}
+body::before { content: none; }
 
 /* Dynamic HUD grid — a faint tech lattice that drifts slowly upward, giving
    the whole site the "inside a machine" backdrop the sci-fi direction asks
    for. It sits behind everything, never intercepts input, and holds still for
    reduced-motion users. */
-body::after {
-  content: '';
-  position: fixed;
-  inset: -50% 0 0 0;
-  height: 200%;
-  z-index: -3;
-  pointer-events: none;
-  opacity: 0.5;
-  background-image:
-    linear-gradient(var(--hud-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--hud-line) 1px, transparent 1px);
-  background-size: 46px 46px;
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 30%, transparent 78%);
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 30%, transparent 78%);
-  animation: hudDrift 24s linear infinite;
-}
+body::after { content: none; }
 
 @keyframes hudDrift {
   from { transform: translateY(0); }
@@ -124,15 +126,19 @@ select:focus-visible {
 }
 
 .serif-title {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  letter-spacing: 0;
+  /* High-contrast Didone. Carries the editorial voice; the old old-style face
+     read softer and less like a masthead. */
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  letter-spacing: -0.015em;
 }
 
 .tech-label {
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  /* System monospace: identical role, zero bytes over the wire. */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   font-size: 0.68rem;
+  color: var(--muted);
 }
 
 /* Mobile readability floor.
@@ -152,15 +158,9 @@ select:focus-visible {
 }
 
 .thin-panel {
-  border: 1px solid var(--glass-border);
-  background:
-    radial-gradient(circle at 12% 0%, rgba(251,123,166,0.10), transparent 13rem),
-    radial-gradient(circle at 90% 8%, rgba(167,139,250,0.10), transparent 13rem),
-    linear-gradient(180deg, rgba(36,31,55,0.72), rgba(21,19,35,0.58));
-  backdrop-filter: blur(10px) saturate(112%);
-  -webkit-backdrop-filter: blur(10px) saturate(112%);
-  box-shadow: 0 14px 42px rgba(3,5,18,0.24), inset 0 1px 0 rgba(255,255,255,0.08);
-  border-radius: 28px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  border-radius: 2px;
 }
 
 .grid-bg {
@@ -180,16 +180,50 @@ select:focus-visible {
 }
 
 .accent-panel {
-  border: 1px solid rgba(167,139,250,0.20);
+  position: relative;
+  border: 1px solid var(--rule);
+  border-left: 2px solid transparent;
+  /* The only gradient left on a panel, and it is a 2px edge rather than a
+     full-surface wash — it marks the panel without repainting its area. */
   background:
-    radial-gradient(circle at 10% 0%, rgba(251,123,166,0.12), transparent 19rem),
-    radial-gradient(circle at 90% 10%, rgba(167,139,250,0.12), transparent 19rem),
-    radial-gradient(circle at 50% 100%, rgba(251,146,60,0.06), transparent 16rem),
-    linear-gradient(180deg, rgba(38,32,58,0.74), rgba(20,18,33,0.60));
-  backdrop-filter: blur(12px) saturate(112%);
-  -webkit-backdrop-filter: blur(12px) saturate(112%);
-  box-shadow: 0 18px 54px rgba(3,5,18,0.28), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 0 40px rgba(139,233,255,0.03);
-  border-radius: 32px;
+    linear-gradient(var(--panel-fill), var(--panel-fill)) padding-box,
+    linear-gradient(180deg, var(--edge-a), var(--edge-b)) border-box;
+  border-radius: 2px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Section tones
+ *
+ * Four accent panels stacked down a page were, until now, four copies of
+ * the same grey rectangle with the same violet edge — the page had one
+ * colour and no rhythm. A tone sets the panel's fill and its edge as CSS
+ * variables, so it can be applied to a WRAPPER and every panel inside
+ * inherits it. Sections get their own identity without a single
+ * component learning about colour.
+ *
+ * Fills stay within a few percent of the page ground: enough that two
+ * adjacent sections are visibly different, not so much that the page
+ * turns into a set of coloured boxes.
+ * ------------------------------------------------------------------ */
+:root,
+.tone-violet {
+  --panel-fill: #0c0a17;
+  --edge-a: var(--violet);
+  --edge-b: #6d8bff;
+}
+
+.tone-rose   { --panel-fill: #120a12; --edge-a: var(--you);  --edge-b: #ff9ec4; }
+.tone-cyan   { --panel-fill: #070f19; --edge-a: var(--them); --edge-b: #8be9ff; }
+.tone-green  { --panel-fill: #06120f; --edge-a: var(--good); --edge-b: #8be9ff; }
+.tone-amber  { --panel-fill: #140f08; --edge-a: var(--warn); --edge-b: var(--you); }
+
+/* Full-bleed ground bands. Alternating these gives the page a pulse on a
+   phone, where sections arrive one at a time and a constant background
+   makes a long scroll feel like one endless section. */
+.band-alt {
+  background: #080b14;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
 }
 
 .accent-text {
@@ -237,11 +271,11 @@ select:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  border-radius: 999px;
+  border-radius: 2px;
   border: 1px solid var(--neon-edge);
   background: rgba(139,233,255,0.06);
   padding: 0.25rem 0.7rem;
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   /* 0.6rem rendered at 9.6px, below the readable floor on a phone. */
   font-size: 0.7rem;
   letter-spacing: 0.1em;
@@ -350,8 +384,10 @@ select:focus-visible {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 999px;
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    /* Squared, like every other edge in the theme. A pill button next to a
+       2px-cornered panel is the single loudest leftover of the old look. */
+    border-radius: 2px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.16em;
@@ -394,20 +430,13 @@ select:focus-visible {
 }
 
 .glass-card {
-  border: 1px solid var(--glass-border);
-  background:
-    linear-gradient(145deg, rgba(36,31,54,0.74), rgba(18,20,34,0.58)),
-    radial-gradient(circle at 18% 0%, rgba(251,123,166,0.08), transparent 12rem),
-    radial-gradient(circle at 85% 12%, rgba(167,139,250,0.08), transparent 12rem);
-  backdrop-filter: blur(10px) saturate(112%);
-  -webkit-backdrop-filter: blur(10px) saturate(112%);
-  border-radius: 28px;
-  box-shadow: 0 14px 42px rgba(3,5,18,0.24), inset 0 1px 0 rgba(255,255,255,0.08);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  border-radius: 2px;
 }
 
 .glass-card:hover {
-  border-color: rgba(167,139,250,0.30);
-  box-shadow: 0 18px 54px rgba(3,5,18,0.30), inset 0 1px 0 rgba(255,255,255,0.10);
+  border-color: var(--rule-strong);
 }
 
 .glow-border {
@@ -468,14 +497,9 @@ select:focus-visible {
 }
 
 .sticky-glass {
-  border: 1px solid rgba(126,87,194,0.17);
-  background:
-    linear-gradient(145deg, rgba(42,36,60,0.78), rgba(22,22,37,0.60)),
-    radial-gradient(circle at 15% 0%, rgba(251,146,60,0.08), transparent 10rem);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 12px 34px rgba(3,5,18,0.22);
-  border-radius: 22px;
+  border: 1px solid var(--rule);
+  background: var(--well);
+  border-radius: 2px;
 }
 
 @keyframes floatGlow {
@@ -511,72 +535,45 @@ select:focus-visible {
   50% { opacity: 1; transform: scale(1.08); }
 }
 
-/* Fresh production theme overrides for older dark utility classes still used across pages. */
+/* Legacy hardcoded chrome colours, remapped onto the current surface tokens.
+ *
+ * An earlier version of this block also flattened every `bg-white/[0.0x]` and
+ * `border-white/1x` in the app to one value. That was the wrong instinct: it
+ * made every panel on every page the identical shade, which is exactly the
+ * monotony this theme is meant to break. Panels now keep the alpha the
+ * component asked for, and separation comes from the per-section accents.
+ *
+ * Only the opaque bars are pinned, because they sit over scrolling content and
+ * there is no backdrop-filter left to hide a mismatch. */
 .bg-\[\#090817\],
 .bg-\[\#05050a\],
-.bg-\[\#050505\],
+.bg-\[\#050505\] {
+  background-color: var(--ink) !important;
+}
+
 .bg-\[\#17111f\]\/95,
 .bg-\[\#171523\]\/82,
+.bg-\[\#171523\]\/92,
+.bg-\[\#141220\],
+.bg-\[\#12101f\]\/95,
 .bg-\[\#20172d\]\/86,
 .bg-\[\#221322\]\/86 {
-  background-color: rgba(24,22,38,0.68) !important;
+  background-color: var(--surface) !important;
 }
 
-.bg-black,
-.bg-black\/15,
-.bg-black\/18,
-.bg-black\/20,
-.bg-black\/24,
-.bg-black\/25,
-.bg-black\/30,
-.bg-black\/35,
-.bg-black\/40,
-.bg-black\/45,
-.bg-black\/50,
-.bg-black\/65,
-.bg-black\/70,
-.bg-black\/75,
-.bg-black\/80,
-.bg-black\/85 {
-  background-color: rgba(22,20,34,0.58) !important;
-}
-
+/* Full-screen scrims read as ink, not as a grey wash over it. */
 .fixed.inset-0.bg-black\/70,
 .fixed.inset-0.bg-black\/75,
 .fixed.inset-0.bg-black\/80,
 .fixed.inset-0.bg-black\/85 {
-  background-color: rgba(5,7,18,0.66) !important;
+  background-color: rgba(5, 7, 14, 0.82) !important;
 }
 
-.border-white\/10,
-.border-white\/12,
-.border-white\/14,
-.border-white\/15,
-.border-white\/16,
-.border-white\/18,
-.border-white\/20 {
-  border-color: rgba(216,202,255,0.13) !important;
-}
-
-.bg-white\/\[0\.035\],
-.bg-white\/\[0\.04\],
-.bg-white\/\[0\.045\],
-.bg-white\/\[0\.05\],
-.bg-white\/\[0\.055\],
-.bg-white\/\[0\.06\],
-.bg-white\/\[0\.07\] {
-  background-color: rgba(255,255,255,0.055) !important;
-}
-
+/* Decorative glows are the most expensive paint on the page. One radius for
+ * all of them keeps the compositor layers small and uniform. */
 .blur-2xl,
 .blur-3xl {
   --tw-blur: blur(22px) !important;
-}
-
-.backdrop-blur,
-.backdrop-blur-md,
-.backdrop-blur-xl {
-  --tw-backdrop-blur: blur(8px) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -820,3 +817,40 @@ select:focus-visible {
     animation: none !important;
   }
 }
+
+
+/* ------------------------------------------------------------------ *
+ * Editorial layer
+ * Hairline rules and wide-tracked labels do the structural work that
+ * rounded translucent cards used to do — cheaper to paint and it reads
+ * like a printed page rather than a dashboard.
+ * ------------------------------------------------------------------ */
+.rule-top { border-top: 1px solid var(--rule); }
+.rule-bottom { border-bottom: 1px solid var(--rule); }
+
+/* Small caps eyebrow. */
+.eyebrow {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* Person identity. One colour per participant, held across every chart. */
+.ink-you { color: var(--you); }
+.ink-them { color: var(--them); }
+.bg-you { background: var(--you); }
+.bg-them { background: var(--them); }
+
+/* Flat data bar — replaces gradient-filled meters. */
+.bar-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+.bar-track > span { display: block; height: 100%; }
+
+/* Corners are square by default now. A handful of genuinely circular things
+   (avatars, the mascot) opt back in with rounded-full, which is untouched. */
+.sq { border-radius: 2px !important; }

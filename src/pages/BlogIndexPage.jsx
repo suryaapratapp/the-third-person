@@ -28,7 +28,7 @@ export default function BlogIndexPage() {
               className="thin-panel group flex flex-col p-6 text-left no-underline transition hover:-translate-y-0.5"
             >
               <div className="flex items-center justify-between gap-3">
-                <span className={`rounded-full border px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.12em] ${CATEGORY_ACCENTS[post.category] || 'border-white/15 text-smoke'}`}>
+                <span className={`rounded-sm border px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.12em] ${CATEGORY_ACCENTS[post.category] || 'border-white/15 text-smoke'}`}>
                   {post.category}
                 </span>
                 <span className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-ash">{post.readTime}</span>

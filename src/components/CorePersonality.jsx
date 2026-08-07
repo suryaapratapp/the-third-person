@@ -179,7 +179,7 @@ export default function CorePersonality({ cards = [] }) {
             {standouts.map((trait) => {
               const reading = traitReading(trait);
               return (
-                <div key={trait.key} className="rounded-[22px] border border-white/10 bg-white/[0.05] p-4">
+                <div key={trait.key} className="rounded-sm border border-white/10 bg-white/[0.05] p-4">
                   <div className="flex items-baseline justify-between gap-3">
                     <h4 className="text-lg leading-6 text-bone">{reading.pole}</h4>
                     <span className="font-mono text-lg tabular-nums text-bone">{Math.round(trait.score)}</span>
@@ -205,7 +205,7 @@ export default function CorePersonality({ cards = [] }) {
 
       {/* HOW YOU SHIFT — the thing a questionnaire cannot produce. */}
       {shifts.length > 0 && (
-        <div className="relative mt-8 rounded-[22px] border border-pink-200/25 bg-pink-300/[0.06] p-4 sm:p-5">
+        <div className="relative mt-8 rounded-sm border border-pink-200/25 bg-pink-300/[0.06] p-4 sm:p-5">
           <h3 className="tech-label text-pink-100">You are not the same with everyone</h3>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             {shifts.map((trait) => (
@@ -229,7 +229,7 @@ export default function CorePersonality({ cards = [] }) {
       )}
 
       {movers.length > 0 && (
-        <div className="trait-delta relative mt-6 rounded-[22px] border border-violet-200/25 bg-violet-300/[0.07] p-4">
+        <div className="trait-delta relative mt-6 rounded-sm border border-violet-200/25 bg-violet-300/[0.07] p-4">
           <h3 className="tech-label text-violet-100">What your last analysis changed</h3>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
             {movers.map(([key, diff]) => (
@@ -266,7 +266,7 @@ export default function CorePersonality({ cards = [] }) {
                   role="tab"
                   aria-selected={item.key === family}
                   onClick={() => setFamily(item.key)}
-                  className={`min-h-[40px] rounded-full border px-4 text-xs transition ${
+                  className={`min-h-[40px] rounded-sm border px-4 text-xs transition ${
                     item.key === family
                       ? 'border-violet-200/50 bg-violet-300/15 text-bone'
                       : 'border-white/12 bg-white/[0.04] text-smoke hover:text-bone'
@@ -286,7 +286,7 @@ export default function CorePersonality({ cards = [] }) {
 
             <div className="mt-5 flex flex-wrap gap-2">
               {['Strong Pattern', 'Repeated Pattern', 'Early Signal'].map((level) => (
-                <span key={level} className={`rounded-full border px-2.5 py-1 font-mono text-[0.58rem] uppercase tracking-[0.1em] ${CONFIDENCE_TONE[level]}`}>
+                <span key={level} className={`rounded-sm border px-2.5 py-1 font-mono text-[0.58rem] uppercase tracking-[0.1em] ${CONFIDENCE_TONE[level]}`}>
                   {level}
                 </span>
               ))}

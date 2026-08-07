@@ -54,7 +54,7 @@ export default function FaqsPage() {
             return (
               <div
                 key={question}
-                className={`overflow-hidden rounded-[22px] border transition ${
+                className={`overflow-hidden rounded-sm border transition ${
                   isOpen ? 'border-purple-200/30 bg-purple-300/[0.06]' : 'border-white/12 bg-white/[0.03]'
                 }`}
               >

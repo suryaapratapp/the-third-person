@@ -67,7 +67,7 @@ export default function BottomNav() {
       <div className="h-[74px] md:hidden" aria-hidden="true" />
       <nav
         aria-label="Primary"
-        className="bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-purple-200/15 bg-[#171523]/92 backdrop-blur-xl md:hidden"
+        className="bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-purple-200/15 bg-[#171523]/92  md:hidden"
       >
         <ul className="mx-auto flex max-w-lg items-stretch justify-between px-1">
           {tabs.map(({ label, path: tabPath, Icon, primary }) => {
@@ -79,7 +79,7 @@ export default function BottomNav() {
                     type="button"
                     onClick={() => navigate(tabPath)}
                     aria-current={active ? 'page' : undefined}
-                    className="-mt-5 flex min-h-[56px] w-[68px] flex-col items-center justify-center gap-1 rounded-[22px] border border-white/14 bg-gradient-to-br from-[#cbb8ff] via-[#e3b0c8] to-[#fbc89a] px-2 py-2 text-[#17122a] shadow-[0_12px_30px_rgba(167,139,250,0.34)] transition active:translate-y-px"
+                    className="-mt-5 flex min-h-[56px] w-[68px] flex-col items-center justify-center gap-1 rounded-sm border border-white/14 bg-gradient-to-br from-[#cbb8ff] via-[#e3b0c8] to-[#fbc89a] px-2 py-2 text-[#17122a] shadow-[0_12px_30px_rgba(167,139,250,0.34)] transition active:translate-y-px"
                   >
                     <Icon className="text-xl" aria-hidden="true" />
                     <span className="font-mono text-[0.58rem] uppercase tracking-[0.08em]">{label}</span>

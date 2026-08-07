@@ -33,13 +33,13 @@ export default class ErrorBoundary extends Component {
           <div className="mt-7 grid gap-3 sm:grid-cols-2">
             <button
               onClick={() => window.location.reload()}
-              className="glass-button rounded-full px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone"
+              className="glass-button rounded-sm px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-bone"
             >
               Reload page
             </button>
             <button
               onClick={() => { window.location.href = '/reports'; }}
-              className="glass-button rounded-full px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-smoke"
+              className="glass-button rounded-sm px-5 py-4 font-mono text-xs uppercase tracking-[0.16em] text-smoke"
             >
               Go to my reports
             </button>

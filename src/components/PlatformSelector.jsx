@@ -63,7 +63,7 @@ function ExportHelpDialog({ platform, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 px-4 py-8 backdrop-blur"
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 px-4 py-8 "
       role="dialog"
       aria-modal="true"
       aria-labelledby="export-guide-heading"
@@ -84,11 +84,11 @@ function ExportHelpDialog({ platform, onClose }) {
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <span className="flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-4 py-2 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-smoke">
+          <span className="flex items-center gap-2 rounded-sm border border-white/12 bg-white/[0.04] px-4 py-2 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-smoke">
             <PiClockLight className="text-sm text-purple-200" aria-hidden="true" />
             {guide.estimatedTime}
           </span>
-          <span className="flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-4 py-2 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-smoke">
+          <span className="flex items-center gap-2 rounded-sm border border-white/12 bg-white/[0.04] px-4 py-2 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-smoke">
             <PiFileTextLight className="text-sm text-purple-200" aria-hidden="true" />
             {guide.fileFormat}
           </span>
@@ -109,7 +109,7 @@ function ExportHelpDialog({ platform, onClose }) {
                 role="tab"
                 aria-selected={osTab === index}
                 onClick={() => setOsTab(index)}
-                className={`rounded-full border px-5 py-2 font-mono text-xs uppercase tracking-[0.12em] transition ${osTab === index ? 'border-purple-200/60 bg-purple-300/15 text-bone' : 'border-white/12 bg-white/[0.03] text-smoke hover:border-purple-200/35'}`}
+                className={`rounded-sm border px-5 py-2 font-mono text-xs uppercase tracking-[0.12em] transition ${osTab === index ? 'border-purple-200/60 bg-purple-300/15 text-bone' : 'border-white/12 bg-white/[0.03] text-smoke hover:border-purple-200/35'}`}
               >
                 {variant.os}
               </button>
@@ -171,7 +171,7 @@ export default function PlatformSelector({ value, onChange }) {
           return (
             <div
               key={platform}
-              className={`group relative overflow-hidden rounded-[20px] border transition ${
+              className={`group relative overflow-hidden rounded-sm border transition ${
                 selected
                   ? 'border-purple-200/60 bg-purple-300/[0.10] shadow-[0_0_30px_rgba(168,85,247,0.18)]'
                   : 'border-white/12 bg-white/[0.04] hover:border-purple-200/40 hover:bg-white/[0.07]'

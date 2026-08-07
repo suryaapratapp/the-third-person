@@ -95,7 +95,7 @@ export default function PricingPage() {
 
       <div className="relative mx-auto max-w-[760px]">
         {reason === 'usage-limit' && (
-          <div className="mb-6 rounded-[24px] border border-orange-200/25 bg-orange-300/[0.055] p-4 sm:p-5">
+          <div className="mb-6 rounded-sm border border-orange-200/25 bg-orange-300/[0.055] p-4 sm:p-5">
             <p className="tech-label text-orange-100">You’re out of credits</p>
             <p className="mt-2.5 text-sm leading-7 text-smoke">Top up below to keep analysing conversations and asking the coach.</p>
           </div>
@@ -111,7 +111,7 @@ export default function PricingPage() {
         </div>
 
         {hasBalance && (
-          <p className="mt-7 rounded-full border border-emerald-200/20 bg-emerald-300/[0.06] px-5 py-3 text-center text-sm text-smoke">
+          <p className="mt-7 rounded-sm border border-emerald-200/20 bg-emerald-300/[0.06] px-5 py-3 text-center text-sm text-smoke">
             You have <span className="text-bone">{balances.paidRelationshipReportsLeft}</span> report
             {balances.paidRelationshipReportsLeft === 1 ? '' : 's'} and{' '}
             <span className="text-bone">{balances.paidBestieChatsLeft}</span> coach chat
@@ -148,7 +148,7 @@ export default function PricingPage() {
               /* Not `serif-title`: Cormorant's lining "1" is nearly identical
                  to a capital I at this size, which is a bad look on the field
                  that decides what someone pays. */
-              className="h-16 w-28 rounded-[20px] border border-purple-200/25 bg-black/40 text-center text-4xl font-light text-bone outline-none focus:border-purple-100/70"
+              className="h-16 w-28 rounded-sm border border-purple-200/25 bg-black/40 text-center text-4xl font-light text-bone outline-none focus:border-purple-100/70"
             />
             <button
               type="button"
@@ -167,7 +167,7 @@ export default function PricingPage() {
                 key={count}
                 type="button"
                 onClick={() => updateReports(count)}
-                className={`min-h-[44px] rounded-full border px-5 font-mono text-xs uppercase tracking-[0.12em] transition ${
+                className={`min-h-[44px] rounded-sm border px-5 font-mono text-xs uppercase tracking-[0.12em] transition ${
                   reportCount === count
                     ? 'border-purple-200/55 bg-purple-300/12 text-bone'
                     : 'border-white/12 bg-white/[0.035] text-smoke hover:border-purple-200/35'
@@ -212,7 +212,7 @@ export default function PricingPage() {
 
         {/* The in-flow price differs from this one and never used to be
             explained anywhere, which reads as inconsistent pricing. */}
-        <p className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-7 text-smoke">
+        <p className="mt-5 rounded-sm border border-white/10 bg-white/[0.03] p-4 text-sm leading-7 text-smoke">
           Starting an analysis with no credits offers a <span className="text-bone">₹199</span> report-only
           option too — no coach chats included. The ₹{PRICE_PER_REPORT} bundle above is the only way to get
           both together.
@@ -220,7 +220,7 @@ export default function PricingPage() {
 
         <div className="mt-8 grid gap-2.5">
           {FACTS.map(([title, body]) => (
-            <div key={title} className="flex gap-3 rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
+            <div key={title} className="flex gap-3 rounded-sm border border-white/10 bg-white/[0.03] p-4">
               <PiCheck className="mt-1 shrink-0 text-emerald-200" aria-hidden="true" />
               <div>
                 <p className="text-sm text-bone">{title}</p>
@@ -231,7 +231,7 @@ export default function PricingPage() {
         </div>
 
         {message && (
-          <p className="mt-5 rounded-[22px] border border-purple-200/20 bg-purple-300/[0.06] p-4 text-sm leading-7 text-smoke">
+          <p className="mt-5 rounded-sm border border-purple-200/20 bg-purple-300/[0.06] p-4 text-sm leading-7 text-smoke">
             {message}
           </p>
         )}

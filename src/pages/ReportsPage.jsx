@@ -98,14 +98,14 @@ export default function ReportsPage() {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search person"
             aria-label="Search reports by person"
-            className="min-h-[48px] flex-1 rounded-[16px] border border-white/12 bg-black/45 px-4 text-sm outline-none focus:border-purple-200/60"
+            className="min-h-[48px] flex-1 rounded-sm border border-white/12 bg-black/45 px-4 text-sm outline-none focus:border-purple-200/60"
           />
           {reports.length > 4 && (
             <button
               type="button"
               onClick={() => setFiltersOpen((current) => !current)}
               aria-expanded={filtersOpen}
-              className={`flex min-h-[48px] items-center justify-center gap-2 rounded-[16px] border px-5 font-mono text-xs uppercase tracking-[0.12em] transition ${
+              className={`flex min-h-[48px] items-center justify-center gap-2 rounded-sm border px-5 font-mono text-xs uppercase tracking-[0.12em] transition ${
                 filtersOpen || platform || relation || month || sort !== 'newest'
                   ? 'border-purple-200/50 bg-purple-300/12 text-bone'
                   : 'border-white/12 bg-white/[0.035] text-smoke hover:border-purple-200/35'
@@ -119,19 +119,19 @@ export default function ReportsPage() {
 
         {reports.length > 4 && filtersOpen && (
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <select value={platform} onChange={(event) => setPlatform(event.target.value)} aria-label="Filter by app" className="min-h-[48px] rounded-[16px] border border-white/12 bg-black/45 px-4 text-sm outline-none">
+            <select value={platform} onChange={(event) => setPlatform(event.target.value)} aria-label="Filter by app" className="min-h-[48px] rounded-sm border border-white/12 bg-black/45 px-4 text-sm outline-none">
               <option value="">All apps</option>
               {platforms.map((item) => <option key={item}>{item}</option>)}
             </select>
-            <select value={relation} onChange={(event) => setRelation(event.target.value)} aria-label="Filter by relationship type" className="min-h-[48px] rounded-[16px] border border-white/12 bg-black/45 px-4 text-sm outline-none">
+            <select value={relation} onChange={(event) => setRelation(event.target.value)} aria-label="Filter by relationship type" className="min-h-[48px] rounded-sm border border-white/12 bg-black/45 px-4 text-sm outline-none">
               <option value="">All relations</option>
               {relations.map((item) => <option key={item}>{item}</option>)}
             </select>
-            <select value={month} onChange={(event) => setMonth(event.target.value)} aria-label="Filter by month" className="min-h-[48px] rounded-[16px] border border-white/12 bg-black/45 px-4 text-sm outline-none">
+            <select value={month} onChange={(event) => setMonth(event.target.value)} aria-label="Filter by month" className="min-h-[48px] rounded-sm border border-white/12 bg-black/45 px-4 text-sm outline-none">
               <option value="">All months</option>
               {months.map((item) => <option key={item}>{item}</option>)}
             </select>
-            <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Sort order" className="min-h-[48px] rounded-[16px] border border-white/12 bg-black/45 px-4 text-sm outline-none">
+            <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Sort order" className="min-h-[48px] rounded-sm border border-white/12 bg-black/45 px-4 text-sm outline-none">
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
             </select>
@@ -179,13 +179,13 @@ export default function ReportsPage() {
                   <div className="mt-5 flex flex-wrap gap-3">
                     <button
                       onClick={() => navigate(`/reports/${encodeURIComponent(chain.chainId)}/coach`)}
-                      className="rounded-full border border-pink-200/30 bg-pink-300/10 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-pink-100 transition hover:border-pink-300/70"
+                      className="rounded-sm border border-pink-200/30 bg-pink-300/10 px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-pink-100 transition hover:border-pink-300/70"
                     >
                       Open AI Relationship Coach
                     </button>
                     <button
                       onClick={() => setOpenChain(open ? '' : chain.chainId)}
-                      className="rounded-full border border-white/10 bg-white/[0.035] px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-smoke transition hover:border-purple-200/50"
+                      className="rounded-sm border border-white/10 bg-white/[0.035] px-5 py-3 font-mono text-xs uppercase tracking-[0.14em] text-smoke transition hover:border-purple-200/50"
                     >
                       {open ? 'Hide reports' : 'View reports'}
                     </button>
@@ -208,13 +208,13 @@ export default function ReportsPage() {
                                 <button
                                   onClick={() => removeReport(report)}
                                   disabled={deletingId === report.analysisId}
-                                  className="rounded-full border border-rose-200/35 bg-rose-300/12 px-4 py-2 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-rose-100 transition hover:border-rose-200/70 disabled:opacity-60"
+                                  className="rounded-sm border border-rose-200/35 bg-rose-300/12 px-4 py-2 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-rose-100 transition hover:border-rose-200/70 disabled:opacity-60"
                                 >
                                   {deletingId === report.analysisId ? 'Deleting…' : 'Yes, delete'}
                                 </button>
                                 <button
                                   onClick={() => setConfirmDeleteId('')}
-                                  className="rounded-full border border-white/12 bg-white/[0.04] px-4 py-2 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-smoke transition hover:border-white/30"
+                                  className="rounded-sm border border-white/12 bg-white/[0.04] px-4 py-2 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-smoke transition hover:border-white/30"
                                 >
                                   Cancel
                                 </button>
@@ -222,7 +222,7 @@ export default function ReportsPage() {
                             ) : (
                               <button
                                 onClick={() => setConfirmDeleteId(report.analysisId)}
-                                className="rounded-full border border-white/12 bg-white/[0.04] px-4 py-2 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-smoke transition hover:border-rose-200/45 hover:text-rose-100"
+                                className="rounded-sm border border-white/12 bg-white/[0.04] px-4 py-2 font-mono text-[0.63rem] uppercase tracking-[0.12em] text-smoke transition hover:border-rose-200/45 hover:text-rose-100"
                               >
                                 Delete report
                               </button>

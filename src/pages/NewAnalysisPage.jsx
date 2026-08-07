@@ -96,10 +96,10 @@ export default function NewAnalysisPage() {
 
       {/* Sticky mobile progress. Keeps "where am I / how much is left" on screen
           without spending a scroll on it.
-          78px clears the floating header pill, which measures 74px to its
-          bottom edge on a phone. Fully opaque, not translucent: content
-          scrolling underneath a blurred bar reads as a rendering artifact. */}
-      <div className="sticky top-[78px] z-30 mb-5 border-y border-white/10 bg-[#141220] px-4 py-3 lg:hidden">
+          Pinned to the header's exact height: leave a gap and page content
+          shows through the strip between the two bars. Fully opaque, not
+          translucent — content scrolling under a bar reads as a glitch. */}
+      <div className="sticky top-[65px] z-30 mb-5 border-y border-white/10 bg-well px-4 py-3 lg:hidden">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-sm text-bone">{steps[step].label}</p>
           <p className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-ash">
@@ -164,7 +164,7 @@ export default function NewAnalysisPage() {
       </div>
 
       {step < 4 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/12 bg-[#12101f]/95 px-4 py-3 backdrop-blur-xl sm:px-8 sm:py-4">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/12 bg-[#12101f]/95 px-4 py-3  sm:px-8 sm:py-4">
           <div className="mx-auto flex max-w-[1320px] items-center gap-3">
             <button
               onClick={() => setStep((current) => Math.max(0, current - 1))}

@@ -67,7 +67,7 @@ export default function RelationshipSelector({ value, onChange }) {
                   type="button"
                   onClick={() => onChange(option.value)}
                   aria-pressed={selected}
-                  className={`group relative flex min-h-[72px] flex-col justify-center rounded-[20px] border px-4 py-3 text-left transition ${
+                  className={`group relative flex min-h-[72px] flex-col justify-center rounded-sm border px-4 py-3 text-left transition ${
                     selected
                       ? `${group.accent} shadow-[0_0_30px_rgba(168,85,247,0.14)]`
                       : 'border-white/12 bg-white/[0.04] hover:border-white/25 hover:bg-white/[0.07]'

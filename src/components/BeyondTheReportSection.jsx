@@ -35,8 +35,8 @@ export default function BeyondTheReportSection() {
   const { navigate } = useRouter();
 
   return (
-    <section className="px-4 py-14 sm:px-8 sm:py-20">
-      <div className="mx-auto max-w-[1180px]">
+    <section>
+      <div>
         <p className="tech-label text-smoke">After the report</p>
         <h2 className="serif-title mt-4 max-w-2xl text-4xl leading-tight sm:text-6xl">
           The report is where it starts.
@@ -44,7 +44,7 @@ export default function BeyondTheReportSection() {
 
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
           {FEATURES.map(({ Icon, bot, label, title, body, points, accent, labelClass }) => (
-            <article key={title} className={`hud-frame rounded-[28px] border p-5 sm:p-7 ${accent}`}>
+            <article key={title} className={`hud-frame rounded-sm border p-5 sm:p-7 ${accent}`}>
               <span className="hud-corner hud-corner-tl" aria-hidden="true" />
               <span className="hud-corner hud-corner-br" aria-hidden="true" />
               <div className="flex items-center gap-3">

@@ -23,7 +23,7 @@ import {
 function Frame({ kind = 'phone', children, label }) {
   if (kind === 'desktop') {
     return (
-      <div className="mx-auto w-full max-w-sm overflow-hidden rounded-[14px] border border-white/15 bg-[#12101f] shadow-[0_18px_50px_rgba(3,5,18,0.35)]">
+      <div className="mx-auto w-full max-w-sm overflow-hidden rounded-sm border border-white/15 bg-[#12101f] shadow-[0_18px_50px_rgba(3,5,18,0.35)]">
         <div className="flex items-center gap-1.5 border-b border-white/10 bg-white/[0.04] px-3 py-2">
           {['#fb7ba6', '#fbc89a', '#a78bfa'].map((c) => (
             <span key={c} className="h-2 w-2 rounded-full" style={{ background: c, opacity: 0.7 }} />
@@ -35,8 +35,8 @@ function Frame({ kind = 'phone', children, label }) {
     );
   }
   return (
-    <div className="mx-auto w-full max-w-[218px] overflow-hidden rounded-[26px] border border-white/15 bg-[#12101f] p-1.5 shadow-[0_18px_50px_rgba(3,5,18,0.35)]">
-      <div className="relative overflow-hidden rounded-[20px] bg-black/40">
+    <div className="mx-auto w-full max-w-[218px] overflow-hidden rounded-sm border border-white/15 bg-[#12101f] p-1.5 shadow-[0_18px_50px_rgba(3,5,18,0.35)]">
+      <div className="relative overflow-hidden rounded-sm bg-black/40">
         <div className="mx-auto mt-1.5 h-1 w-10 rounded-full bg-white/20" aria-hidden="true" />
         <div className="p-2.5">{children}</div>
       </div>
@@ -131,7 +131,7 @@ function Visual({ spec }) {
               text={label}
               highlight={i === spec.highlight}
               trailing={
-                <span className={`grid h-3 w-3 shrink-0 place-items-center rounded-[3px] border ${on ? 'border-transparent bg-violet-200 text-[#17122a]' : 'border-white/25'}`}>
+                <span className={`grid h-3 w-3 shrink-0 place-items-center rounded-sm border ${on ? 'border-transparent bg-violet-200 text-[#17122a]' : 'border-white/25'}`}>
                   {on && <PiCheck className="text-[0.45rem]" aria-hidden="true" />}
                 </span>
               }
@@ -254,7 +254,7 @@ function Visual({ spec }) {
 export default function ExportStepVisual({ spec, alt }) {
   if (!spec) return null;
   return (
-    <figure className="my-4 overflow-hidden rounded-[20px] border border-white/12 bg-white/[0.03] p-4">
+    <figure className="my-4 overflow-hidden rounded-sm border border-white/12 bg-white/[0.03] p-4">
       <Frame kind={spec.frame || 'phone'} label={spec.frameLabel || 'Telegram Desktop'}>
         <Visual spec={spec} />
       </Frame>
