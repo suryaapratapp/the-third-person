@@ -169,35 +169,32 @@ export default function PlatformSelector({ value, onChange }) {
           const data = platformData[platform];
           const Icon = data.Icon;
           return (
-            <div
-              key={platform}
-              className={`group relative overflow-hidden rounded-sm border transition ${
-                selected
-                  ? 'border-signal bg-accent-wash shadow-glow'
-                  : 'border-line bg-paper hover:border-purple-200 hover:bg-well'
-              }`}
-            >
+            <div key={platform} className="option overflow-hidden" data-selected={selected}>
               <button
                 onClick={() => onChange(platform)}
                 aria-pressed={selected}
-                className="flex w-full items-center gap-3.5 p-4 text-left"
+                className="flex w-full items-center gap-3 p-3.5 text-left"
               >
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-paper text-2xl transition group-hover:bg-well">
+                {/* The brand icon sits on its own tinted tile rather than
+                    floating on the card: six logos in six different brand
+                    colours directly on white is visual noise, and the tile
+                    gives each one the same footprint. */}
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-canvas text-2xl">
                   <Icon style={{ color: data.color }} aria-hidden="true" />
                 </span>
-                <span className="min-w-0 flex-1 text-base text-bone">{platform}</span>
+                <span className="min-w-0 flex-1 text-[0.95rem] font-medium text-ink">{platform}</span>
                 <span
-                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border transition ${
-                    selected ? 'border-transparent bg-signal text-white' : 'border-line'
+                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition ${
+                    selected ? 'border-signal bg-signal text-white' : 'border-lineStrong'
                   }`}
                   aria-hidden="true"
                 >
-                  {selected && <PiCheck className="text-[0.7rem]" />}
+                  {selected && <PiCheck className="text-[0.75rem]" />}
                 </span>
               </button>
               <button
                 onClick={() => setHelpPlatform(platform)}
-                className="flex min-h-[40px] w-full items-center gap-1.5 border-t border-line px-4 text-left text-xs text-ash transition hover:bg-well hover:text-bone"
+                className="flex min-h-[42px] w-full items-center gap-1.5 border-t border-line bg-canvas px-3.5 text-left text-xs font-medium text-ash transition hover:text-signal"
               >
                 <PiQuestion className="text-sm" aria-hidden="true" />
                 How to export from {platform}

@@ -143,7 +143,7 @@ function ProfileAvatar({ profile }) {
       {profile.profileImage ? (
         <img src={profile.profileImage} alt="Profile" className="h-full w-full object-cover" />
       ) : (
-        <div className="flex h-full w-full items-center justify-center bg-signal font-mono text-3xl text-bone">
+        <div className="flex h-full w-full items-center justify-center bg-signal text-3xl font-semibold text-white">
           {getInitials(profile)}
         </div>
       )}

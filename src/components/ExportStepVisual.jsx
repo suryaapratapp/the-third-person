@@ -216,7 +216,7 @@ function Visual({ spec }) {
             <p className="text-[0.5rem] text-ash">ready to analyse</p>
           </div>
         )}
-        <div className="mt-2 rounded-full bg-signal py-1 text-center">
+        <div className="mt-2 rounded-lg bg-signal py-1 text-center">
           <span className=" text-xs text-ink">Start analysis</span>
         </div>
       </>

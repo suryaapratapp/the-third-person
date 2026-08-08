@@ -110,14 +110,15 @@ export default function FloatingCoach({ chainId }) {
             type="button"
             onClick={() => navigate(chainId ? `/reports/${encodeURIComponent(chainId)}/coach` : '/reports')}
             tabIndex={visible ? 0 : -1}
-            className="group flex items-center gap-2 rounded-sm border border-pink-200 bg-signal py-2 pl-2 pr-2.5 text-left shadow-glow transition hover:border-pink-200 sm:gap-3 sm:pr-4"
+            style={{ background: 'var(--you)' }}
+            className="group flex items-center gap-2 rounded-lg py-2 pl-2 pr-2.5 text-left shadow-raised transition hover:-translate-y-0.5 sm:gap-3 sm:pr-4"
           >
             <CoachBot size={40} mood="happy" />
             <span className="hidden sm:block">
-              <span className="block text-xs text-pink-700">
+              <span className="block text-xs font-semibold text-white">
                 Coach
               </span>
-              <span className="block text-sm leading-5 text-bone">Ask about this report</span>
+              <span className="block text-sm font-semibold leading-5 text-white">Ask about this report</span>
             </span>
           </button>
           <button
@@ -125,7 +126,7 @@ export default function FloatingCoach({ chainId }) {
             onClick={dismiss}
             tabIndex={visible ? 0 : -1}
             aria-label="Hide the coach shortcut"
-            className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-line bg-paper text-ash transition hover:text-bone"
+            className="absolute -left-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-paper text-ash shadow-glow transition hover:text-ink"
           >
             <PiX className="text-[0.7rem]" aria-hidden="true" />
           </button>

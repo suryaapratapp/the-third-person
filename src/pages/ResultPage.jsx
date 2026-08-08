@@ -54,36 +54,32 @@ function compactPeriod(period = '', index = 0) {
   return value.replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, '').replace(/\s{2,}/g, ' ').trim() || `Phase ${index + 1}`;
 }
 
+// Some scores are better when low. Conflict intensity of 90 is not a win.
 function scoreTone(key, score) {
   const inverse = key === 'conflictIntensity' || key === 'mixedSignalLevel';
   const good = inverse ? score <= 35 : score >= 72;
   const mid = inverse ? score <= 68 : score >= 46;
-  if (good) return { ring: '#34d399', glow: 'rgba(52,211,153,0.32)', label: 'green' };
-  if (mid) return { ring: '#fb923c', glow: 'rgba(251,146,60,0.28)', label: 'amber' };
-  return { ring: '#fb7185', glow: 'rgba(251,113,133,0.32)', label: 'rose' };
+  if (good) return { ring: 'var(--good)', wash: 'var(--good-wash)', label: 'good' };
+  if (mid) return { ring: 'var(--warn)', wash: 'var(--warn-wash)', label: 'mixed' };
+  return { ring: 'var(--risk)', wash: 'var(--risk-wash)', label: 'strained' };
 }
 
-function CardShell({ id, title, emoji, summary, children, className = '', accent = 'purple' }) {
-  const accentClass = {
-    purple: '',
-    pink: '',
-    blue: '',
-    orange: '',
-    green: '',
-  }[accent] || '';
-
+// Every section of the report is one of these. The `accent` prop used to pick a
+// gradient wash for the card's whole surface; the theme has no washes, so the
+// card is simply a card and the prop is gone. Section identity now comes from
+// the heading, which is where a reader looks for it anyway.
+function CardShell({ id, title, emoji, summary, children, className = '' }) {
   return (
-    <section id={id} data-export-bg="#ffffff" className={`glass-card glow-border relative overflow-hidden p-5 sm:p-6 ${className}`}>
-      <div className={`pointer-events-none absolute inset-0 ${accentClass} opacity-80`} />
-      <div className="relative">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            {title && <p className="tech-label text-smoke">{emoji ? `${title} ${emoji}` : title}</p>}
-          </div>
-          {id && <CardActions targetId={id} name={title || id} summary={summary} />}
-        </div>
-        {children}
+    <section id={id} data-export-bg="#ffffff" className={`card p-5 sm:p-6 ${className}`}>
+      <div className="mb-4 flex items-start justify-between gap-4">
+        {title && (
+          <h2 className="text-base font-semibold leading-6 text-ink">
+            {emoji ? `${emoji} ${title}` : title}
+          </h2>
+        )}
+        {id && <CardActions targetId={id} name={title || id} summary={summary} />}
       </div>
+      {children}
     </section>
   );
 }
@@ -104,33 +100,33 @@ function ScoreBubble({ item }) {
   const tone = scoreTone(item.key, score);
   const circumference = 2 * Math.PI * 42;
   return (
-    <div className="glass-card p-5 transition duration-200 hover:-translate-y-1" style={{ boxShadow: `0 22px 80px ${tone.glow}` }}>
+    <div className="card p-5 transition duration-150 hover:-translate-y-0.5 hover:shadow-raised">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-2xl">{item.icon}</p>
-          <p className="tech-label mt-3 text-smoke">{item.label}</p>
-          <p className="mt-3 text-sm leading-6 text-smoke">{item.description}</p>
+        <div className="min-w-0">
+          <p className="text-xl leading-none">{item.icon}</p>
+          <p className="mt-2.5 text-sm font-semibold text-ink">{item.label}</p>
+          <p className="mt-1.5 text-sm leading-6 text-smoke">{item.description}</p>
         </div>
-        <div className="relative h-24 w-24 shrink-0">
+        <div className="relative h-20 w-20 shrink-0">
           <svg viewBox="0 0 100 100" className="-rotate-90">
-            <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.10)" strokeWidth="8" />
+            <circle cx="50" cy="50" r="42" fill="none" stroke={tone.wash} strokeWidth="9" />
             <circle
               cx="50"
               cy="50"
               r="42"
               fill="none"
               stroke={tone.ring}
-              strokeWidth="8"
+              strokeWidth="9"
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={circumference - (score / 100) * circumference}
             />
           </svg>
-          <p className="absolute inset-0 flex items-center justify-center font-mono text-2xl text-bone">{score}</p>
+          <p className="absolute inset-0 flex items-center justify-center text-xl font-semibold" style={{ color: tone.ring }}>{score}</p>
         </div>
       </div>
-      <div className="mt-5 h-2 overflow-hidden rounded-full bg-well">
-        <div className="h-full rounded-full bg-signal" style={{ width: `${score}%` }} />
+      <div className="mt-4 h-1.5 bar-track">
+        <div className="h-full rounded-full" style={{ width: `${score}%`, background: tone.ring }} />
       </div>
     </div>
   );
@@ -163,15 +159,15 @@ function RadarPentagon({ data = [] }) {
           key={ring}
           points={points.map((_, index) => coord(index, ring).join(',')).join(' ')}
           fill="none"
-          stroke="rgba(255,255,255,.16)"
+          stroke="var(--line)"
           strokeWidth="1"
         />
       ))}
       {points.map((_, index) => {
         const [x, y] = coord(index, 1);
-        return <line key={index} x1={center} y1={center} x2={x} y2={y} stroke="rgba(255,255,255,.12)" strokeWidth="1" />;
+        return <line key={index} x1={center} y1={center} x2={x} y2={y} stroke="var(--line)" strokeWidth="1" />;
       })}
-      <polygon points={shape} fill="#a78bfa" fillOpacity="0.32" stroke="#f472b6" strokeWidth="2" />
+      <polygon points={shape} fill="var(--accent)" fillOpacity="0.16" stroke="var(--accent)" strokeWidth="2" />
       {points.map((point, index) => {
         const [x, y] = coord(index, 1.2);
         return (
@@ -179,8 +175,9 @@ function RadarPentagon({ data = [] }) {
             key={point.subject}
             x={x}
             y={y}
-            fill="#b9b7b1"
-            fontSize="10"
+            fill="var(--muted)"
+            fontSize="11"
+            fontWeight="500"
             textAnchor={x > center + 5 ? 'start' : x < center - 5 ? 'end' : 'middle'}
             dominantBaseline="middle"
           >
@@ -209,7 +206,7 @@ function ActivityBars({ activity }) {
           <div key={bucket.key} className="group flex h-full min-w-0 flex-1 flex-col justify-end" title={`${bucket.label}: ${bucket.count}`}>
             <span className="mb-1 text-center font-mono text-[0.55rem] text-ash opacity-0 transition group-hover:opacity-100">{bucket.count}</span>
             <div
-              className="w-full rounded-t bg-signal transition hover: hover:"
+              className="w-full rounded-t bg-signal transition hover:bg-signalStrong"
               style={{ height: `${Math.max(3, (bucket.count / peak) * 100)}%` }}
             />
           </div>
@@ -230,16 +227,19 @@ function ActivityBars({ activity }) {
   );
 }
 
+// Uses the two person tokens rather than the brand accent: this bar is about
+// who did more, so it should be readable against the same colours every other
+// per-person figure in the report uses.
 function EffortBar({ value, personName = 'Them' }) {
   const userShare = Math.max(0, Math.min(100, Number(value) || 0));
   return (
     <div>
-      <div className="flex justify-between text-xs text-ash">
-        <span>You {userShare}%</span>
-        <span>{personName} {100 - userShare}%</span>
+      <div className="flex justify-between text-xs font-medium">
+        <span className="ink-you">You {userShare}%</span>
+        <span className="ink-them">{personName} {100 - userShare}%</span>
       </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-well">
-        <div className="h-full rounded-full bg-signal" style={{ width: `${userShare}%` }} />
+      <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-them">
+        <div className="h-full bg-you" style={{ width: `${userShare}%` }} />
       </div>
     </div>
   );
@@ -589,12 +589,12 @@ export default function ResultPage({ reportId = '' }) {
               arithmetic the reader could redo by hand, which is what buys the
               credit that the hedged sections below it spend. */}
           {list(metrics.quickStats).length > 0 && (
-            <CardShell id="quick-stats" title="At a glance" emoji="📌" summary="Exact counts from the conversation." accent="blue">
+            <CardShell id="quick-stats" title="At a glance" emoji="📌" summary="Exact counts from the conversation.">
               <QuickStats stats={list(metrics.quickStats)} />
             </CardShell>
           )}
 
-          <CardShell id="report-summary-card" title="Relationship Summary" emoji="✨" summary={analysis.screenshotWorthySummary || summary.currentDynamic} accent="pink">
+          <CardShell id="report-summary-card" title="Relationship Summary" emoji="✨" summary={analysis.screenshotWorthySummary || summary.currentDynamic}>
             <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
               <div>
                 <h2 className="serif-title text-4xl leading-tight sm:text-5xl">{safe(analysis.screenshotWorthySummary || relationshipReport.vibeLabel, 'This connection has signals worth reading gently.')}</h2>
@@ -626,7 +626,7 @@ export default function ResultPage({ reportId = '' }) {
             </div>
           </section>
 
-          <CardShell id="emotional-timeline" title="Relationship Timeline" emoji="🗺️" summary={timelineArc || 'Timeline of relationship phases.'} accent="blue">
+          <CardShell id="emotional-timeline" title="Relationship Timeline" emoji="🗺️" summary={timelineArc || 'Timeline of relationship phases.'}>
             {timelineArc && <p className="mb-5 max-w-3xl text-base leading-8 text-smoke">{safe(timelineArc)}</p>}
             {timeline.length ? (
               <>
@@ -691,7 +691,7 @@ export default function ResultPage({ reportId = '' }) {
           </CardShell>
 
           {personFactGroups.length > 0 && (
-            <CardShell id="person-profile" title={`About ${personName}`} emoji="🔍" summary={`What ${personName}'s own messages reveal about them.`} accent="purple">
+            <CardShell id="person-profile" title={`About ${personName}`} emoji="🔍" summary={`What ${personName}'s own messages reveal about them.`}>
               <p className="max-w-3xl text-sm leading-7 text-smoke">
                 Everything {personName} revealed about themselves in this chat — each point backed by their own words.
                 Mentioned in more than one period shows as <span className="text-purple-700">Confirmed</span>.
@@ -719,7 +719,7 @@ export default function ResultPage({ reportId = '' }) {
             </CardShell>
           )}
 
-          <CardShell id="activity-over-time" title="Messages Over Time" emoji="📊" summary="How much you both talked across the life of this chat." accent="blue">
+          <CardShell id="activity-over-time" title="Messages Over Time" emoji="📊" summary="How much you both talked across the life of this chat.">
             <ActivityBars activity={metrics.activity} />
           </CardShell>
 
@@ -729,7 +729,6 @@ export default function ResultPage({ reportId = '' }) {
                 title={`What Matters In ${meta.relationshipType || 'This Relationship'}`}
                 emoji="🎯"
                 summary={signatureMetrics.map((metric) => `${metric.label}: ${metric.score}`).join(' · ')}
-                accent="pink"
               >
                 <p className="max-w-3xl text-sm leading-7 text-smoke">
                   These four are scored specifically for a {String(meta.relationshipType || 'relationship').toLowerCase()}.
@@ -769,7 +768,7 @@ export default function ResultPage({ reportId = '' }) {
           )}
 
           {effort && (
-            <CardShell id="effort-balance" title="Effort & Reciprocity" emoji="⚖️" summary="Measured counts: who starts, who replies faster, who lets it end." accent="purple">
+            <CardShell id="effort-balance" title="Effort & Reciprocity" emoji="⚖️" summary="Measured counts: who starts, who replies faster, who lets it end.">
               <p className="max-w-3xl text-sm leading-7 text-smoke">
                 These are exact counts from the messages themselves — not an AI estimate — across {effort.conversations.toLocaleString()} separate conversations.
               </p>
@@ -836,7 +835,7 @@ export default function ResultPage({ reportId = '' }) {
           )}
 
           {emojis.length > 0 && (
-            <CardShell id="top-emojis" title="Top Emojis" emoji="😊" summary="The nine emojis used most in this chat." accent="orange">
+            <CardShell id="top-emojis" title="Top Emojis" emoji="😊" summary="The nine emojis used most in this chat.">
               <p className="max-w-2xl text-sm leading-7 text-smoke">Counted directly from the uploaded chat.</p>
               <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
                 {emojis.map((item) => (
@@ -855,7 +854,6 @@ export default function ResultPage({ reportId = '' }) {
               title="Patterns Over Time"
               emoji="📈"
               summary={metrics.rhythm ? `Busiest ${metrics.rhythm.peakLabel}.` : 'How the tone moved.'}
-              accent="blue"
             >
               <p className="max-w-3xl text-sm leading-7 text-smoke">
                 Counted from the timestamps and the words themselves. No model
@@ -869,7 +867,7 @@ export default function ResultPage({ reportId = '' }) {
           )}
 
           {zodiacMatch && (
-            <CardShell id="zodiac-match" title="Zodiac Layer" emoji="✨" summary={`${zodiacMatch.userSign} + ${zodiacMatch.otherSign}: ${zodiacMatch.label}`} accent="purple">
+            <CardShell id="zodiac-match" title="Zodiac Layer" emoji="✨" summary={`${zodiacMatch.userSign} + ${zodiacMatch.otherSign}: ${zodiacMatch.label}`}>
               <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
                 <div className="rounded-sm border border-purple-200 bg-purple-50 p-5 text-center">
                   <div className="flex items-center justify-center gap-4">
@@ -909,7 +907,7 @@ export default function ResultPage({ reportId = '' }) {
             </CardShell>
           )}
 
-          <CardShell id="word-cloud" title="Top Words" emoji="☁️" summary="The five words used most across this conversation." accent="pink">
+          <CardShell id="word-cloud" title="Top Words" emoji="☁️" summary="The five words used most across this conversation.">
             <p className="max-w-2xl text-sm leading-7 text-smoke">
               The five words that came up most across this conversation, counted directly from the messages.
             </p>
@@ -929,7 +927,7 @@ export default function ResultPage({ reportId = '' }) {
           </CardShell>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <CardShell id="red-flags" title="Red Flags" emoji="🚩" summary="Gentle red flag reflections." accent="pink">
+            <CardShell id="red-flags" title="Red Flags" emoji="🚩" summary="Gentle red flag reflections.">
               <div className="grid gap-4">
                 {flags.red.length ? flags.red.map((flag, index) => (
                   <div key={`${flag.label}-${index}`} className="rounded-sm border border-pink-200 bg-pink-50 p-4">
@@ -956,7 +954,7 @@ export default function ResultPage({ reportId = '' }) {
               </div>
             </CardShell>
 
-            <CardShell id="green-flags" title="Green Flags" emoji="🟢" summary="Positive signals from this conversation." accent="green">
+            <CardShell id="green-flags" title="Green Flags" emoji="🟢" summary="Positive signals from this conversation.">
               <div className="grid gap-4">
                 {flags.green.length ? flags.green.map((flag, index) => (
                   <div key={`${flag.label}-${index}`} className="rounded-sm border border-emerald-200 bg-emerald-50 p-4">
@@ -981,7 +979,7 @@ export default function ResultPage({ reportId = '' }) {
             </CardShell>
           </div>
 
-          <CardShell id="energy-match" title="Energy Match Score" emoji="⚡" summary={energy.explanation} accent="orange">
+          <CardShell id="energy-match" title="Energy Match Score" emoji="⚡" summary={energy.explanation}>
             <div className="grid gap-5 xl:grid-cols-[.75fr_1.25fr]">
               <div className="flex flex-col justify-between rounded-sm border border-orange-200 bg-orange-50 p-5">
                 <div>
@@ -1016,7 +1014,7 @@ export default function ResultPage({ reportId = '' }) {
           </CardShell>
 
           {list(analysis.reportSummaryForFutureUse?.personalityDelta).length > 0 && (
-            <CardShell id="personality-update" title="Personality Update" emoji="🧬" summary="How this analysis refined your personality profile." accent="green">
+            <CardShell id="personality-update" title="Personality Update" emoji="🧬" summary="How this analysis refined your personality profile.">
               <p className="max-w-3xl text-sm leading-7 text-smoke">
                 Each analysis teaches ThirdPerson AI a little more about you. This conversation updated your evolving profile in these ways:
               </p>
@@ -1037,7 +1035,7 @@ export default function ResultPage({ reportId = '' }) {
             </CardShell>
           )}
 
-          <CardShell id="next-best-move" title="Next Best Move" emoji="💬" summary={analysis.advice?.nextBestStep} accent="orange">
+          <CardShell id="next-best-move" title="Next Best Move" emoji="💬" summary={analysis.advice?.nextBestStep}>
             <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
               <div>
                 <h2 className="serif-title text-5xl leading-tight">Recommended next step.</h2>

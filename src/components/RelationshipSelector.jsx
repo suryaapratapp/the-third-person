@@ -67,21 +67,18 @@ export default function RelationshipSelector({ value, onChange }) {
                   type="button"
                   onClick={() => onChange(option.value)}
                   aria-pressed={selected}
-                  className={`group relative flex min-h-[72px] flex-col justify-center rounded-sm border px-4 py-3 text-left transition ${
-                    selected
-                      ? `${group.accent} shadow-[0_0_30px_rgba(168,85,247,0.14)]`
-                      : 'border-line bg-paper hover:border-lineStrong hover:bg-well'
-                  }`}
+                  data-selected={selected}
+                  className="option flex min-h-[76px] flex-col justify-center px-3.5 py-3"
                 >
                   <span className="flex items-center justify-between gap-2">
-                    <span className="text-base leading-5 text-bone">{option.label}</span>
+                    <span className="text-[0.95rem] font-medium leading-5 text-ink">{option.label}</span>
                     <span
-                      className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border transition ${
-                        selected ? 'border-transparent bg-signal text-white' : 'border-line'
+                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition ${
+                        selected ? 'border-signal bg-signal text-white' : 'border-lineStrong'
                       }`}
                       aria-hidden="true"
                     >
-                      {selected && <PiCheck className="text-[0.7rem]" />}
+                      {selected && <PiCheck className="text-[0.75rem]" />}
                     </span>
                   </span>
                   <span className="mt-1 text-xs leading-4 text-ash">{option.hint}</span>

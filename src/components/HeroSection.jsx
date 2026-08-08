@@ -78,7 +78,10 @@ export default function HeroSection() {
                 key={name}
                 title={name}
                 aria-label={name}
-                className="grid h-11 w-11 place-items-center rounded-full transition hover:-translate-y-1 hover:bg-well sm:h-14 sm:w-14"
+                /* White tile per logo. Six brand colours straight onto the
+                   tinted page is noise, and Snapchat's yellow all but
+                   disappears against it. */
+                className="grid h-11 w-11 place-items-center rounded-lg border border-line bg-paper shadow-glow transition hover:-translate-y-0.5 sm:h-12 sm:w-12"
               >
                 <Icon className="text-2xl sm:text-3xl" style={{ color }} aria-hidden="true" />
               </span>

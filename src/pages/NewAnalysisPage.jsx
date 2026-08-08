@@ -48,12 +48,15 @@ export default function NewAnalysisPage() {
   // Skipped on first render: this effect also runs on mount, which scrolled
   // people ~400px down the moment they opened the wizard and pushed the page
   // heading off the top of the screen before they had touched anything.
-  const isFirstRender = useRef(true);
+  // Compares against the step it last scrolled for, rather than tracking
+  // "have I run before". A boolean flag does not survive StrictMode, which
+  // remounts the same instance: the first run clears the flag, the second sees
+  // it already cleared and scrolls — dragging the page ~400px down on first
+  // paint, before anyone has touched anything.
+  const scrolledForStep = useRef(step);
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+    if (scrolledForStep.current === step) return;
+    scrolledForStep.current = step;
     panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [step]);
 
@@ -85,76 +88,96 @@ export default function NewAnalysisPage() {
   ];
 
   return (
-    <section className="relative min-h-screen overflow-hidden pb-32 pt-24 sm:pt-28">
+    <section className="relative min-h-screen pb-32 pt-[var(--header-h)]">
+      {/* Sticky stepper.
+          Was five hairline bars that communicated a proportion and nothing
+          else — you could see you were 40% through and not what the remaining
+          60% asked of you. Now it names the current step, counts the rest, and
+          the dots are real navigation: completed steps are reachable, future
+          ones are not, which is the honest affordance for a flow where step 4
+          depends on step 1.
 
-      {/* The page heading sits ABOVE the sticky bar on mobile so it scrolls
-          away cleanly. Ordered after it, the heading slid underneath the
-          translucent bar and ghosted through the blur. */}
-      <h1 className="serif-title relative mb-4 px-4 text-3xl leading-tight lg:hidden">Prepare the signal.</h1>
-
-      {/* Sticky mobile progress. Keeps "where am I / how much is left" on screen
-          without spending a scroll on it.
-          Pinned to the header's exact height: leave a gap and page content
-          shows through the strip between the two bars. Fully opaque, not
-          translucent — content scrolling under a bar reads as a glitch. */}
-      <div className="sticky top-[65px] z-30 mb-5 border-y border-line bg-well px-4 py-3 lg:hidden">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="text-sm text-bone">{steps[step].label}</p>
-          <p className=" text-xs text-ash">
-            {step + 1} / {steps.length}
-          </p>
-        </div>
-        <div className="mt-2.5 flex gap-1.5" role="progressbar" aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={steps.length}>
-          {steps.map((item, index) => (
-            <button
-              key={item.short}
-              type="button"
-              onClick={() => index < step && setStep(index)}
-              disabled={index >= step}
-              aria-label={`Step ${index + 1}: ${item.label}`}
-              className={`h-1.5 flex-1 rounded-full transition ${
-                index < step ? 'bg-signal' : index === step ? 'bg-signal/45' : 'bg-well'
-              } ${index < step ? 'cursor-pointer' : 'cursor-default'}`}
-            />
-          ))}
+          Pinned to the header's exact height. Leave a gap and page content
+          shows through the strip between the two bars. */}
+      <div className="below-header sticky z-30 border-b border-line bg-paper px-4 py-3 shadow-glow sm:px-6">
+        <div className="mx-auto max-w-[1320px]">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-sm font-semibold text-ink">{steps[step].label}</p>
+            <p className="shrink-0 text-xs font-medium text-ash">
+              Step {step + 1} of {steps.length}
+            </p>
+          </div>
+          <ol
+            className="mt-2.5 flex items-center gap-1.5"
+            role="progressbar"
+            aria-valuenow={step + 1}
+            aria-valuemin={1}
+            aria-valuemax={steps.length}
+          >
+            {steps.map((item, index) => {
+              const state = index < step ? 'done' : index === step ? 'current' : 'todo';
+              return (
+                <li key={item.short} className="flex min-w-0 flex-1 items-center gap-1.5 last:flex-none">
+                  <button
+                    type="button"
+                    onClick={() => index < step && setStep(index)}
+                    disabled={index >= step}
+                    aria-current={index === step ? 'step' : undefined}
+                    aria-label={`Step ${index + 1}: ${item.label}`}
+                    className="step-dot disabled:cursor-default"
+                    data-state={state}
+                  >
+                    {state === 'done' ? <PiCheck aria-hidden="true" /> : index + 1}
+                  </button>
+                  {index < steps.length - 1 && (
+                    <span className="step-rail" data-state={index < step ? 'done' : 'todo'} aria-hidden="true" />
+                  )}
+                </li>
+              );
+            })}
+          </ol>
         </div>
       </div>
 
-      <div className="relative mx-auto max-w-[1320px] px-4 sm:px-8">
-        <div className="mb-5 hidden lg:mb-8 lg:block">
-          <p className="tech-label text-smoke">New conversation analysis</p>
-          <h1 className="serif-title mt-4 text-5xl leading-none sm:text-7xl">Prepare the signal.</h1>
-        </div>
-        <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
-          <aside className="thin-panel hidden h-fit p-5 lg:block">
-            {steps.map((item, index) => {
-              const done = index < step;
-              return (
-                <button
-                  key={item.label}
-                  onClick={() => setStep(index)}
-                  className={`flex w-full items-center gap-4 border-b border-line py-4 text-left last:border-b-0 ${index === step ? 'text-bone' : 'text-ash'}`}
-                >
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center border font-mono text-xs ${index === step ? 'border-line' : 'border-line'}`}>
-                    {done ? <PiCheck className="text-violet-700" aria-hidden="true" /> : String(index + 1).padStart(2, '0')}
-                  </span>
-                  <span className="text-sm">{item.label}</span>
-                </button>
-              );
-            })}
+      <div className="relative mx-auto max-w-[1320px] px-4 pt-6 sm:px-6 sm:pt-8">
+        <div className="grid gap-6 lg:grid-cols-[240px_1fr] lg:gap-8">
+          {/* On a wide screen the step list is worth its column: it shows the
+              whole shape of the task at once. On a phone it is five rows of
+              chrome above the thing you are meant to do, so it is the sticky
+              bar's job there and this is hidden. */}
+          <aside className="hidden h-fit lg:block">
+            <p className="tech-label">New analysis</p>
+            <ol className="mt-3 grid gap-0.5">
+              {steps.map((item, index) => {
+                const state = index < step ? 'done' : index === step ? 'current' : 'todo';
+                return (
+                  <li key={item.label}>
+                    <button
+                      onClick={() => index <= step && setStep(index)}
+                      disabled={index > step}
+                      aria-current={index === step ? 'step' : undefined}
+                      className={`flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-left transition ${
+                        index === step
+                          ? 'bg-accentWash text-ink'
+                          : index < step
+                            ? 'text-smoke hover:bg-well'
+                            : 'cursor-default text-ash'
+                      }`}
+                    >
+                      <span className="step-dot" data-state={state}>
+                        {state === 'done' ? <PiCheck aria-hidden="true" /> : index + 1}
+                      </span>
+                      <span className="text-sm font-medium">{item.label}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
           </aside>
 
-          <div ref={panelRef} className="thin-panel scroll-mt-32 p-4 transition-all duration-300 sm:p-8 lg:min-h-[560px]">
-            <div className="mb-6 hidden items-start justify-between gap-4 lg:flex">
-              <div>
-                <p className="tech-label text-smoke">Step {step + 1} / {steps.length}</p>
-                <h2 className="serif-title mt-3 text-4xl leading-tight sm:text-5xl">{steps[step].label}</h2>
-              </div>
-              <div className="w-44 pt-3">
-                <div className="h-px bg-well">
-                  <div className="h-px accent-gradient transition-all" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
-                </div>
-              </div>
+          <div ref={panelRef} className="card scroll-mt-[156px] p-4 sm:p-7 lg:scroll-mt-24 lg:min-h-[560px]">
+            <div className="mb-5 hidden lg:block">
+              <h1 className="serif-title text-[1.75rem]">{steps[step].label}</h1>
             </div>
             {bodies[step]}
           </div>
@@ -162,20 +185,23 @@ export default function NewAnalysisPage() {
       </div>
 
       {step < 4 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-well px-4 py-3  sm:px-8 sm:py-4">
-          <div className="mx-auto flex max-w-[1320px] items-center gap-3">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-paper px-4 py-3 shadow-raised sm:px-6">
+          <div className="mx-auto flex max-w-[1320px] items-center gap-2.5">
             <button
               onClick={() => setStep((current) => Math.max(0, current - 1))}
               disabled={step === 0}
-              className="btn btn-ghost min-h-[48px] !px-5 !py-3 text-xs disabled:cursor-not-allowed disabled:opacity-40"
+              className="btn btn-secondary btn-lg shrink-0 !px-4"
+              aria-label="Back a step"
             >
               <PiArrowLeft className="text-base" aria-hidden="true" />
               <span className="hidden sm:inline">Back</span>
             </button>
+            {/* Full width on a phone. The primary action of the product's
+                critical flow should not be a small target in a corner. */}
             <button
               disabled={!canContinue}
               onClick={() => setStep((current) => Math.min(4, current + 1))}
-              className="btn btn-primary min-h-[48px] flex-1 !py-3 text-xs disabled:cursor-not-allowed disabled:opacity-45 sm:flex-none sm:!px-8"
+              className="btn btn-primary btn-lg flex-1 sm:flex-none sm:!px-8"
             >
               Continue
               <PiArrowRight className="text-base" aria-hidden="true" />

@@ -127,8 +127,8 @@ export default function TopNav() {
   // content sliding through it, and a rounded card hovering over the content
   // was the last piece of chrome still reading as the old look.
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 border-b border-line bg-surface">
-      <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 sm:px-6">
+    <header className="app-header fixed left-0 right-0 top-0 z-50 border-b border-line bg-paper">
+      <div className="mx-auto flex h-full max-w-[1400px] items-center justify-between gap-3 px-4 sm:px-6">
         <button onClick={() => navigate('/')} aria-label="ThirdPerson AI — home">
           <Logo size={26} withWordmark />
         </button>

@@ -11,67 +11,82 @@ import { useRouter } from '../state/RouterContext.jsx';
 // they have just learned something and want to ask about it — and the product
 // was quietly ending there.
 //
-// Deliberately styled AGAINST the report's own language. Every card above this
-// is a translucent panel on the shared violet ground; these two are solid,
-// saturated, and carry their own artwork, so they read as doors out of the
-// report rather than as two more sections of it. Each also previews the theme
-// of the page it opens, so the colour change on arrival feels intentional.
+// These are the only two saturated surfaces in the whole report. Everything
+// above them is white cards on a tinted page, so a filled panel reads as a door
+// out rather than as one more section. Each carries the colour of the page it
+// opens, so the shift on arrival feels intentional rather than jarring.
+//
+// Colours come from the two person tokens, which is not arbitrary: the coach
+// talks about you, so it wears `--you`; Know Yourself is the profile built
+// across everyone, so it wears `--them`.
+const CARDS = [
+  {
+    key: 'coach',
+    eyebrow: 'Included with this report',
+    title: 'Ask the coach about it',
+    body: '“Is he actually interested?” “What do I reply?” It answers from this report, not generic advice.',
+    action: 'Start chatting',
+    bg: 'var(--you)',
+    art: <CoachBot size={64} mood="happy" />,
+    attr: { 'data-coach-cta': true },
+  },
+  {
+    key: 'yourself',
+    eyebrow: 'Builds with every analysis',
+    title: 'See who you actually are',
+    body: 'This report just added to your profile — fifteen traits, read from how you really talk across every relationship.',
+    action: 'Open Know Yourself',
+    bg: 'var(--them)',
+    // Near-opaque tile, not a 15% wash. The constellation is drawn in the
+    // accent and rose inks; on a translucent tile over the blue fill its own
+    // lines all but vanished, so the preview showed nothing at all.
+    art: (
+      <span className="grid h-16 w-16 place-items-center rounded-lg bg-white/95">
+        <TraitConstellation view={[]} size={52} showLabels={false} />
+      </span>
+    ),
+    attr: {},
+  },
+];
+
 export default function AfterReportActions({ chainId }) {
   const { navigate } = useRouter();
-  const coachHref = chainId ? `/reports/${encodeURIComponent(chainId)}/coach` : '/reports';
+  const hrefFor = {
+    coach: chainId ? `/reports/${encodeURIComponent(chainId)}/coach` : '/reports',
+    yourself: '/personality-card',
+  };
 
   return (
     <section className="mt-10" aria-label="What to do next">
-      <p className="tech-label text-smoke">Now that you have the report</p>
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        {/* Coach — warm rose, matching the page it opens. */}
-        <button
-          type="button"
-          data-coach-cta
-          onClick={() => navigate(coachHref)}
-          className="group relative overflow-hidden rounded-sm border border-pink-200 bg-signal p-6 text-left shadow-glow transition duration-200 hover:-translate-y-0.5 hover:border-pink-200 sm:p-7"
-        >
-          <div className="relative flex items-start gap-4">
-            <CoachBot size={64} mood="happy" />
-            <div className="min-w-0 flex-1">
-              <p className=" text-xs text-pink-700">Included with this report</p>
-              <h3 className="serif-title mt-2 text-3xl leading-tight text-bone sm:text-4xl">Ask the coach about it</h3>
-              <p className="mt-2 text-sm leading-6 text-smoke">
-                “Is he actually interested?” “What do I reply?” It answers from this report, not
-                generic advice.
-              </p>
-              <span className="mt-4 inline-flex items-center gap-2 rounded-sm bg-pink-50 px-4 py-2 text-xs text-ink">
-                Start chatting
-                <PiArrowRight className="text-sm" aria-hidden="true" />
-              </span>
+      <p className="tech-label">Now that you have the report</p>
+      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+        {CARDS.map((card) => (
+          <button
+            key={card.key}
+            type="button"
+            {...card.attr}
+            onClick={() => navigate(hrefFor[card.key])}
+            style={{ background: card.bg }}
+            className="group relative overflow-hidden rounded-lg p-5 text-left shadow-raised transition duration-150 hover:-translate-y-0.5 active:translate-y-0 sm:p-6"
+          >
+            <div className="flex items-start gap-4">
+              <span className="shrink-0">{card.art}</span>
+              <div className="min-w-0 flex-1">
+                {/* Full white, not a tint. White at 80% over the rose fill
+                    composites to 4.35:1, which is under AA for text this
+                    small — and a lighter tint of the fill itself would be
+                    worse still. */}
+                <p className="text-xs font-semibold text-white">{card.eyebrow}</p>
+                <h3 className="serif-title mt-1.5 text-2xl !text-white sm:text-[1.75rem]">{card.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-white/90">{card.body}</p>
+                <span className="mt-4 inline-flex min-h-[40px] items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold" style={{ color: card.bg }}>
+                  {card.action}
+                  <PiArrowRight className="text-base transition group-hover:translate-x-0.5" aria-hidden="true" />
+                </span>
+              </div>
             </div>
-          </div>
-        </button>
-
-        {/* Know Yourself — cyan/indigo, matching the constellation page. */}
-        <button
-          type="button"
-          onClick={() => navigate('/personality-card')}
-          className="group relative overflow-hidden rounded-sm border border-cyan-200 bg-signal p-6 text-left shadow-glow transition duration-200 hover:-translate-y-0.5 hover:border-cyan-200 sm:p-7"
-        >
-          <div className="relative flex items-start gap-4">
-            <span className="shrink-0 opacity-90">
-              <TraitConstellation view={[]} size={64} showLabels={false} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className=" text-xs text-cyan-700">Builds with every analysis</p>
-              <h3 className="serif-title mt-2 text-3xl leading-tight text-bone sm:text-4xl">See who you actually are</h3>
-              <p className="mt-2 text-sm leading-6 text-smoke">
-                This report just added to your profile — fifteen traits, read from how you really
-                talk across every relationship.
-              </p>
-              <span className="mt-4 inline-flex items-center gap-2 rounded-sm bg-cyan-50 px-4 py-2 text-xs text-ink">
-                Open Know Yourself
-                <PiArrowRight className="text-sm" aria-hidden="true" />
-              </span>
-            </div>
-          </div>
-        </button>
+          </button>
+        ))}
       </div>
     </section>
   );

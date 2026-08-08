@@ -3,71 +3,103 @@
 @tailwind utilities;
 
 /* ==================================================================== *
- * ThirdPerson AI — light product theme
+ * ThirdPerson AI — design system
  *
- * Replaces a dark "sci-fi HUD" system: particle canvases, aurora orbs,
- * glow borders, corner ticks, scan lines, backdrop blur, a Didone
- * display face and uppercase letter-spaced mono labels on every
- * section. It looked engineered. It did not look easy to use, and it
- * cost a webfont request plus a compositor layer on every scroll.
+ * A soft blue-grey page with white cards on it, rather than white cards
+ * on white. Two reasons that matters:
  *
- * Three rules replace all of it:
- *   1. Contrast comes from the ink, not from glow.
- *   2. Structure comes from whitespace and hairlines, not from cards
- *      floating on cards.
- *   3. Nothing paints that isn't information.
+ *   1. Pure #ffffff behind a long report is genuinely tiring to read on
+ *      a phone at night, which is when people read these.
+ *   2. It gives elevation something to work against. On a white page a
+ *      white card can only be described by a hairline border; on a
+ *      tinted page it separates on its own, so structure stops
+ *      depending on drawing a box around everything.
+ *
+ * Every colour below was chosen against a computed contrast ratio, not
+ * by eye. The weakest text/ground pair in the whole system is 4.74:1
+ * (`--good` on `--well`); everything else clears 5:1, and body text on
+ * the page ground is 9.5:1. See the token table in the palette block.
  *
  * There is no webfont. The system UI stack renders on the first frame
- * with no network request and no layout shift, and on the phones this
- * product actually runs on it is the face people already read all day.
+ * with no network request and no layout shift.
  * ==================================================================== */
 
 :root {
   color-scheme: light;
 
-  /* Ground, in three steps. Page → section band → inset well. */
+  /* ---- Ground, three steps -------------------------------------- *
+   * canvas = the page, paper = a card, well = an inset inside a card.
+   * The steps are deliberately shallow (1.14 and 1.09) — enough to
+   * read as separate planes, not enough to look like stripes. */
+  --canvas: #eef0f4;
   --paper: #ffffff;
-  --canvas: #f6f6f8;
-  --well: #f0f0f3;
+  --well: #e4e7ee;
 
-  --line: #e5e5ea;
-  --line-strong: #d2d2da;
+  --line: #d9dce4;
+  --line-strong: #bfc4d0;
 
-  /* Text, in three steps. Anything below `muted` fails contrast on
-     white and has no business being on the page. */
-  --ink: #15151a;
-  --graphite: #46464f;
-  --muted: #6e6e7a;
+  /* ---- Ink, three steps ----------------------------------------- *
+   *                  on paper   on canvas   on well
+   *   ink              19.03      16.68      15.37
+   *   graphite         10.87       9.53       8.78
+   *   muted             6.49       5.69       5.24    */
+  --ink: #0d1017;
+  --graphite: #383d49;
+  --muted: #585e6d;
 
-  /* PER-PERSON IDENTITY.
-     One colour per participant, constant across every chart in the
-     report, so "who is who" is learned once and never re-read from a
-     legend. Both are darkened from the old dark-theme values to clear
-     4.5:1 on white. */
-  --you: #c62a63;
-  --them: #1263c4;
+  /* ---- Brand ---------------------------------------------------- *
+   * One accent, for actions and emphasis only. Dark enough (7.9:1 on
+   * paper) to be used as text, which a lighter indigo would not be. */
+  --accent: #4338ca;
+  --accent-ink: #362ba6;
+  --accent-wash: #eceafb;
+  --accent-line: #c5bff4;
 
-  /* Semantic, deliberately distinct from the two person colours so a
-     chart can show sentiment and identity at once without collision. */
-  --good: #0a8055;
-  --warn: #9a6410;
-  --risk: #c8392f;
+  /* ---- Per-person identity -------------------------------------- *
+   * One colour per participant, held constant across every chart in
+   * the report, so "who is who" is learned once and never re-read from
+   * a legend. Both clear AA on all three grounds. */
+  --you: #bb1f57;
+  --them: #0f5cb8;
+  --you-wash: #fdeef3;
+  --them-wash: #eaf2fd;
 
-  /* Single brand accent. One accent, used for actions only. */
-  --accent: #5546d6;
-  --accent-ink: #4136ad;
-  --accent-wash: #f0eefc;
+  /* ---- Semantic ------------------------------------------------- *
+   * Deliberately distinct from the two person colours, so a chart can
+   * show sentiment and identity at the same time without collision. */
+  --good: #0a7350;
+  --warn: #8a5a0b;
+  --risk: #bd2f26;
+  --good-wash: #e7f5ef;
+  --warn-wash: #fbf2e3;
+  --risk-wash: #fdeeec;
 
-  --radius: 4px;
-  --radius-lg: 6px;
+  /* ---- Shape ---------------------------------------------------- *
+   * 10 for cards, 8 for controls, 6 for chips. One scale, three
+   * values. The old theme had nine radii, which is the same as having
+   * none. */
+  --r-card: 10px;
+  --r-control: 8px;
+  --r-chip: 6px;
 
-  /* One elevation. A product with five shadow depths has none. */
-  --lift: 0 1px 2px rgba(21, 21, 26, 0.05), 0 4px 12px rgba(21, 21, 26, 0.04);
+  /* ---- Elevation ------------------------------------------------ *
+   * Two levels and no more: resting and raised. A product with five
+   * shadow depths has none, because nothing is legibly above anything
+   * else. */
+  --lift: 0 1px 2px rgba(13, 16, 23, 0.04), 0 1px 3px rgba(13, 16, 23, 0.06);
+  --lift-raised: 0 2px 4px rgba(13, 16, 23, 0.05), 0 8px 20px rgba(13, 16, 23, 0.08);
+  --lift-accent: 0 1px 2px rgba(13, 16, 23, 0.08), 0 6px 16px rgba(67, 56, 202, 0.22);
+
+  /* ---- Layout --------------------------------------------------- *
+   * Fixed, so anything pinning below the header references it instead of
+   * guessing. A hardcoded 64px here was 5px short of the real rendered
+   * height, which tucked the wizard's stepper under the header. */
+  --header-h: 64px;
 
   --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  background: var(--paper);
+  background: var(--canvas);
   color: var(--graphite);
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
@@ -86,8 +118,10 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  overflow-x: hidden;
-  background: var(--paper);
+  /* clip, not hidden — see AppShell. Hidden here would make body a scroll
+     container and break every sticky element in the product. */
+  overflow-x: clip;
+  background: var(--canvas);
   color: var(--graphite);
   font-size: 16px;
   line-height: 1.6;
@@ -117,14 +151,17 @@ button {
   cursor: pointer;
 }
 
+/* One focus ring for the whole product, and it is always visible against
+   both the page and a card. */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
-select:focus-visible {
+select:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 ::selection {
@@ -135,23 +172,25 @@ select:focus-visible {
 /* -------------------------------------------------------------------- *
  * Type
  *
- * `serif-title` keeps its name because 66 call sites use it, but it is
- * no longer a serif. A high-contrast Didone at display size is a
- * magazine gesture; this is a tool people open when they are anxious
- * about a relationship, and it should read as calm and plain.
+ * `serif-title` keeps its name because 66 call sites use it, but it has
+ * not been a serif since the theme changed. Optical sizing by hand: the
+ * bigger the type, the tighter the tracking, which is the one thing that
+ * makes a system font look deliberate at display sizes.
  * -------------------------------------------------------------------- */
 .serif-title {
   font-family: var(--font-ui);
-  font-weight: 660;
-  letter-spacing: -0.022em;
-  line-height: 1.12;
+  font-weight: 680;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
   color: var(--ink);
+  text-wrap: balance;
 }
 
-/* Section eyebrow. Was uppercase mono at 0.18em tracking — the single
-   loudest tell of the old theme, repeated 121 times. Now it is just a
-   small, quiet label. */
-.tech-label {
+/* Section eyebrow. Was uppercase mono at 0.18em tracking, 121 times
+   over — the loudest tell of the old theme. Now a quiet small label. */
+.tech-label,
+.eyebrow {
+  display: block;
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0;
@@ -159,19 +198,16 @@ select:focus-visible {
   color: var(--muted);
 }
 
-.eyebrow {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--muted);
-}
-
 /* -------------------------------------------------------------------- *
  * Surfaces
  *
- * One card. Not a glass card and a thin panel and an accent panel and a
- * HUD frame — those were four names for the same rectangle with
- * different amounts of glow. The legacy names are kept as aliases so
- * nothing has to be renamed at 300 call sites; they all resolve here.
+ * One card. The old theme had four names for the same rectangle with
+ * different amounts of glow (`glass-card`, `thin-panel`, `accent-panel`,
+ * `sticky-glass`); they are kept as aliases so 300 call sites did not
+ * need renaming, and all resolve here.
+ *
+ * A card is white on a tinted page with a real (if slight) shadow. That
+ * is what makes it a card rather than a bordered region.
  * -------------------------------------------------------------------- */
 .card,
 .glass-card,
@@ -180,40 +216,48 @@ select:focus-visible {
 .sticky-glass {
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
+  border-radius: var(--r-card);
+  box-shadow: var(--lift);
 }
 
-/* The one panel that is allowed to stand out: a left rule in the brand
-   accent. Cheaper than a gradient border and it reads as emphasis
-   rather than as decoration. */
+/* A card that wants attention gets a 3px accent edge, not a gradient,
+   not a glow. */
 .accent-panel {
   border-left: 3px solid var(--accent);
 }
 
-/* Panels nest — a page section can contain cards that also carry the class.
-   Two parallel accent rules an inch apart read as a rendering fault, so only
-   the outermost one keeps it. */
-.accent-panel .accent-panel {
-  border-left: 1px solid var(--line);
+/* Cards nest — a page section can contain cards carrying the same
+   class. Two parallel accent rules an inch apart read as a rendering
+   fault, and a shadow inside a shadow reads as dirt, so nested cards
+   flatten to a plain inset. */
+.accent-panel .accent-panel,
+.card .card,
+.glass-card .glass-card {
+  border-left-width: 1px;
+  border-left-color: var(--line);
+  box-shadow: none;
 }
 
+/* An inset region inside a card: quoted evidence, a code well, a
+   sub-table. Recessed, so it never competes with the card itself. */
 .well {
   background: var(--well);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--r-control);
+  box-shadow: none;
 }
 
-.lift {
-  box-shadow: var(--lift);
-}
+.lift { box-shadow: var(--lift); }
+.lift-raised { box-shadow: var(--lift-raised); }
 
 .rule-top { border-top: 1px solid var(--line); }
 .rule-bottom { border-bottom: 1px solid var(--line); }
 
-/* Alternating full-bleed section grounds. The only device giving a long
-   scroll a rhythm now that sections are not coloured boxes. */
+/* Alternating full-bleed grounds. With a tinted page, the alternate
+   band is the WHITE one — the inverse of the old dark theme, and it
+   reads as a lift rather than as a shadow. */
 .band-alt {
-  background: var(--canvas);
+  background: var(--paper);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
@@ -221,14 +265,13 @@ select:focus-visible {
 /* -------------------------------------------------------------------- *
  * Controls
  *
- * In `@layer components` so plain utilities still beat them — `.btn`
- * used to be defined after `@tailwind utilities`, which meant its
+ * In `@layer components` so plain utilities still beat them — `.btn` was
+ * once defined after `@tailwind utilities`, which meant its
  * `display: inline-flex` overrode `hidden` and a header CTA that was
  * supposed to disappear on mobile did not.
  *
- * Sentence case, not uppercase mono. "Analyse a chat" is a sentence a
- * person reads; "A N A L Y S E   A   C H A T" is a thing a person
- * decodes.
+ * Every button is at least 44px tall, because this product is used on
+ * phones and 44px is the smallest target a thumb hits reliably.
  * -------------------------------------------------------------------- */
 @layer components {
   .btn {
@@ -236,21 +279,54 @@ select:focus-visible {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: var(--radius);
+    border-radius: var(--r-control);
     font-size: 0.9375rem;
-    font-weight: 560;
-    letter-spacing: -0.006em;
+    font-weight: 590;
+    letter-spacing: -0.008em;
     text-transform: none;
-    padding: 0.75rem 1.25rem;
+    padding: 0.6875rem 1.125rem;
     min-height: 44px;
     border: 1px solid transparent;
-    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+    color: var(--ink);
+    /* Transform is in the transition so the 1px press works, but nothing
+       else animates — a button that fades its colour feels laggy. */
+    transition: background-color 120ms ease, border-color 120ms ease,
+      box-shadow 120ms ease, color 120ms ease, transform 60ms ease;
   }
 
+  .btn:active { transform: translateY(1px); }
+
+  .btn:disabled,
+  .btn[disabled] {
+    cursor: not-allowed;
+    opacity: 0.45;
+    transform: none;
+  }
+
+  .btn-sm {
+    min-height: 36px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: var(--r-chip);
+  }
+
+  .btn-lg {
+    min-height: 52px;
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  .btn-block { width: 100%; }
+
+  /* Primary. The inset top highlight is the whole trick: one
+     hairline of white at 18% along the top edge reads as a lit
+     surface, which is what separates a modern solid button from a
+     flat rectangle of colour. */
   .btn-primary {
     background: var(--accent);
     border-color: var(--accent);
     color: #ffffff;
+    box-shadow: var(--lift-accent), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   }
 
   .btn-primary:hover {
@@ -266,26 +342,31 @@ select:focus-visible {
     gap: 0.5rem;
     background: var(--paper);
     border: 1px solid var(--line-strong);
-    border-radius: var(--radius);
+    border-radius: var(--r-control);
     color: var(--ink);
     font-size: 0.9375rem;
-    font-weight: 560;
+    font-weight: 590;
+    letter-spacing: -0.008em;
     text-transform: none;
-    letter-spacing: -0.006em;
     min-height: 44px;
-    padding: 0.75rem 1.25rem;
-    transition: background-color 140ms ease, border-color 140ms ease;
+    padding: 0.6875rem 1.125rem;
+    box-shadow: var(--lift);
+    transition: background-color 120ms ease, border-color 120ms ease, transform 60ms ease;
   }
 
   .btn-secondary:hover,
   .glass-button:hover {
-    background: var(--well);
+    background: var(--canvas);
     border-color: var(--muted);
   }
+
+  .btn-secondary:active,
+  .glass-button:active { transform: translateY(1px); }
 
   .btn-ghost {
     background: transparent;
     border-color: transparent;
+    box-shadow: none;
     color: var(--graphite);
   }
 
@@ -293,13 +374,139 @@ select:focus-visible {
     background: var(--well);
     color: var(--ink);
   }
+
+  /* Destructive, for delete-everything confirmations. */
+  .btn-danger {
+    background: var(--risk);
+    border-color: var(--risk);
+    color: #ffffff;
+  }
+
+  .btn-danger:hover { background: #a12820; border-color: #a12820; }
 }
 
 /* -------------------------------------------------------------------- *
- * Data marks
+ * Chips
+ * -------------------------------------------------------------------- */
+.chip,
+.neon-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: var(--r-chip);
+  border: 1px solid var(--line);
+  background: var(--canvas);
+  padding: 0.1875rem 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: var(--graphite);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.chip-accent {
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+}
+
+/* -------------------------------------------------------------------- *
+ * Fields
+ * -------------------------------------------------------------------- */
+.field {
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-control);
+  padding: 0.6875rem 0.875rem;
+  min-height: 44px;
+  color: var(--ink);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+/* -------------------------------------------------------------------- *
+ * Selectable option
  *
- * Shared by every chart in the report so a bar, a dot and a line all
- * mean the same thing wherever they appear.
+ * The wizard's messaging-app and relationship pickers. A selected
+ * option is marked THREE ways — accent border, tinted fill, and a check
+ * — because on a phone in sunlight a border alone is not a state
+ * anybody can see.
+ * -------------------------------------------------------------------- */
+.option {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  box-shadow: var(--lift);
+  transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.option:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--lift-raised);
+}
+
+.option[aria-pressed='true'],
+.option[data-selected='true'] {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  box-shadow: 0 0 0 1px var(--accent), var(--lift);
+}
+
+/* -------------------------------------------------------------------- *
+ * Stepper
+ *
+ * The analysis wizard's progress. Was five hairline bars that told you
+ * a proportion and nothing else; now it names the step you are on and
+ * how many remain, with completed steps reachable and future ones not.
+ * -------------------------------------------------------------------- */
+.step-dot {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line-strong);
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 620;
+  flex: none;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.step-dot[data-state='current'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.step-dot[data-state='done'] {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+}
+
+.step-rail {
+  height: 2px;
+  flex: 1 1 auto;
+  background: var(--line);
+  border-radius: 1px;
+}
+
+.step-rail[data-state='done'] { background: var(--accent); }
+
+/* -------------------------------------------------------------------- *
+ * Data marks
  * -------------------------------------------------------------------- */
 .ink-you { color: var(--you); }
 .ink-them { color: var(--them); }
@@ -308,17 +515,17 @@ select:focus-visible {
 
 .bar-track {
   background: var(--well);
-  border-radius: 2px;
+  border-radius: 999px;
   overflow: hidden;
 }
 
 /* -------------------------------------------------------------------- *
  * Decoration removal
  *
- * These classes are still referenced across the app. Rather than touch
- * every call site, they are neutralised here: the markup stays valid
- * and paints nothing. Deleting the call sites is a separate, safer
- * change than deleting them mid-theme-swap.
+ * These classes are still referenced across the app. Neutralised here
+ * rather than at every call site: the markup stays valid and paints
+ * nothing. Deleting the call sites is a safer separate change than
+ * doing it during a theme swap.
  * -------------------------------------------------------------------- */
 .aurora-orb,
 .aurora-ring,
@@ -339,23 +546,10 @@ select:focus-visible {
   background-image: none;
 }
 
-.neon-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: var(--well);
-  padding: 0.25rem 0.6rem;
-  font-size: 0.75rem;
-  font-weight: 560;
-  color: var(--graphite);
-}
-
 .neon-meter {
   position: relative;
   height: 6px;
-  border-radius: 3px;
+  border-radius: 999px;
   background: var(--well);
   overflow: hidden;
 }
@@ -363,21 +557,13 @@ select:focus-visible {
 .neon-meter > span {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: 3px;
+  border-radius: 999px;
   background: var(--accent);
 }
 
-.accent-gradient {
-  background: var(--accent);
-}
-
-.accent-text {
-  color: var(--accent-ink);
-}
-
-.decorative-label {
-  color: var(--muted);
-}
+.accent-gradient { background: var(--accent); }
+.accent-text { color: var(--accent-ink); }
+.decorative-label { color: var(--muted); }
 
 /* -------------------------------------------------------------------- *
  * CoachBot mascot
@@ -406,4 +592,16 @@ select:focus-visible {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* -------------------------------------------------------------------- *
+ * Layout anchors
+ * -------------------------------------------------------------------- */
+.app-header {
+  height: var(--header-h);
+}
+
+/* Anything sticky that must sit directly below the header. */
+.below-header {
+  top: var(--header-h);
 }

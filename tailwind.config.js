@@ -1,12 +1,14 @@
-/** Light product theme.
+/** Design tokens, mirrored from the CSS custom properties in styles.css.
  *
- * The old dark tokens (`bone`, `smoke`, `ash`, `panel`, `line`, and the
- * violet/pink/cyan signal ramp) are kept as NAMES and repointed at light
- * values, because they are used ~600 times across the app. Renaming them
- * would be a 40-file mechanical diff that changes nothing a user sees;
- * repointing them flips the whole product in one place.
+ * The dark-theme names (`bone`, `smoke`, `ash`, `panel`, `signal`, and the
+ * violet/pink/cyan ramp) are kept as NAMES and repointed, because they are used
+ * ~600 times across the app. Renaming them would be a 40-file mechanical diff
+ * that changes nothing a user sees; repointing them moves the whole product.
  *
- * `bone` → primary ink, `smoke` → body, `ash` → muted. Read them that way.
+ * Read them as: `bone` → primary ink, `smoke` → body, `ash` → muted.
+ *
+ * Every value here was chosen against a computed contrast ratio. The weakest
+ * text/ground pair in the system is 4.74:1; body text on the page is 9.5:1.
  */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
@@ -19,62 +21,65 @@ export default {
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       colors: {
-        /* Text, three steps. */
-        bone: '#15151a',
-        ink: '#15151a',
-        smoke: '#46464f',
-        graphite: '#46464f',
-        ash: '#6e6e7a',
-        muted: '#6e6e7a',
+        /* Ink, three steps. */
+        bone: '#0d1017',
+        ink: '#0d1017',
+        smoke: '#383d49',
+        graphite: '#383d49',
+        ash: '#585e6d',
+        muted: '#585e6d',
 
-        /* Ground, three steps. */
+        /* Ground, three steps. The page is `canvas`, a card is `paper`. */
+        canvas: '#eef0f4',
         paper: '#ffffff',
-        canvas: '#f6f6f8',
         surface: '#ffffff',
         panel: '#ffffff',
-        well: '#f0f0f3',
-        line: '#e5e5ea',
-        lineStrong: '#d2d2da',
+        well: '#e4e7ee',
+        line: '#d9dce4',
+        lineStrong: '#bfc4d0',
 
-        /* One action colour. */
-        signal: '#5546d6',
-        signalStrong: '#4136ad',
-        accent: '#5546d6',
+        /* One action colour. Dark enough to also be used as text. */
+        signal: '#4338ca',
+        signalStrong: '#362ba6',
+        accent: '#4338ca',
+        accentWash: '#eceafb',
+        accentLine: '#c5bff4',
 
         /* Per-person identity, constant across every chart. */
-        you: '#c62a63',
-        them: '#1263c4',
+        you: '#bb1f57',
+        them: '#0f5cb8',
 
         /* Semantic. */
-        good: '#0a8055',
-        warn: '#9a6410',
-        risk: '#c8392f',
+        good: '#0a7350',
+        warn: '#8a5a0b',
+        risk: '#bd2f26',
 
         /* Legacy accent names, repointed so old markup stays legible. */
-        bloom: '#c62a63',
-        bloomStrong: '#a41f51',
-        ember: '#9a6410',
-        emberSoft: '#b8760a',
-        electric: '#1263c4',
-        electricDim: '#0f4f9c',
+        bloom: '#bb1f57',
+        bloomStrong: '#9a1848',
+        ember: '#8a5a0b',
+        emberSoft: '#a06b0d',
+        electric: '#0f5cb8',
+        electricDim: '#0c4a94',
       },
       borderRadius: {
         none: '0',
-        sm: '4px',
-        DEFAULT: '4px',
-        md: '4px',
-        lg: '6px',
-        xl: '6px',
-        '2xl': '8px',
-        '3xl': '8px',
+        sm: '6px',
+        DEFAULT: '8px',
+        md: '8px',
+        lg: '10px',
+        xl: '10px',
+        '2xl': '12px',
+        '3xl': '12px',
         full: '9999px',
       },
       boxShadow: {
-        // One elevation. A product with five shadow depths has none.
-        glow: '0 1px 2px rgba(21,21,26,0.05), 0 4px 12px rgba(21,21,26,0.04)',
-        card: '0 1px 2px rgba(21,21,26,0.05), 0 4px 12px rgba(21,21,26,0.04)',
-        neon: '0 1px 2px rgba(21,21,26,0.05), 0 4px 12px rgba(21,21,26,0.04)',
-        'neon-strong': '0 2px 4px rgba(21,21,26,0.06), 0 8px 24px rgba(21,21,26,0.06)',
+        // Two levels and no more: resting and raised.
+        glow: '0 1px 2px rgba(13,16,23,0.04), 0 1px 3px rgba(13,16,23,0.06)',
+        card: '0 1px 2px rgba(13,16,23,0.04), 0 1px 3px rgba(13,16,23,0.06)',
+        raised: '0 2px 4px rgba(13,16,23,0.05), 0 8px 20px rgba(13,16,23,0.08)',
+        neon: '0 1px 2px rgba(13,16,23,0.04), 0 1px 3px rgba(13,16,23,0.06)',
+        'neon-strong': '0 2px 4px rgba(13,16,23,0.05), 0 8px 20px rgba(13,16,23,0.08)',
       },
     },
   },

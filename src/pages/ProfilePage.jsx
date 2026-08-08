@@ -120,7 +120,7 @@ export default function ProfilePage() {
               </p>
             </div>
             <div className="flex flex-col items-center gap-3">
-              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-purple-200 bg-signal text-3xl text-bone">
+              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-signal text-3xl font-semibold text-white">
                 {profile.profileImage ? <img src={profile.profileImage} alt="Profile preview" className="h-full w-full object-cover" /> : getInitials(profile)}
               </div>
               {zodiac && <span className=" text-xs text-purple-700">{getZodiacGlyph(zodiac)} {zodiac}</span>}
