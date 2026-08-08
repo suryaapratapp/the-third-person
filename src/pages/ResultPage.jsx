@@ -7,7 +7,8 @@ import QuickStats from '../components/QuickStats.jsx';
 import RhythmHeatmap from '../components/RhythmHeatmap.jsx';
 import ToneOverTime from '../components/ToneOverTime.jsx';
 import { buildZodiacMatch } from '../lib/zodiac.js';
-import { exportElementAsImage, shareCardSummary } from '../lib/exportElementAsImage.js';
+import { shareCardSummary } from '../lib/exportElementAsImage.js';
+import { exportElementAsPdf, pdfFileName } from '../lib/exportPdf.js';
 import { fetchRelationshipReportById } from '../lib/supabaseDataService.js';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
@@ -409,12 +410,18 @@ export default function ResultPage({ reportId = '' }) {
   })();
   const detectedLanguage = prepared.languageStyle || analysis?.detectedLanguageStyle?.recommendedOutputStyle || analysis?.reportSummaryForFutureUse?.languageStyle || 'Language style inferred from the chat';
 
-  async function exportFullReport() {
+  // PDF, not a PNG. A relationship report runs several screens; as an image it
+  // was one enormous unreadable strip, and the text in it could not be
+  // selected, searched or read by a screen reader. Printing gives real
+  // pagination and real text, and costs no bundle.
+  function exportFullReport() {
     try {
-      await exportElementAsImage('relationship-report-export', `thirdperson-relationship-report-${new Date().toISOString().slice(0, 10)}.png`);
-      setToast('Report card downloaded.');
+      exportElementAsPdf(
+        'relationship-report-export',
+        pdfFileName(`thirdperson-report-${String(personName || 'relationship').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`),
+      );
     } catch {
-      setToast('Could not export this report on this device.');
+      setToast('Could not open the print view on this device.');
     }
   }
 
@@ -558,7 +565,7 @@ export default function ResultPage({ reportId = '' }) {
                   <p className="mt-1 text-sm leading-6 text-bone">{safe(value)}</p>
                 </div>
               ))}
-              <button data-export-ignore onClick={exportFullReport} className="glass-button mt-2 rounded-sm px-4 py-3 text-xs text-bone">
+              <button data-export-ignore onClick={exportFullReport} className="btn btn-secondary btn-sm mt-2">
                 Download Report
               </button>
             </div>
@@ -1056,8 +1063,8 @@ export default function ResultPage({ reportId = '' }) {
               </div>
             </div>
             <div data-export-ignore className="mt-6 flex flex-wrap gap-3">
-              <button onClick={exportFullReport} className="glass-button rounded-sm px-5 py-3 text-xs text-bone">Download Report Card</button>
-              <button onClick={shareSummary} className="glass-button rounded-sm px-5 py-3 text-xs text-bone">Share Summary</button>
+              <button onClick={exportFullReport} className="btn btn-secondary">Download PDF</button>
+              <button onClick={shareSummary} className="btn btn-secondary">Share summary</button>
             </div>
           </CardShell>
 

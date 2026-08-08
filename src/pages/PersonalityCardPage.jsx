@@ -4,7 +4,7 @@ import MatchmakingPitch from '../components/MatchmakingPitch.jsx';
 import CorePersonality from '../components/CorePersonality.jsx';
 import { generatePersonalityCardViaSupabase } from '../lib/backendAiService.js';
 import { fetchCreditBalances } from '../lib/creditsService.js';
-import { exportElementAsImage } from '../lib/exportElementAsImage.js';
+import { exportElementAsPdf, pdfFileName } from '../lib/exportPdf.js';
 import { getInitials, getUserProfile } from '../lib/profileStore.js';
 import {
   fetchPersonalityHistory,
@@ -340,12 +340,14 @@ export default function PersonalityCardPage() {
     };
   }, []);
 
-  async function exportWholeProfile() {
+  // The whole profile page as a PDF. It is a multi-section document, not a
+  // square social card — as a PNG it was one very tall unreadable strip with
+  // no selectable text.
+  function exportWholeProfile() {
     try {
-      await exportElementAsImage('personality-page-export', `thirdperson-understand-yourself-${new Date().toISOString().slice(0, 10)}.png`);
-      setMessage('Know Yourself card downloaded.');
+      exportElementAsPdf('personality-page-export', pdfFileName('thirdperson-know-yourself'));
     } catch {
-      setMessage('We could not export this card on this device. Please try again on desktop.');
+      setMessage('Could not open the print view on this device.');
     }
   }
 
@@ -444,7 +446,7 @@ export default function PersonalityCardPage() {
                 {hasPaidAccess ? (generating ? 'Generating…' : 'Generate') : 'Unlock'}
               </button>
               <button onClick={exportWholeProfile} className="glass-button min-h-[44px] flex-1 rounded-sm px-4 py-3 text-xs text-bone sm:flex-none sm:px-6 sm:text-xs">
-                Download Card
+                Download PDF
               </button>
               {message && <p className="rounded-2xl border border-line bg-paper p-4 text-xs leading-6 text-smoke">{message}</p>}
             </div>

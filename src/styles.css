@@ -605,3 +605,109 @@ select:focus-visible,
 .below-header {
   top: var(--header-h);
 }
+
+/* ==================================================================== *
+ * Print / PDF
+ *
+ * "Download PDF" is `window.print()` with these rules, not a PDF
+ * library. See src/lib/exportPdf.js for why. The JS marks one element
+ * `.print-root`, its ancestors `.print-keep`, and everything else on
+ * that path `.print-hide`; the rest is here.
+ * ==================================================================== */
+@media print {
+  /* A tinted page ground is a full-bleed ink flood on paper. */
+  :root,
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .print-hide { display: none !important; }
+
+  /* Ancestors of the print root must not impose the app's layout: no
+     page padding, no max width, no fixed positioning, no clipping. */
+  .print-keep {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: auto !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  .print-root {
+    display: block !important;
+    position: static !important;
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* Screen-only chrome: action buttons, the floating coach, toasts. The
+     same attribute the old image export used, so nothing needed a new
+     marker adding to it. */
+  [data-export-ignore],
+  header,
+  footer,
+  nav,
+  .bottom-nav {
+    display: none !important;
+  }
+
+  /* Cards become ruled blocks. A drop shadow prints as a grey smear and
+     a 10px radius is invisible at 300dpi, so both go. */
+  .card,
+  .glass-card,
+  .thin-panel,
+  .accent-panel,
+  .sticky-glass,
+  .option {
+    box-shadow: none !important;
+    border: 1px solid #c8c8c8 !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* A section split across a page boundary is the main thing that makes
+     a printed report look broken. */
+  section,
+  article,
+  figure,
+  table,
+  li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  h1, h2, h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* Charts are the one thing that must keep its colour: a heatmap or a
+     two-person line chart in greyscale says nothing. */
+  svg,
+  [class*='bg-signal'],
+  [class*='bg-you'],
+  [class*='bg-them'],
+  .bar-track > * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Links print as text; the URL is noise on a private report. */
+  a[href]::after { content: none !important; }
+
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+}
