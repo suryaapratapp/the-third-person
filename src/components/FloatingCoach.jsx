@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { PiX } from 'react-icons/pi';
 import CoachBot from './CoachBot.jsx';
-import { useRouter } from '../state/RouterContext.jsx';
 
 // The coach, riding along the top-right of a finished report.
 //
@@ -28,14 +27,16 @@ import { useRouter } from '../state/RouterContext.jsx';
 // the parent's `position: relative` load-bearing — mount this inside the
 // section it belongs to, not at the page root.
 //
-// The bubble is a real button on desktop and collapses to the mascot alone on a
-// phone, where 56px in the corner is as much as the screen can spare.
+// The mascot alone, with no label. A pill reading "Ask about this report" was
+// wider than a phone's whole right margin and covered the report while it sat
+// there; the bot is recognisable on its own, and the corner of a report is not
+// where anyone reads copy anyway. It gets a soft accent bloom instead so it
+// stays findable against a dark page without shouting.
 
 const HEADER_ZONE_PX = 560;
 const DISMISS_KEY = 'tp:floating-coach-dismissed';
 
-export default function FloatingCoach({ chainId }) {
-  const { navigate } = useRouter();
+export default function FloatingCoach({ onOpen }) {
   const sentinelRef = useRef(null);
   const [pastHeader, setPastHeader] = useState(false);
   const [ctaOnScreen, setCtaOnScreen] = useState(false);
@@ -101,32 +102,27 @@ export default function FloatingCoach({ chainId }) {
       <div
         data-export-ignore
         aria-hidden={!visible}
-        className={`fixed right-3 top-[80px] z-40 transition-all duration-300 sm:right-6 sm:top-[96px] ${
+        className={`fixed right-3 top-[76px] z-40 transition-all duration-300 sm:right-6 sm:top-[92px] ${
           visible ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-3 opacity-0'
         }`}
       >
         <div className="relative">
           <button
             type="button"
-            onClick={() => navigate(chainId ? `/reports/${encodeURIComponent(chainId)}/coach` : '/reports')}
+            onClick={onOpen}
             tabIndex={visible ? 0 : -1}
-            style={{ background: 'var(--you)' }}
-            className="group flex items-center gap-2 rounded-lg py-2 pl-2 pr-2.5 text-left shadow-raised transition hover:-translate-y-0.5 sm:gap-3 sm:pr-4"
+            aria-label="Ask the relationship coach about this report"
+            title="Ask the coach about this report"
+            className="coach-orb grid h-[68px] w-[68px] place-items-center rounded-full transition duration-200 hover:scale-105 active:scale-100 sm:h-[76px] sm:w-[76px]"
           >
-            <CoachBot size={40} mood="happy" />
-            <span className="hidden sm:block">
-              <span className="block text-xs font-semibold text-white">
-                Coach
-              </span>
-              <span className="block text-sm font-semibold leading-5 text-white">Ask about this report</span>
-            </span>
+            <CoachBot size={52} mood="happy" />
           </button>
           <button
             type="button"
             onClick={dismiss}
             tabIndex={visible ? 0 : -1}
             aria-label="Hide the coach shortcut"
-            className="absolute -left-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-paper text-ash shadow-glow transition hover:text-ink"
+            className="absolute -left-1 -top-1 grid h-7 w-7 place-items-center rounded-full border border-line bg-paper text-ash shadow-glow transition hover:text-ink"
           >
             <PiX className="text-[0.7rem]" aria-hidden="true" />
           </button>

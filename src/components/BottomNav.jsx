@@ -79,7 +79,7 @@ export default function BottomNav() {
                     type="button"
                     onClick={() => navigate(tabPath)}
                     aria-current={active ? 'page' : undefined}
-                    className="-mt-5 flex min-h-[56px] w-[68px] flex-col items-center justify-center gap-1 rounded-lg border border-signal bg-signal px-2 py-2 text-white shadow-glow transition active:translate-y-px"
+                    className="-mt-5 flex min-h-[56px] w-[68px] flex-col items-center justify-center gap-1 rounded-lg border border-signal bg-signal px-2 py-2 text-[color:var(--on-solid)] shadow-glow transition active:translate-y-px"
                   >
                     <Icon className="text-xl" aria-hidden="true" />
                     <span className="text-xs font-medium">{label}</span>

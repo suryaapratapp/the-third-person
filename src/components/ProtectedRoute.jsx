@@ -23,7 +23,7 @@ export default function ProtectedRoute({ children }) {
     return (
       <section className="min-h-screen px-4 pt-32 text-center">
         <div className="accent-panel mx-auto max-w-xl p-8">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-purple-200 border-t-transparent" />
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-signal/35 border-t-transparent" />
           <p className="mt-5 text-xs text-smoke">Checking your secure session…</p>
         </div>
       </section>
@@ -34,7 +34,7 @@ export default function ProtectedRoute({ children }) {
     return (
       <section className="min-h-screen px-4 pt-32 text-center">
         <div className="accent-panel mx-auto max-w-2xl p-8">
-          <p className="tech-label text-purple-700">Private account required</p>
+          <p className="tech-label text-signal">Private account required</p>
           <h1 className="serif-title mt-4 text-5xl">Sign in to continue.</h1>
           <p className="mt-5 text-sm leading-8 text-smoke">
             Your reports, coach chats, and profile stay connected to your private account.

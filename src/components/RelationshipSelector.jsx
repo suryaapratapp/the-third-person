@@ -14,8 +14,8 @@ const GROUPS = [
   {
     key: 'romantic',
     title: 'Romantic',
-    accent: 'border-pink-200 bg-pink-50',
-    labelClass: 'text-pink-700',
+    accent: 'border-you/35 bg-you/10',
+    labelClass: 'text-you',
     options: [
       { value: 'Partner', label: 'Partner', hint: 'Together now' },
       { value: 'Early stage dating / seeing each other', label: 'Early dating', hint: 'Seeing each other' },
@@ -26,8 +26,8 @@ const GROUPS = [
   {
     key: 'friendship',
     title: 'Friendship',
-    accent: 'border-violet-200 bg-violet-50',
-    labelClass: 'text-violet-700',
+    accent: 'border-signal/35 bg-signal/10',
+    labelClass: 'text-signal',
     options: [
       { value: 'Friend', label: 'Friend', hint: 'Any closeness' },
     ],
@@ -35,8 +35,8 @@ const GROUPS = [
   {
     key: 'family',
     title: 'Family',
-    accent: 'border-emerald-200 bg-emerald-50',
-    labelClass: 'text-emerald-700',
+    accent: 'border-good/35 bg-good/10',
+    labelClass: 'text-good',
     options: [
       { value: 'Mom', label: 'Mom', hint: 'Parent' },
       { value: 'Dad', label: 'Dad', hint: 'Parent' },
@@ -74,7 +74,7 @@ export default function RelationshipSelector({ value, onChange }) {
                     <span className="text-[0.95rem] font-medium leading-5 text-ink">{option.label}</span>
                     <span
                       className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition ${
-                        selected ? 'border-signal bg-signal text-white' : 'border-lineStrong'
+                        selected ? 'border-signal bg-signal text-[color:var(--on-solid)]' : 'border-lineStrong'
                       }`}
                       aria-hidden="true"
                     >

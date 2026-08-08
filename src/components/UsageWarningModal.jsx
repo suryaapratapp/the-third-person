@@ -43,19 +43,19 @@ export default function UsageWarningModal({ status = 'exhausted', feature = 'rep
       aria-labelledby="usage-warning-heading"
       onKeyDown={(event) => { if (event.key === 'Escape') (status === 'exhausted' ? onBack : onContinue)?.(); }}
     >
-      <div className="relative max-w-xl overflow-hidden rounded-sm border border-purple-200 bg-paper p-6 shadow-glow sm:p-8">
+      <div className="relative max-w-xl overflow-hidden rounded-sm border border-signal/35 bg-paper p-6 shadow-glow sm:p-8">
         <div className="relative">
-          <p className="tech-label text-orange-700">ThirdPerson AI</p>
+          <p className="tech-label text-warn">ThirdPerson AI</p>
           <h2 id="usage-warning-heading" className="serif-title mt-4 text-4xl leading-tight text-bone sm:text-5xl">{copy.title}</h2>
           <p className="mt-5 text-sm leading-8 text-smoke">{copy.body}</p>
           <p className="mt-4 rounded-2xl border border-line bg-paper p-4 text-xs leading-6 text-ash">
             One price per report — ₹249 gets you 1 Relationship Report and 5 Coach Chats together. There is no separate chats-only top-up.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <button onClick={onPlans} className="rounded-sm border border-purple-200 bg-purple-50 px-5 py-3 text-xs text-bone hover:border-purple-200">
+            <button onClick={onPlans} className="rounded-sm border border-signal/35 bg-signal/10 px-5 py-3 text-xs text-bone hover:border-signal/35">
               {copy.primary}
             </button>
-            <button onClick={status === 'exhausted' ? onBack : onContinue} className="rounded-sm border border-line bg-paper px-5 py-3 text-xs text-smoke hover:border-pink-200 hover:text-bone">
+            <button onClick={status === 'exhausted' ? onBack : onContinue} className="rounded-sm border border-line bg-paper px-5 py-3 text-xs text-smoke hover:border-you/35 hover:text-bone">
               {copy.secondary}
             </button>
           </div>

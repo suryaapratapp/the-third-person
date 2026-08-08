@@ -27,52 +27,48 @@
 :root {
   color-scheme: light;
 
-  /* ---- Ground, three steps -------------------------------------- *
-   * canvas = the page, paper = a card, well = an inset inside a card.
-   * The steps are deliberately shallow (1.14 and 1.09) — enough to
-   * read as separate planes, not enough to look like stripes. */
-  --canvas: #eef0f4;
-  --paper: #ffffff;
-  --well: #e4e7ee;
+  /* ---- Channel triplets ----------------------------------------- *
+   * Colours are declared as bare RGB channels, and everything else is
+   * derived from them. Two consumers need that:
+   *
+   *   - Tailwind, whose tokens are `rgb(var(--x-rgb) / <alpha-value>)`,
+   *     so `bg-signal/45` keeps working while still tracking the theme.
+   *   - `.theme-deep` below, which repaints whole pages by overriding
+   *     these and nothing else.
+   *
+   * A literal hex anywhere in this file would opt that rule out of
+   * scoped theming silently, so there are none.
+   *
+   * Light theme, measured on paper / canvas / well:
+   *   ink       19.03  16.68  15.37
+   *   graphite  10.87   9.53   8.78
+   *   muted      6.49   5.69   5.24                                */
+  --canvas-rgb: 238 240 244;
+  --paper-rgb: 255 255 255;
+  --well-rgb: 228 231 238;
+  --line-rgb: 217 220 228;
+  --line-strong-rgb: 191 196 208;
 
-  --line: #d9dce4;
-  --line-strong: #bfc4d0;
+  --ink-rgb: 13 16 23;
+  --graphite-rgb: 56 61 73;
+  --muted-rgb: 88 94 109;
 
-  /* ---- Ink, three steps ----------------------------------------- *
-   *                  on paper   on canvas   on well
-   *   ink              19.03      16.68      15.37
-   *   graphite         10.87       9.53       8.78
-   *   muted             6.49       5.69       5.24    */
-  --ink: #0d1017;
-  --graphite: #383d49;
-  --muted: #585e6d;
+  --accent-rgb: 67 56 202;
+  --accent-ink-rgb: 54 43 166;
+  --accent-wash-rgb: 236 234 251;
+  --accent-line-rgb: 197 191 244;
 
-  /* ---- Brand ---------------------------------------------------- *
-   * One accent, for actions and emphasis only. Dark enough (7.9:1 on
-   * paper) to be used as text, which a lighter indigo would not be. */
-  --accent: #4338ca;
-  --accent-ink: #362ba6;
-  --accent-wash: #eceafb;
-  --accent-line: #c5bff4;
+  /* PER-PERSON IDENTITY. One colour per participant, held constant
+     across every chart in the report, so "who is who" is learned once
+     and never re-read from a legend. */
+  --you-rgb: 187 31 87;
+  --them-rgb: 15 92 184;
 
-  /* ---- Per-person identity -------------------------------------- *
-   * One colour per participant, held constant across every chart in
-   * the report, so "who is who" is learned once and never re-read from
-   * a legend. Both clear AA on all three grounds. */
-  --you: #bb1f57;
-  --them: #0f5cb8;
-  --you-wash: #fdeef3;
-  --them-wash: #eaf2fd;
-
-  /* ---- Semantic ------------------------------------------------- *
-   * Deliberately distinct from the two person colours, so a chart can
-   * show sentiment and identity at the same time without collision. */
-  --good: #0a7350;
-  --warn: #8a5a0b;
-  --risk: #bd2f26;
-  --good-wash: #e7f5ef;
-  --warn-wash: #fbf2e3;
-  --risk-wash: #fdeeec;
+  /* Semantic, deliberately distinct from the two person colours so a
+     chart can show sentiment and identity at once without collision. */
+  --good-rgb: 10 115 80;
+  --warn-rgb: 138 90 11;
+  --risk-rgb: 189 47 38;
 
   /* ---- Shape ---------------------------------------------------- *
    * 10 for cards, 8 for controls, 6 for chips. One scale, three
@@ -86,9 +82,19 @@
    * Two levels and no more: resting and raised. A product with five
    * shadow depths has none, because nothing is legibly above anything
    * else. */
-  --lift: 0 1px 2px rgba(13, 16, 23, 0.04), 0 1px 3px rgba(13, 16, 23, 0.06);
-  --lift-raised: 0 2px 4px rgba(13, 16, 23, 0.05), 0 8px 20px rgba(13, 16, 23, 0.08);
-  --lift-accent: 0 1px 2px rgba(13, 16, 23, 0.08), 0 6px 16px rgba(67, 56, 202, 0.22);
+  --lift: 0 1px 2px rgb(var(--ink-rgb) / 0.04), 0 1px 3px rgb(var(--ink-rgb) / 0.06);
+  --lift-raised: 0 2px 4px rgb(var(--ink-rgb) / 0.05), 0 8px 20px rgb(var(--ink-rgb) / 0.08);
+  --lift-accent: 0 1px 2px rgb(var(--ink-rgb) / 0.08), 0 6px 16px rgb(var(--accent-rgb) / 0.22);
+
+  /* What reads on top of a solid accent / risk fill. It has to flip with
+     the theme: the deep theme's accent is a LIGHT violet, and white text
+     on that is 1.6:1. */
+  --on-solid: rgb(255 255 255);
+  --risk-hover: rgb(161 40 32);
+
+  /* Only the deep theme uses this; it is the one place a glow earns
+     its keep, and it must be a no-op in the light theme. */
+  --glow: none;
 
   /* ---- Layout --------------------------------------------------- *
    * Fixed, so anything pinning below the header references it instead of
@@ -104,6 +110,119 @@
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==================================================================== *
+ * Deep theme
+ *
+ * Scoped to the three surfaces that are about the person rather than
+ * about the product: the report, Know Yourself, and the coach. Those
+ * are read slowly, often at night, usually about something that
+ * matters — a violet-black ground with luminous ink suits that far
+ * better than an office-white page, and it makes the charts glow
+ * instead of merely printing.
+ *
+ * It overrides ONLY the channel triplets. Everything else — cards,
+ * buttons, charts, the stepper — is already derived, so nothing needs
+ * a dark variant written for it.
+ *
+ * Measured on canvas / paper / well; worst text pair is 6.37:1:
+ *   ink       17.57  16.23  14.60
+ *   graphite  11.94  11.02   9.92
+ *   muted      7.67   7.09   6.37
+ * ==================================================================== */
+.theme-deep {
+  color-scheme: dark;
+
+  --canvas-rgb: 16 11 33;
+  --paper-rgb: 25 19 51;
+  --well-rgb: 35 27 69;
+  --line-rgb: 62 51 108;
+  --line-strong-rgb: 90 76 148;
+
+  --ink-rgb: 246 243 255;
+  --graphite-rgb: 207 199 236;
+  --muted-rgb: 167 157 208;
+
+  --accent-rgb: 179 157 255;
+  --accent-ink-rgb: 205 188 255;
+  --accent-wash-rgb: 44 33 84;
+  --accent-line-rgb: 108 88 180;
+
+  --you-rgb: 255 119 171;
+  --them-rgb: 108 184 255;
+
+  --good-rgb: 77 219 160;
+  --warn-rgb: 247 198 90;
+  --risk-rgb: 255 132 151;
+
+  /* Shadows do nothing on a dark ground — a black shadow on near-black
+     is invisible. Depth comes from a lit edge and a coloured bloom
+     instead, which is also where the "magic" lives. */
+  --lift: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 8px 24px rgb(0 0 0 / 0.45);
+  --lift-raised: 0 1px 0 rgb(255 255 255 / 0.07) inset, 0 16px 44px rgb(0 0 0 / 0.55);
+  --lift-accent: 0 0 0 1px rgb(var(--accent-rgb) / 0.4), 0 10px 34px rgb(var(--accent-rgb) / 0.35);
+  --glow: 0 0 24px rgb(var(--accent-rgb) / 0.45);
+
+  /* Both fills are light here, so what sits on them is the page ground. */
+  --on-solid: rgb(var(--canvas-rgb));
+  --risk-hover: rgb(255 160 175);
+
+  background: var(--canvas);
+  color: var(--graphite);
+}
+
+/* ==================================================================== *
+ * Derived colours — declared for BOTH themes, on purpose.
+ *
+ * A custom property is substituted at the element that DECLARES it, not
+ * at the element that uses it. `--canvas: rgb(var(--canvas-rgb))` on
+ * `:root` therefore computes once, against the light channels, and
+ * inherits that fixed colour downwards — overriding `--canvas-rgb`
+ * inside `.theme-deep` would not change it. Naming `.theme-deep` here
+ * makes the substitution happen again on that element, against its own
+ * channels.
+ *
+ * Tailwind utilities (`bg-paper`, `text-ink`) never had this problem:
+ * they reference the channel triplets directly and resolve per element.
+ * It only bites the component classes in this file.
+ * ==================================================================== */
+:root,
+.theme-deep {
+/* ---- Derived ---------------------------------------------------- */
+--canvas: rgb(var(--canvas-rgb));
+--paper: rgb(var(--paper-rgb));
+--well: rgb(var(--well-rgb));
+--line: rgb(var(--line-rgb));
+--line-strong: rgb(var(--line-strong-rgb));
+
+--ink: rgb(var(--ink-rgb));
+--graphite: rgb(var(--graphite-rgb));
+--muted: rgb(var(--muted-rgb));
+
+--accent: rgb(var(--accent-rgb));
+--accent-ink: rgb(var(--accent-ink-rgb));
+--accent-wash: rgb(var(--accent-wash-rgb));
+--accent-line: rgb(var(--accent-line-rgb));
+
+--you: rgb(var(--you-rgb));
+--them: rgb(var(--them-rgb));
+--you-wash: rgb(var(--you-rgb) / 0.08);
+--them-wash: rgb(var(--them-rgb) / 0.08);
+
+--good: rgb(var(--good-rgb));
+--warn: rgb(var(--warn-rgb));
+--risk: rgb(var(--risk-rgb));
+--good-wash: rgb(var(--good-rgb) / 0.1);
+--warn-wash: rgb(var(--warn-rgb) / 0.1);
+--risk-wash: rgb(var(--risk-rgb) / 0.1);
+}
+
+/* The page ground has to follow the theme too, or a short page leaves a
+   white band under the content. Set by the page components. */
+.theme-deep-root {
+  background: var(--canvas);
+  min-height: 100vh;
 }
 
 * {
@@ -325,8 +444,8 @@ select:focus-visible,
   .btn-primary {
     background: var(--accent);
     border-color: var(--accent);
-    color: #ffffff;
-    box-shadow: var(--lift-accent), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    color: var(--on-solid);
+    box-shadow: var(--lift-accent), inset 0 1px 0 rgb(255 255 255 / 0.18);
   }
 
   .btn-primary:hover {
@@ -379,10 +498,10 @@ select:focus-visible,
   .btn-danger {
     background: var(--risk);
     border-color: var(--risk);
-    color: #ffffff;
+    color: var(--on-solid);
   }
 
-  .btn-danger:hover { background: #a12820; border-color: #a12820; }
+  .btn-danger:hover { background: var(--risk-hover); border-color: var(--risk-hover); }
 }
 
 /* -------------------------------------------------------------------- *
@@ -487,7 +606,7 @@ select:focus-visible,
 .step-dot[data-state='current'] {
   border-color: var(--accent);
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-solid);
 }
 
 .step-dot[data-state='done'] {
@@ -564,6 +683,26 @@ select:focus-visible,
 .accent-gradient { background: var(--accent); }
 .accent-text { color: var(--accent-ink); }
 .decorative-label { color: var(--muted); }
+
+/* The floating coach orb on a report. The only glow in the product, and
+   it earns it: on the deep theme a flat button in the corner of a dark
+   page is invisible, and this is the one control we actively want
+   people to find. It breathes rather than pulses — a hard blink in the
+   corner of something you are reading is an irritant. */
+.coach-orb {
+  background: radial-gradient(circle at 50% 42%, rgb(var(--accent-rgb) / 0.34), rgb(var(--accent-rgb) / 0.1) 62%, transparent 74%);
+  box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.34), 0 10px 30px rgb(var(--accent-rgb) / 0.32);
+  animation: coachGlow 3.6s ease-in-out infinite;
+}
+
+.coach-orb:hover {
+  box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.55), 0 14px 40px rgb(var(--accent-rgb) / 0.45);
+}
+
+@keyframes coachGlow {
+  0%, 100% { box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.3), 0 10px 26px rgb(var(--accent-rgb) / 0.26); }
+  50% { box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.5), 0 14px 40px rgb(var(--accent-rgb) / 0.46); }
+}
 
 /* -------------------------------------------------------------------- *
  * CoachBot mascot

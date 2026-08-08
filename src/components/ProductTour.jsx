@@ -22,7 +22,7 @@ const SCENES = [
       <div className="grid gap-3">
         <div className="grid grid-cols-3 gap-2">
           {[['WhatsApp', '🟢'], ['Instagram', '🟣'], ['iMessage', '🔵']].map(([name, dot]) => (
-            <div key={name} className={`rounded-2xl border p-3 text-center ${name === 'WhatsApp' ? 'border-purple-200 bg-purple-50' : 'border-line bg-paper'}`}>
+            <div key={name} className={`rounded-2xl border p-3 text-center ${name === 'WhatsApp' ? 'border-signal/35 bg-signal/10' : 'border-line bg-paper'}`}>
               <p className="text-lg leading-none">{dot}</p>
               <p className="mt-2 text-[0.7rem] leading-4 text-smoke">{name}</p>
             </div>
@@ -32,10 +32,10 @@ const SCENES = [
           <p className="font-mono text-[0.7rem] leading-5 text-ash">
             03/03/24, 9:14 AM — Riya: good morning, reached office?<br />
             03/03/24, 9:16 AM — Aarav: haan just reached, you tell?<br />
-            <span className="text-purple-700">…4,200 messages detected</span>
+            <span className="text-signal">…4,200 messages detected</span>
           </p>
         </div>
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+        <div className="rounded-2xl border border-good/35 bg-good/10 p-3">
           <p className="text-[0.72rem] leading-5 text-smoke">🧼 Phone numbers, emails and IDs removed before analysis</p>
         </div>
       </div>
@@ -55,7 +55,7 @@ const SCENES = [
           ['Dec – Mar', 'Repair through daily check-ins', 'warm', 'Strong Pattern'],
         ].map(([period, title, tone, confidence], index) => (
           <div key={period} className="relative flex items-start gap-3">
-            <span className={`relative z-10 mt-3 block h-5 w-5 shrink-0 rounded-full border ${index === 1 ? 'border-violet-100 bg-violet-50' : 'border-line bg-well'}`} />
+            <span className={`relative z-10 mt-3 block h-5 w-5 shrink-0 rounded-full border ${index === 1 ? 'border-signal/35 bg-signal/10' : 'border-line bg-well'}`} />
             <div className="min-w-0 flex-1 rounded-2xl border border-line bg-paper p-3">
               <p className=" text-xs text-ash">{period}</p>
               <p className="mt-1 text-sm leading-5 text-bone">{title}</p>
@@ -73,10 +73,10 @@ const SCENES = [
     caption: 'Flags are never vague. Each one quotes the actual message behind it, with a confidence level — plus exact counts of who starts and who replies faster.',
     render: () => (
       <div className="grid gap-3">
-        <div className="rounded-2xl border border-pink-200 bg-pink-50 p-3">
+        <div className="rounded-2xl border border-you/35 bg-you/10 p-3">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-bone">Perceived imbalance of effort</p>
-            <span className="rounded-sm border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs text-violet-700">Strong</span>
+            <span className="rounded-sm border border-signal/35 bg-signal/10 px-2 py-0.5 text-xs text-signal">Strong</span>
           </div>
           <p className="mt-2 border-l-2 border-line pl-2 font-mono text-[0.68rem] leading-4 text-smoke">
             “honestly it feels like im the only one trying here”
@@ -100,15 +100,15 @@ const SCENES = [
     caption: 'Follow up in plain language. The coach answers from your report — not generic advice — and always asks you something back.',
     render: () => (
       <div className="grid gap-2.5">
-        <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm border border-purple-200 bg-purple-50 p-3">
+        <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm border border-signal/35 bg-signal/10 p-3">
           <p className="text-sm leading-5 text-bone">Should I bring up how uneven things felt in May?</p>
         </div>
         <div className="mr-auto max-w-[92%] rounded-2xl rounded-bl-sm border border-line bg-paper p-3">
-          <p className=" text-xs text-pink-700">💛 The Warm One</p>
+          <p className=" text-xs text-you">💛 The Warm One</p>
           <p className="mt-2 text-sm leading-5 text-smoke">
             Yes — but frame it as a check-in, not a complaint. Your report flags uneven energy in exactly that stretch, so you are not imagining it.
           </p>
-          <p className="mt-2 text-sm leading-5 text-purple-700">
+          <p className="mt-2 text-sm leading-5 text-signal">
             What would feel like enough effort to you — more replies, or more planned time together?
           </p>
         </div>
@@ -124,7 +124,7 @@ const SCENES = [
       <div className="grid gap-3">
         <div className="grid grid-cols-3 gap-2">
           {[['♡', 'Partner', '3 chats'], ['♊', 'Friends', '1 chat'], ['▣', 'Work', 'Add one']].map(([icon, world, count]) => (
-            <div key={world} className={`rounded-2xl border p-3 text-center ${world === 'Partner' ? 'border-pink-200 bg-pink-50' : 'border-line bg-paper'}`}>
+            <div key={world} className={`rounded-2xl border p-3 text-center ${world === 'Partner' ? 'border-you/35 bg-you/10' : 'border-line bg-paper'}`}>
               <p className="text-lg leading-none text-bone">{icon}</p>
               <p className="mt-1.5 text-[0.7rem] leading-4 text-bone">{world}</p>
               <p className="text-[0.6rem] leading-4 text-ash">{count}</p>
@@ -132,11 +132,11 @@ const SCENES = [
           ))}
         </div>
         <div className="rounded-2xl border border-line bg-paper p-3">
-          <p className=" text-xs text-emerald-700">Profile evolution</p>
+          <p className=" text-xs text-good">Profile evolution</p>
           <ul className="mt-2 grid gap-1 text-[0.72rem] leading-5 text-smoke">
-            <li>• <span className="text-purple-700">New:</span> you set boundaries earlier than before</li>
-            <li>• <span className="text-emerald-700">Reinforced:</span> repair-oriented under tension</li>
-            <li>• <span className="text-orange-700">Softened:</span> less anxious during busy weeks</li>
+            <li>• <span className="text-signal">New:</span> you set boundaries earlier than before</li>
+            <li>• <span className="text-good">Reinforced:</span> repair-oriented under tension</li>
+            <li>• <span className="text-warn">Softened:</span> less anxious during busy weeks</li>
           </ul>
         </div>
       </div>
@@ -175,7 +175,7 @@ export default function ProductTour() {
     <section ref={containerRef} className="accent-panel relative overflow-hidden p-5 sm:p-8">
 
       <div className="relative">
-        <p className="tech-label text-purple-700">See it in action</p>
+        <p className="tech-label text-signal">See it in action</p>
         <h2 className="serif-title mt-3 text-4xl leading-tight sm:text-5xl">
           What you actually get.
         </h2>
@@ -191,8 +191,8 @@ export default function ProductTour() {
                   aria-current={index === active}
                   className={`relative min-h-[44px] overflow-hidden rounded-sm border px-3.5 py-1.5 text-xs transition ${
                     index === active
-                      ? 'border-purple-200 bg-purple-50 text-bone'
-                      : 'border-line bg-paper text-smoke hover:border-purple-200'
+                      ? 'border-signal/35 bg-signal/10 text-bone'
+                      : 'border-line bg-paper text-smoke hover:border-signal/35'
                   }`}
                 >
                   {index === active && playing && (

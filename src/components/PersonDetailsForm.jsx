@@ -20,16 +20,16 @@ export default function PersonDetailsForm({ value, onChange, dateOfBirth = '', o
           onChange={(event) => onChange(event.target.value)}
           placeholder="e.g. Avery"
           autoComplete="off"
-          className="mt-3 w-full rounded-sm border border-line bg-well px-4 py-4 text-lg text-bone outline-none transition placeholder:text-ash focus:border-purple-200"
+          className="mt-3 w-full rounded-sm border border-line bg-well px-4 py-4 text-lg text-bone outline-none transition placeholder:text-ash focus:border-signal/35"
         />
         <p className="mt-2.5 text-sm leading-6 text-smoke">
           Used throughout your report. Pick something distinctive if you know two people with the same name.
         </p>
       </div>
 
-      <div className="rounded-sm border border-purple-200 bg-purple-50 p-4 sm:p-5">
+      <div className="rounded-sm border border-signal/35 bg-signal/10 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <label className="tech-label text-purple-700" htmlFor="person-dob">
+          <label className="tech-label text-signal" htmlFor="person-dob">
             Their date of birth
           </label>
           <span className="rounded-sm border border-line px-2.5 py-1 text-xs text-ash">
@@ -41,11 +41,11 @@ export default function PersonDetailsForm({ value, onChange, dateOfBirth = '', o
           type="date"
           value={dateOfBirth}
           onChange={(event) => onDateChange?.(event.target.value)}
-          className="mt-3 w-full rounded-sm border border-line bg-well px-4 py-4 text-lg text-bone outline-none transition focus:border-purple-200"
+          className="mt-3 w-full rounded-sm border border-line bg-well px-4 py-4 text-lg text-bone outline-none transition focus:border-signal/35"
         />
 
         {sign ? (
-          <div className="mt-3 flex items-center gap-3 rounded-sm border border-purple-200 bg-purple-50 px-4 py-3">
+          <div className="mt-3 flex items-center gap-3 rounded-sm border border-signal/35 bg-signal/10 px-4 py-3">
             <span className="text-3xl leading-none" aria-hidden="true">{getZodiacGlyph(sign)}</span>
             <div>
               <p className="text-base leading-5 text-bone">{sign}</p>

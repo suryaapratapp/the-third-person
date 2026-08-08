@@ -38,9 +38,13 @@ export function formatDuration(minutes) {
   return `${days.toFixed(days < 10 ? 1 : 0)} days`;
 }
 
-// Emojis must be counted from the RAW upload: cleanConversationLine() strips
-// them out before messages are parsed, so by the time we have message objects
-// the emojis are already gone.
+// Counted from message BODIES, never from the whole upload.
+//
+// A raw WhatsApp export repeats the sender on every single line, and people put
+// emoji in their display name — "[18/05/2022, 15:40:41] Surya 🚀: gainz". Count
+// the file and that rocket appears once per message that person ever sent, so
+// it wins "most used emoji" by a mile while saying nothing about the
+// conversation. `messageBodiesFor()` hands this only what was actually typed.
 export function computeEmojiUsage(rawText = '', limit = 9) {
   const text = String(rawText || '');
   if (!text) return [];
@@ -272,13 +276,26 @@ export function computeEffortMetrics(messages = []) {
   };
 }
 
+// Message bodies as typed, joined for scanning.
+//
+// Falls back to the raw upload only when the parser produced no bodies at all
+// (the untimestamped-fallback path), because a slightly wrong emoji count beats
+// no emoji count. When bodies exist they are always preferred: the raw upload
+// carries sender names, and a name can contain an emoji.
+export function messageBodiesFor(messages = [], rawText = '') {
+  const bodies = messages
+    .map((message) => message?.rawBody)
+    .filter((body) => typeof body === 'string' && body.trim());
+  return bodies.length ? bodies.join('\n') : String(rawText || '');
+}
+
 // One compact object: displayed in the report AND sent to the model as facts.
 //
 // This survives the transcript — `localMetrics` is on the retained allowlist in
 // retainedConversation.js — so everything in it must be counts, dates and
 // labels. Nothing here may carry message text.
 export function computeLocalMetrics({ messages = [], rawText = '' } = {}) {
-  const emojis = computeEmojiUsage(rawText);
+  const emojis = computeEmojiUsage(messageBodiesFor(messages, rawText));
   const effort = computeEffortMetrics(messages);
   const milestones = computeMilestones(messages);
 

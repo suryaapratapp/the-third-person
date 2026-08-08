@@ -29,12 +29,12 @@ function Block({ block }) {
       return (
         <div className="mt-5 rounded-sm border border-line bg-paper p-4 sm:p-5">
           <div className="flex gap-3">
-            <span className="font-mono text-purple-700">{String(block.number).padStart(2, '0')}</span>
+            <span className="font-mono text-signal">{String(block.number).padStart(2, '0')}</span>
             <p className="text-sm leading-7 text-smoke sm:text-base">{block.instruction}</p>
           </div>
           {block.visual && <ExportStepVisual spec={block.visual} alt={block.visual.alt} />}
           {block.tip && (
-            <p className="mt-2 rounded-xl border border-purple-200 bg-purple-50 p-3 text-xs leading-6 text-ash">
+            <p className="mt-2 rounded-xl border border-signal/35 bg-signal/10 p-3 text-xs leading-6 text-ash">
               Tip: {block.tip}
             </p>
           )}
@@ -42,10 +42,10 @@ function Block({ block }) {
       );
     case 'callout': {
       const toneClass = block.tone === 'privacy'
-        ? 'border-emerald-200 bg-emerald-50'
+        ? 'border-good/35 bg-good/10'
         : block.tone === 'tip'
-          ? 'border-purple-200 bg-purple-50'
-          : 'border-orange-200 bg-orange-50';
+          ? 'border-signal/35 bg-signal/10'
+          : 'border-warn/35 bg-warn/10';
       return (
         <div className={`mt-5 rounded-2xl border p-4 text-sm leading-6 text-smoke ${toneClass}`}>
           {block.text}
@@ -82,7 +82,7 @@ export default function BlogPostPage({ slug }) {
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <article className="relative mx-auto max-w-[860px]">
-        <RouteLink to="/blog" className=" text-xs text-purple-700 hover:text-bone">
+        <RouteLink to="/blog" className=" text-xs text-signal hover:text-bone">
           ← Back to Blog
         </RouteLink>
         <div className="mt-5 flex flex-wrap items-center gap-3">

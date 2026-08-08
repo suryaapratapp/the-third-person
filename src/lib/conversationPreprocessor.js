@@ -112,6 +112,17 @@ function parseTimestampedLine(line, platform, id) {
       timestamp: timestamp ? timestamp.toISOString() : null,
       sender: sender.trim(),
       message: cleanedMessage,
+      // The body exactly as typed, before emoji stripping. Two things need it
+      // and neither can use `message` or `rawLine`:
+      //   - emoji counts, because `rawLine` includes the sender name, and on
+      //     WhatsApp people put an emoji IN their display name ("Surya 🚀:").
+      //     That emoji then appears on every line they ever sent and wins
+      //     "most used emoji" outright.
+      //   - the warmth signal, which reads emoji and would otherwise be
+      //     scoring text that has had all of them removed.
+      // Dropped before persistence: `parsedMessages` is not on the retained
+      // allowlist, so this never outlives the report generation.
+      rawBody: message,
       platform,
       dayPeriod: hour === null ? 'Unknown' : classifyPeriod(hour),
       monthKey: formatMonthKey(timestamp, Math.floor(id / 20)),

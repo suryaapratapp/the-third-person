@@ -103,7 +103,7 @@ export default function AuthPage() {
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <div className="relative mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_420px]">
         <div className="accent-panel p-7 sm:p-10">
-          <p className="tech-label text-purple-700">Private access</p>
+          <p className="tech-label text-signal">Private access</p>
           <h1 className="serif-title mt-4 text-5xl leading-tight sm:text-7xl">Welcome to ThirdPerson AI.</h1>
           <p className="mt-6 max-w-2xl text-sm leading-8 text-smoke">
             Sign in to keep your reports, relationship chains, coach chats, and personality insights connected to you.
@@ -129,18 +129,18 @@ export default function AuthPage() {
                 type="button"
                 onClick={handleGoogle}
                 disabled={busy}
-                className="mt-6 w-full rounded-sm border border-violet-200 bg-violet-50 px-5 py-4 text-sm text-bone transition hover:border-violet-200 disabled:opacity-50"
+                className="mt-6 w-full rounded-sm border border-signal/35 bg-signal/10 px-5 py-4 text-sm text-bone transition hover:border-signal/35 disabled:opacity-50"
               >
                 Continue with Google
               </button>
               <div className="my-6 h-px bg-well" />
               <label className="block">
                 <span className="tech-label text-ash">Email</span>
-                <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required className="mt-2 w-full border border-line bg-well px-4 py-3 text-sm outline-none focus:border-purple-200" />
+                <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required className="mt-2 w-full border border-line bg-well px-4 py-3 text-sm outline-none focus:border-signal/35" />
               </label>
               <label className="mt-4 block">
                 <span className="tech-label text-ash">Password</span>
-                <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={6} required className="mt-2 w-full border border-line bg-well px-4 py-3 text-sm outline-none focus:border-purple-200" />
+                <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={6} required className="mt-2 w-full border border-line bg-well px-4 py-3 text-sm outline-none focus:border-signal/35" />
               </label>
               {mode === 'sign-up' && (
                 <p className="mt-4 text-xs leading-6 text-ash">

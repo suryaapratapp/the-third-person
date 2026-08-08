@@ -51,14 +51,14 @@ export default function CardActions({ targetId, name, summary }) {
 
   return (
     <div data-export-ignore className="relative z-10 float-right ml-3 flex items-center gap-1.5">
-      <button aria-label={`Download ${name}`} title="Download" onClick={download} className="flex h-6 w-6 items-center justify-center rounded-full bg-paper text-smoke  transition hover:bg-purple-50 hover:text-bone">
+      <button aria-label={`Download ${name}`} title="Download" onClick={download} className="flex h-6 w-6 items-center justify-center rounded-full bg-paper text-smoke  transition hover:bg-signal/10 hover:text-bone">
         <DownloadIcon />
       </button>
-      <button aria-label={`Share ${name}`} title="Share" onClick={share} className="flex h-6 w-6 items-center justify-center rounded-full bg-paper text-smoke  transition hover:bg-violet-50 hover:text-bone">
+      <button aria-label={`Share ${name}`} title="Share" onClick={share} className="flex h-6 w-6 items-center justify-center rounded-full bg-paper text-smoke  transition hover:bg-signal/10 hover:text-bone">
         <ShareIcon />
       </button>
       {message && (
-        <span className="absolute right-0 top-8 w-56 border border-purple-200 bg-well px-3 py-2 text-xs leading-5 text-smoke shadow-glow">
+        <span className="absolute right-0 top-8 w-56 border border-signal/35 bg-well px-3 py-2 text-xs leading-5 text-smoke shadow-glow">
           {message}
         </span>
       )}

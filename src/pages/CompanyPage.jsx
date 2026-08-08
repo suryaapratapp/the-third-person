@@ -32,7 +32,7 @@ export default function CompanyPage() {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             {work.map((item) => (
-              <span key={item} className="border border-purple-200 bg-purple-50 px-3 py-2 text-xs text-smoke">{item}</span>
+              <span key={item} className="border border-signal/35 bg-signal/10 px-3 py-2 text-xs text-smoke">{item}</span>
             ))}
           </div>
         </section>
@@ -41,9 +41,9 @@ export default function CompanyPage() {
           <div id="contact" className="thin-panel scroll-mt-28 p-6">
             <p className="tech-label text-smoke">Contact us</p>
             <div className="mt-5 space-y-4 text-sm text-smoke">
-              <p>Email: <a className="text-purple-700" href="mailto:legal@thethirdperson.ai">legal@thethirdperson.ai</a></p>
-              <p>Support: <a className="text-purple-700" href="mailto:support@thethirdperson.ai">support@thethirdperson.ai</a></p>
-              <p>Business: <a className="text-purple-700" href="mailto:hello@thethirdperson.ai">hello@thethirdperson.ai</a></p>
+              <p>Email: <a className="text-signal" href="mailto:legal@thethirdperson.ai">legal@thethirdperson.ai</a></p>
+              <p>Support: <a className="text-signal" href="mailto:support@thethirdperson.ai">support@thethirdperson.ai</a></p>
+              <p>Business: <a className="text-signal" href="mailto:hello@thethirdperson.ai">hello@thethirdperson.ai</a></p>
             </div>
             <div className="mt-6">
               <p className="tech-label mb-3 text-ash">Follow us — coming soon</p>

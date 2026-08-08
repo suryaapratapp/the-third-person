@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CardActions from '../components/CardActions.jsx';
 import { formatDuration } from '../lib/conversationMetrics.js';
 import AfterReportActions from '../components/AfterReportActions.jsx';
 import FloatingCoach from '../components/FloatingCoach.jsx';
+import CoachDialog from '../components/CoachDialog.jsx';
+import { buildAnalysisChainContext, getChainById, groupReports } from '../lib/reportsStore.js';
 import QuickStats from '../components/QuickStats.jsx';
 import RhythmHeatmap from '../components/RhythmHeatmap.jsx';
 import ToneOverTime from '../components/ToneOverTime.jsx';
 import { buildZodiacMatch } from '../lib/zodiac.js';
 import { shareCardSummary } from '../lib/exportElementAsImage.js';
 import { exportElementAsPdf, pdfFileName } from '../lib/exportPdf.js';
-import { fetchRelationshipReportById } from '../lib/supabaseDataService.js';
+import { fetchRelationshipReportById, fetchRelationshipReports } from '../lib/supabaseDataService.js';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
@@ -87,11 +89,11 @@ function CardShell({ id, title, emoji, summary, children, className = '' }) {
 
 function Badge({ children, tone = 'purple' }) {
   const colors = {
-    purple: 'border-purple-200 bg-purple-50 text-purple-700',
-    pink: 'border-pink-200 bg-pink-50 text-pink-700',
-    blue: 'border-violet-200 bg-violet-50 text-violet-700',
-    orange: 'border-orange-200 bg-orange-50 text-orange-700',
-    green: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    purple: 'border-signal/35 bg-signal/10 text-signal',
+    pink: 'border-you/35 bg-you/10 text-you',
+    blue: 'border-signal/35 bg-signal/10 text-signal',
+    orange: 'border-warn/35 bg-warn/10 text-warn',
+    green: 'border-good/35 bg-good/10 text-good',
   };
   return <span className={`rounded-sm border px-3 py-1.5 text-xs ${colors[tone]}`}>{children}</span>;
 }
@@ -135,59 +137,6 @@ function ScoreBubble({ item }) {
 
 function EmptyHint({ children = 'More chats can make this clearer.' }) {
   return <p className="rounded-2xl border border-line bg-paper p-4 text-sm leading-7 text-smoke">{children}</p>;
-}
-
-// Hand-rolled so the report no longer pulls in a ~285KB charting library for
-// one shape. Pure SVG: no runtime dependency, no layout thrash.
-function RadarPentagon({ data = [] }) {
-  const size = 240;
-  const center = size / 2;
-  const radius = size / 2 - 34;
-  const points = data.length ? data : [{ subject: '—', value: 0 }];
-  const angleFor = (index) => (Math.PI * 2 * index) / points.length - Math.PI / 2;
-  const coord = (index, ratio) => [
-    center + Math.cos(angleFor(index)) * radius * ratio,
-    center + Math.sin(angleFor(index)) * radius * ratio,
-  ];
-  const shape = points
-    .map((point, index) => coord(index, Math.max(0, Math.min(100, Number(point.value) || 0)) / 100).join(','))
-    .join(' ');
-
-  return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="h-auto w-full" role="img" aria-label="Relationship balance chart">
-      {[0.25, 0.5, 0.75, 1].map((ring) => (
-        <polygon
-          key={ring}
-          points={points.map((_, index) => coord(index, ring).join(',')).join(' ')}
-          fill="none"
-          stroke="var(--line)"
-          strokeWidth="1"
-        />
-      ))}
-      {points.map((_, index) => {
-        const [x, y] = coord(index, 1);
-        return <line key={index} x1={center} y1={center} x2={x} y2={y} stroke="var(--line)" strokeWidth="1" />;
-      })}
-      <polygon points={shape} fill="var(--accent)" fillOpacity="0.16" stroke="var(--accent)" strokeWidth="2" />
-      {points.map((point, index) => {
-        const [x, y] = coord(index, 1.2);
-        return (
-          <text
-            key={point.subject}
-            x={x}
-            y={y}
-            fill="var(--muted)"
-            fontSize="11"
-            fontWeight="500"
-            textAnchor={x > center + 5 ? 'start' : x < center - 5 ? 'end' : 'middle'}
-            dominantBaseline="middle"
-          >
-            {String(point.subject).slice(0, 12)}
-          </text>
-        );
-      })}
-    </svg>
-  );
 }
 
 // Sized to fit the card without horizontal scrolling: the bucket count is
@@ -266,7 +215,7 @@ function TimelinePhaseDetail({ phase = {}, personName }) {
         </div>
         {(phase.turningPoint || phase.quote) && (
           <div className="sticky-glass rotate-[-1deg] p-4">
-            <p className="tech-label text-orange-700">Turning point</p>
+            <p className="tech-label text-warn">Turning point</p>
             {phase.turningPoint && <p className="mt-2 text-sm leading-7 text-bone">{safe(phase.turningPoint)}</p>}
             {phase.quote && <p className="mt-2 font-mono text-sm leading-6 text-smoke">“{String(phase.quote).slice(0, 200)}”</p>}
           </div>
@@ -289,13 +238,18 @@ function TimelinePhaseDetail({ phase = {}, personName }) {
   );
 }
 
-export default function ResultPage({ reportId = '' }) {
+export default function ResultPage({ reportId = '', openCoach = false }) {
   const { flow } = useAnalysis();
   const { navigate } = useRouter();
   const [selectedTimeline, setSelectedTimeline] = useState(0);
   const [toast, setToast] = useState('');
   const [fetchedReport, setFetchedReport] = useState(null);
   const [fetchState, setFetchState] = useState('idle');
+  // The coach is a dialog over this page, not a route of its own. Old
+  // /reports/:id/coach links still resolve here and open it, so nothing that
+  // was ever linked or bookmarked breaks.
+  const [coachOpen, setCoachOpen] = useState(Boolean(openCoach));
+  const [coachChain, setCoachChain] = useState(null);
 
   // Prefer the in-memory flow when it already holds the report being viewed
   // (a fresh generation, or a saved report opened from history). Otherwise —
@@ -350,6 +304,28 @@ export default function ResultPage({ reportId = '' }) {
       }
       : null;
 
+  const chainId = source?.chainId || null;
+
+  // The coach answers from the whole CHAIN, not just this one report — several
+  // analyses of the same person build on each other. Loaded only when the
+  // dialog is actually opened; the report itself does not need it.
+  useEffect(() => {
+    if (!coachOpen || !chainId) return undefined;
+    let active = true;
+    setCoachChain(getChainById(chainId));
+    fetchRelationshipReports()
+      .then((reports) => {
+        if (!active) return;
+        setCoachChain(groupReports(reports).get(chainId) || getChainById(chainId));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [coachOpen, chainId]);
+
+  const coachContext = useMemo(() => buildAnalysisChainContext(coachChain), [coachChain]);
+
   const analysis = source?.analysisResult || null;
   const prepared = source?.preparedConversation || {};
   const meta = prepared.metadata || analysis?.conversationRecap || {};
@@ -394,7 +370,7 @@ export default function ResultPage({ reportId = '' }) {
         title: 'Directional read — small sample',
         description: `This report is based on ${messageCount} message${messageCount === 1 ? '' : 's'}. Treat everything below as a first impression worth checking, not a conclusion about this relationship.`,
         notes,
-        className: 'border-orange-200 bg-orange-50',
+        className: 'border-warn/35 bg-warn/10',
       };
     }
     if (moderate) {
@@ -443,7 +419,7 @@ export default function ResultPage({ reportId = '' }) {
           <div className="accent-panel corner-frame p-8 text-center sm:p-14">
             {isLoading ? (
               <>
-                <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-purple-200 border-t-transparent" />
+                <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-signal/35 border-t-transparent" />
                 <p className="mt-6 text-xs text-smoke">Loading your report…</p>
               </>
             ) : (
@@ -490,13 +466,6 @@ export default function ResultPage({ reportId = '' }) {
       : scores[key] ?? 50,
   }));
 
-  const radarData = [
-    { subject: 'You', value: Number(energy.score || scores.effortBalance || 50) },
-    { subject: personName, value: Number(scores.communicationHealth || 50) },
-    { subject: 'Clarity', value: Number(scores.clarity || 50) },
-    { subject: 'Safety', value: Number(scores.emotionalSafety || 50) },
-    { subject: 'Trust', value: Number(scores.trustSignal || 50) },
-  ];
 
   // Top words are counted locally by the parser — no AI tokens spent on
   // something a simple frequency count does exactly and for free.
@@ -536,12 +505,18 @@ export default function ResultPage({ reportId = '' }) {
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       {/* Rides the top-right corner once the reader is past the header. */}
-      <FloatingCoach chainId={source?.chainId} />
-      <div id="relationship-report-export" data-export-bg="#ffffff" className="relative mx-auto max-w-[1560px] rounded-sm bg-canvas0 p-2 sm:p-4">
+      <FloatingCoach onOpen={() => setCoachOpen(true)} />
+      <CoachDialog
+        open={coachOpen}
+        onClose={() => setCoachOpen(false)}
+        chainId={chainId}
+        context={coachContext}
+      />
+      <div id="relationship-report-export" data-export-bg="#ffffff" className="relative mx-auto max-w-[1560px] rounded-sm bg-transparent p-2 sm:p-4">
         <header className="accent-panel glow-border relative mb-6 overflow-hidden p-6 sm:p-8">
           <div className="relative flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-4xl">
-              <p className="tech-label text-purple-700">Relationship Intelligence Report</p>
+              <p className="tech-label text-signal">Relationship Intelligence Report</p>
               <h1 className="serif-title mt-4 text-5xl leading-none sm:text-7xl">{personName}</h1>
               <p className="mt-5 max-w-3xl text-lg leading-8 text-smoke">
                 This is your private emotional map of what the conversation appears to show: warm signals, clarity gaps, energy balance, key moments, and the next best move.
@@ -625,7 +600,7 @@ export default function ResultPage({ reportId = '' }) {
 
           <section id="score-cards" data-export-bg="#ffffff" className="relative">
             <div className="mb-4 flex items-center justify-between gap-4">
-              <p className="tech-label text-emerald-700">Score Cards 🧠</p>
+              <p className="tech-label text-good">Score Cards 🧠</p>
               <CardActions targetId="score-cards" name="score-cards" summary={`Compatibility ${scores.compatibility || 0}/100`} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -652,7 +627,7 @@ export default function ResultPage({ reportId = '' }) {
                         className="relative flex items-start gap-4 text-left"
                       >
                         <span className={`relative z-10 mt-4 block h-6 w-6 shrink-0 rounded-full border ${active ? 'border-signal bg-signal' : 'border-line bg-well'} transition`} />
-                        <span className={`min-w-0 flex-1 rounded-2xl border p-4 transition ${active ? 'border-violet-200 bg-paper' : 'border-line bg-paper'}`}>
+                        <span className={`min-w-0 flex-1 rounded-2xl border p-4 transition ${active ? 'border-signal/35 bg-paper' : 'border-line bg-paper'}`}>
                           <span className="block text-xs text-ash">{compactPeriod(item.period, index)}</span>
                           <span className="mt-1.5 block text-sm font-semibold text-bone">{safe(item.title, `Phase ${index + 1}`)}</span>
                           <span className="mt-1.5 block text-xs leading-5 text-smoke">{phaseSentiment} • {item.compatibility || scores.compatibility || 50}/100</span>
@@ -678,7 +653,7 @@ export default function ResultPage({ reportId = '' }) {
                         >
                           <p className="h-12 text-xs text-ash">{compactPeriod(item.period, index)}</p>
                           <span className={`relative z-10 block h-7 w-7 rounded-full border ${active ? 'border-signal bg-signal' : 'border-line bg-well'} transition group-hover:border-signal`} />
-                          <div className={`mt-5 rounded-2xl border p-4  transition ${active ? 'border-violet-200 bg-paper' : 'border-line bg-paper'}`}>
+                          <div className={`mt-5 rounded-2xl border p-4  transition ${active ? 'border-signal/35 bg-paper' : 'border-line bg-paper'}`}>
                             <p className="text-sm font-semibold text-bone">{safe(item.title, `Phase ${index + 1}`)}</p>
                             <p className="mt-2 text-xs leading-5 text-smoke">{phaseSentiment} • {item.compatibility || scores.compatibility || 50}/100</p>
                             {item.confidence && <p className="mt-2 text-xs text-ash">{item.confidence}</p>}
@@ -701,12 +676,12 @@ export default function ResultPage({ reportId = '' }) {
             <CardShell id="person-profile" title={`About ${personName}`} emoji="🔍" summary={`What ${personName}'s own messages reveal about them.`}>
               <p className="max-w-3xl text-sm leading-7 text-smoke">
                 Everything {personName} revealed about themselves in this chat — each point backed by their own words.
-                Mentioned in more than one period shows as <span className="text-purple-700">Confirmed</span>.
+                Mentioned in more than one period shows as <span className="text-signal">Confirmed</span>.
               </p>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 {personFactGroups.map(([category, items]) => (
                   <div key={category} className="rounded-sm border border-line bg-paper p-5">
-                    <p className="tech-label text-purple-700">{FACT_CATEGORY_LABELS[category] || category.replace(/_/g, ' ')}</p>
+                    <p className="tech-label text-signal">{FACT_CATEGORY_LABELS[category] || category.replace(/_/g, ' ')}</p>
                     <ul className="mt-4 space-y-4">
                       {items.map((item, index) => (
                         <li key={`${item.fact}-${index}`}>
@@ -758,7 +733,7 @@ export default function ResultPage({ reportId = '' }) {
                           <p className="mt-3 text-sm leading-6 text-smoke">{metric.reading}</p>
                         )}
                         {metric.evidenceQuote && (
-                          <p className="mt-3 border-l-2 border-pink-200 pl-3 text-sm italic leading-6 text-ash">
+                          <p className="mt-3 border-l-2 border-you/35 pl-3 text-sm italic leading-6 text-ash">
                             “{metric.evidenceQuote}”
                           </p>
                         )}
@@ -876,7 +851,7 @@ export default function ResultPage({ reportId = '' }) {
           {zodiacMatch && (
             <CardShell id="zodiac-match" title="Zodiac Layer" emoji="✨" summary={`${zodiacMatch.userSign} + ${zodiacMatch.otherSign}: ${zodiacMatch.label}`}>
               <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-                <div className="rounded-sm border border-purple-200 bg-purple-50 p-5 text-center">
+                <div className="rounded-sm border border-signal/35 bg-signal/10 p-5 text-center">
                   <div className="flex items-center justify-center gap-4">
                     <div>
                       <p className="text-4xl leading-none text-bone">{zodiacMatch.userGlyph}</p>
@@ -891,7 +866,7 @@ export default function ResultPage({ reportId = '' }) {
                     </div>
                   </div>
                   <p className="serif-title mt-5 text-6xl leading-none text-bone">{zodiacMatch.score}</p>
-                  <p className="mt-1 text-xs text-purple-700">{zodiacMatch.label}</p>
+                  <p className="mt-1 text-xs text-signal">{zodiacMatch.label}</p>
                   <div className="mt-4 h-2 overflow-hidden rounded-full bg-well">
                     <div className="h-full rounded-full bg-signal" style={{ width: `${zodiacMatch.score}%` }} />
                   </div>
@@ -937,7 +912,7 @@ export default function ResultPage({ reportId = '' }) {
             <CardShell id="red-flags" title="Red Flags" emoji="🚩" summary="Gentle red flag reflections.">
               <div className="grid gap-4">
                 {flags.red.length ? flags.red.map((flag, index) => (
-                  <div key={`${flag.label}-${index}`} className="rounded-sm border border-pink-200 bg-pink-50 p-4">
+                  <div key={`${flag.label}-${index}`} className="rounded-sm border border-you/35 bg-you/10 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <h3 className="text-xl text-bone">{safe(flag.label || flag.title, 'Pattern worth noticing')}</h3>
                       <div className="flex flex-wrap gap-2">
@@ -948,14 +923,14 @@ export default function ResultPage({ reportId = '' }) {
                     <p className="mt-3 text-sm leading-7 text-smoke">{safe(flag.explanation, 'This may be worth noticing based on the conversation.')}</p>
                     {flag.evidenceQuote ? (
                       <blockquote className="mt-3 rounded-2xl border border-line bg-well p-3">
-                        <p className="tech-label text-pink-700">Receipt</p>
+                        <p className="tech-label text-you">Receipt</p>
                         <p className="mt-2 font-mono text-sm leading-6 text-bone">“{String(flag.evidenceQuote).slice(0, 220)}”</p>
                       </blockquote>
                     ) : (
                       <p className="mt-3 rounded-2xl border border-line bg-well p-3 text-xs text-ash">No direct quote from this chat — treat as a limited-evidence signal</p>
                     )}
-                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-pink-700">Why it matters:</span> {safe(flag.whyItMatters, 'This could affect clarity or emotional safety over time.')}</p>
-                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-pink-700">Reflection:</span> {safe(flag.reflectionQuestion, 'What would you need to ask clearly instead of guessing?')}</p>
+                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-you">Why it matters:</span> {safe(flag.whyItMatters, 'This could affect clarity or emotional safety over time.')}</p>
+                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-you">Reflection:</span> {safe(flag.reflectionQuestion, 'What would you need to ask clearly instead of guessing?')}</p>
                   </div>
                 )) : <EmptyHint>This conversation did not show strong red flag evidence. That does not prove everything is fine, it just means the signal is limited.</EmptyHint>}
               </div>
@@ -964,7 +939,7 @@ export default function ResultPage({ reportId = '' }) {
             <CardShell id="green-flags" title="Green Flags" emoji="🟢" summary="Positive signals from this conversation.">
               <div className="grid gap-4">
                 {flags.green.length ? flags.green.map((flag, index) => (
-                  <div key={`${flag.label}-${index}`} className="rounded-sm border border-emerald-200 bg-emerald-50 p-4">
+                  <div key={`${flag.label}-${index}`} className="rounded-sm border border-good/35 bg-good/10 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <h3 className="text-xl text-bone">{safe(flag.label || flag.title, 'Promising signal')}</h3>
                       {flag.confidence && <Badge tone="green">{flag.confidence}</Badge>}
@@ -972,14 +947,14 @@ export default function ResultPage({ reportId = '' }) {
                     <p className="mt-3 text-sm leading-7 text-smoke">{safe(flag.explanation, 'A possible positive sign appears in this chat.')}</p>
                     {flag.evidenceQuote ? (
                       <blockquote className="mt-3 rounded-2xl border border-line bg-well p-3">
-                        <p className="tech-label text-emerald-700">Receipt</p>
+                        <p className="tech-label text-good">Receipt</p>
                         <p className="mt-2 font-mono text-sm leading-6 text-bone">“{String(flag.evidenceQuote).slice(0, 220)}”</p>
                       </blockquote>
                     ) : (
                       <p className="mt-3 rounded-2xl border border-line bg-well p-3 text-xs text-ash">No direct quote from this chat — treat as a limited-evidence signal</p>
                     )}
-                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-emerald-700">Why it matters:</span> {safe(flag.whyItMatters, 'Healthy signals can create room for calmer repair.')}</p>
-                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-emerald-700">Build on it:</span> {safe(flag.howToBuildOnIt, 'Name the good signal and ask for one clear next step.')}</p>
+                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-good">Why it matters:</span> {safe(flag.whyItMatters, 'Healthy signals can create room for calmer repair.')}</p>
+                    <p className="mt-3 text-sm leading-7 text-smoke"><span className="text-good">Build on it:</span> {safe(flag.howToBuildOnIt, 'Name the good signal and ask for one clear next step.')}</p>
                   </div>
                 )) : <EmptyHint>Green flags were not strong in this sample yet. More chats can make this clearer.</EmptyHint>}
               </div>
@@ -988,9 +963,9 @@ export default function ResultPage({ reportId = '' }) {
 
           <CardShell id="energy-match" title="Energy Match Score" emoji="⚡" summary={energy.explanation}>
             <div className="grid gap-5 xl:grid-cols-[.75fr_1.25fr]">
-              <div className="flex flex-col justify-between rounded-sm border border-orange-200 bg-orange-50 p-5">
+              <div className="flex flex-col justify-between rounded-sm border border-warn/35 bg-warn/10 p-5">
                 <div>
-                  <p className="tech-label text-orange-700">Overall energy match</p>
+                  <p className="tech-label text-warn">Overall energy match</p>
                   <p className="serif-title mt-3 text-7xl">{Number(energy.score ?? scores.effortBalance) || 50}</p>
                   <p className="mt-4 text-sm leading-7 text-smoke">{safe(energy.explanation, 'The energy balance needs more data, but effort and clarity are the main things to watch.')}</p>
                 </div>
@@ -998,24 +973,19 @@ export default function ResultPage({ reportId = '' }) {
                   <div className="h-full rounded-full bg-signal" style={{ width: `${Number(energy.score ?? scores.effortBalance) || 50}%` }} />
                 </div>
               </div>
-              <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {[
-                    ['Your energy', energy.userEnergy],
-                    [`${personName}’s energy`, energy.otherPersonEnergy],
-                    ['Effort balance', energy.effortBalance],
-                    ['Emotional availability', energy.emotionalAvailability],
-                    ['Consistency', energy.consistency],
-                  ].map(([label, value]) => (
-                    <div key={label} className="rounded-sm border border-line bg-paper p-4">
-                      <p className="tech-label text-ash">{label}</p>
-                      <p className="mt-3 text-sm leading-7 text-bone">{safe(value)}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="rounded-sm border border-line bg-well p-4">
-                  <RadarPentagon data={radarData} />
-                </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  ['Your energy', energy.userEnergy],
+                  [`${personName}’s energy`, energy.otherPersonEnergy],
+                  ['Effort balance', energy.effortBalance],
+                  ['Emotional availability', energy.emotionalAvailability],
+                  ['Consistency', energy.consistency],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-lg border border-line bg-paper p-4">
+                    <p className="tech-label">{label}</p>
+                    <p className="mt-2 text-sm leading-7 text-bone">{safe(value)}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </CardShell>
@@ -1068,7 +1038,7 @@ export default function ResultPage({ reportId = '' }) {
             </div>
           </CardShell>
 
-          <AfterReportActions chainId={source?.chainId} />
+          <AfterReportActions onOpenCoach={() => setCoachOpen(true)} />
 
           <section className="glass-card p-5">
             <p className="text-sm leading-7 text-smoke">

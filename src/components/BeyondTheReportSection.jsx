@@ -17,8 +17,8 @@ const FEATURES = [
     title: 'Ask the coach about it',
     body: 'Once a report exists you can talk to it. “Is he actually interested?” “What do I reply to this?” The coach answers from your report — not generic advice — and always hands a question back to you.',
     points: ['Reads your specific report', 'Replies in your language', 'Honest, not flattering'],
-    accent: 'border-pink-200 bg-pink-50',
-    labelClass: 'text-pink-700',
+    accent: 'border-you/35 bg-you/10',
+    labelClass: 'text-you',
   },
   {
     Icon: PiUserFocus,
@@ -26,8 +26,8 @@ const FEATURES = [
     title: 'Know Yourself',
     body: 'Every analysis adds to a profile of how you communicate — how you open, repair, argue, go quiet. You are not the same with a partner as with your mother, and what repeats across all of them is the part that is actually you.',
     points: ['Accumulates across reports', 'Separated by relationship type', 'Yours alone, never shared'],
-    accent: 'border-violet-200 bg-violet-50',
-    labelClass: 'text-violet-700',
+    accent: 'border-signal/35 bg-signal/10',
+    labelClass: 'text-signal',
   },
 ];
 

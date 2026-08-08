@@ -32,10 +32,10 @@ export default function CookieConsentBanner() {
       aria-label="Cookie and storage notice"
       className="fixed inset-x-0 bottom-0 z-[110] px-3 pb-3 sm:px-6 sm:pb-6"
     >
-      <div className="mx-auto flex max-w-3xl flex-col gap-4 rounded-sm border border-purple-200 bg-surface p-5 shadow-glow  sm:flex-row sm:items-center sm:justify-between">
+      <div className="mx-auto flex max-w-3xl flex-col gap-4 rounded-sm border border-signal/35 bg-surface p-5 shadow-glow  sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm leading-6 text-smoke">
           ThirdPerson AI uses essential local storage to keep you signed in and remember your preferences. We do not use third-party advertising trackers.{' '}
-          <button type="button" onClick={() => navigate('/privacy')} className="text-purple-700 underline hover:text-bone">Read our Privacy Policy</button>.
+          <button type="button" onClick={() => navigate('/privacy')} className="text-signal underline hover:text-bone">Read our Privacy Policy</button>.
         </p>
         <button
           type="button"

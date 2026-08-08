@@ -26,7 +26,7 @@ export default function MatchmakingPitch({ className = '' }) {
           There’s someone out there you’d stay up all night talking to — two compatible people who
           would vibe perfectly, if only they knew each other existed.
         </p>
-        <p className="mt-4 text-base leading-7 text-violet-700 sm:text-xl sm:leading-9">
+        <p className="mt-4 text-base leading-7 text-signal sm:text-xl sm:leading-9">
           We’re going to help you find them.
         </p>
 

@@ -57,10 +57,10 @@ function DropdownItem({ label, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center justify-between border-b border-line px-4 py-3 text-left text-sm text-smoke transition last:border-b-0 hover:bg-purple-50 hover:text-bone"
+      className="flex w-full items-center justify-between border-b border-line px-4 py-3 text-left text-sm text-smoke transition last:border-b-0 hover:bg-signal/10 hover:text-bone"
     >
       <span>{label}</span>
-      <PiArrowRight className="text-purple-700" aria-hidden="true" />
+      <PiArrowRight className="text-signal" aria-hidden="true" />
     </button>
   );
 }
@@ -147,7 +147,7 @@ export default function TopNav() {
               <PiCaretDown className={`text-xs transition-transform duration-200 ${productOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
             {productOpen && (
-              <div className="absolute left-0 top-8 w-64 rounded-sm border border-purple-200 bg-surface p-2 shadow-glow ">
+              <div className="absolute left-0 top-8 w-64 rounded-sm border border-signal/35 bg-surface p-2 shadow-glow ">
                 {PRODUCT_LINKS.map(([label, href]) => (
                   <DropdownItem key={label} label={label} onClick={() => menuNavigate(href)} />
                 ))}
@@ -186,7 +186,7 @@ export default function TopNav() {
               <PiCaretDown className={`text-xs transition-transform duration-200 ${companyOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
             {companyOpen && (
-              <div className="absolute right-0 top-8 w-56 rounded-sm border border-purple-200 bg-surface p-2 shadow-glow ">
+              <div className="absolute right-0 top-8 w-56 rounded-sm border border-signal/35 bg-surface p-2 shadow-glow ">
                 {COMPANY_LINKS.map(([label, href]) => (
                   <DropdownItem key={label} label={label} onClick={() => menuNavigate(href)} />
                 ))}
@@ -252,7 +252,7 @@ export default function TopNav() {
                       className="flex min-h-[52px] w-full items-center justify-between border-b border-line text-left text-base text-smoke transition active:text-bone"
                     >
                       <span>{label}</span>
-                      <PiArrowRight className="text-purple-700" aria-hidden="true" />
+                      <PiArrowRight className="text-signal" aria-hidden="true" />
                     </button>
                   </li>
                 ))}

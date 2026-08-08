@@ -42,7 +42,7 @@ export default function FaqsPage() {
 
       <div className="relative mx-auto max-w-[720px]">
         <div className="text-center">
-          <p className="tech-label text-purple-700">FAQs</p>
+          <p className="tech-label text-signal">FAQs</p>
           <h1 className="serif-title mt-4 text-4xl leading-tight sm:text-6xl">Questions worth asking.</h1>
         </div>
 
@@ -53,7 +53,7 @@ export default function FaqsPage() {
               <div
                 key={question}
                 className={`overflow-hidden rounded-sm border transition ${
-                  isOpen ? 'border-purple-200 bg-purple-50' : 'border-line bg-paper'
+                  isOpen ? 'border-signal/35 bg-signal/10' : 'border-line bg-paper'
                 }`}
               >
                 <button
@@ -62,7 +62,7 @@ export default function FaqsPage() {
                   className="flex min-h-[60px] w-full items-center justify-between gap-4 p-4 text-left sm:p-5"
                 >
                   <span className="text-base leading-6 text-bone sm:text-lg">{question}</span>
-                  <span className="shrink-0 text-purple-700" aria-hidden="true">
+                  <span className="shrink-0 text-signal" aria-hidden="true">
                     {isOpen ? <PiMinus /> : <PiPlus />}
                   </span>
                 </button>

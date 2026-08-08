@@ -18,7 +18,6 @@ const PersonalityCardPage = lazy(() => import('./pages/PersonalityCardPage.jsx')
 const VisionPage = lazy(() => import('./pages/VisionPage.jsx'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'));
 const FaqsPage = lazy(() => import('./pages/FaqsPage.jsx'));
-const BestieBotPage = lazy(() => import('./pages/BestieBotPage.jsx'));
 const PricingPage = lazy(() => import('./pages/PricingPage.jsx'));
 const AuthPage = lazy(() => import('./pages/AuthPage.jsx'));
 const BlogIndexPage = lazy(() => import('./pages/BlogIndexPage.jsx'));
@@ -53,9 +52,12 @@ function RouteSwitch() {
   if (path === '/personality-card') return <ProtectedRoute><PersonalityCardPage /></ProtectedRoute>;
   if (path === '/vision') return <VisionPage />;
   if (path === '/reports') return <ProtectedRoute><ReportsPage /></ProtectedRoute>;
+  // The coach is no longer a page — it is a dialog over the report it is about.
+  // These URLs still resolve, because they were linked from the reports list
+  // and may be bookmarked; they now open the report with the coach showing.
   if (path.startsWith('/reports/') && (path.endsWith('/coach') || path.endsWith('/broski') || path.endsWith('/bestie'))) {
-    const chainId = decodeURIComponent(path.replace('/reports/', '').replace('/coach', '').replace('/broski', '').replace('/bestie', ''));
-    return <ProtectedRoute><BestieBotPage chainId={chainId} /></ProtectedRoute>;
+    const reportId = decodeURIComponent(path.replace('/reports/', '').replace(/\/(coach|broski|bestie)$/, ''));
+    return <ProtectedRoute><ResultPage reportId={reportId} openCoach /></ProtectedRoute>;
   }
   if (path.startsWith('/reports/')) {
     const reportId = decodeURIComponent(path.replace('/reports/', '').replace(/\/$/, ''));

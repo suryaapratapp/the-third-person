@@ -96,7 +96,7 @@ export default function ReportsPage() {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search person"
             aria-label="Search reports by person"
-            className="min-h-[48px] flex-1 rounded-sm border border-line bg-well px-4 text-sm outline-none focus:border-purple-200"
+            className="min-h-[48px] flex-1 rounded-sm border border-line bg-well px-4 text-sm outline-none focus:border-signal/35"
           />
           {reports.length > 4 && (
             <button
@@ -105,8 +105,8 @@ export default function ReportsPage() {
               aria-expanded={filtersOpen}
               className={`flex min-h-[48px] items-center justify-center gap-2 rounded-sm border px-5 text-xs transition ${
                 filtersOpen || platform || relation || month || sort !== 'newest'
-                  ? 'border-purple-200 bg-purple-50 text-bone'
-                  : 'border-line bg-paper text-smoke hover:border-purple-200'
+                  ? 'border-signal/35 bg-signal/10 text-bone'
+                  : 'border-line bg-paper text-smoke hover:border-signal/35'
               }`}
             >
               <PiSlidersHorizontal aria-hidden="true" />
@@ -137,12 +137,12 @@ export default function ReportsPage() {
         )}
 
         {notice && (
-          <p className="mt-4 rounded-2xl border border-purple-200 bg-purple-50 p-4 text-sm leading-7 text-smoke">{notice}</p>
+          <p className="mt-4 rounded-2xl border border-signal/35 bg-signal/10 p-4 text-sm leading-7 text-smoke">{notice}</p>
         )}
 
         {loading ? (
           <div className="mt-8 thin-panel p-8 text-center">
-            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-purple-200 border-t-transparent" />
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-signal/35 border-t-transparent" />
             <p className="mt-5 text-xs text-smoke">Loading relationship reports…</p>
           </div>
         ) : !chains.length ? (
@@ -164,7 +164,7 @@ export default function ReportsPage() {
                 <article key={chain.chainId} className="thin-panel p-5">
                   <button onClick={() => setOpenChain(open ? '' : chain.chainId)} className="flex w-full flex-wrap items-start justify-between gap-5 text-left">
                     <div>
-                      <p className="tech-label text-purple-700">Analysis Chain</p>
+                      <p className="tech-label text-signal">Analysis Chain</p>
                       <h2 className="serif-title mt-2 text-4xl">{chain.personName}</h2>
                       <p className="mt-2 text-sm text-smoke">{chain.platform} • {chain.relationshipType} • {chain.reports.length} report{chain.reports.length === 1 ? '' : 's'}</p>
                     </div>
@@ -177,13 +177,13 @@ export default function ReportsPage() {
                   <div className="mt-5 flex flex-wrap gap-3">
                     <button
                       onClick={() => navigate(`/reports/${encodeURIComponent(chain.chainId)}/coach`)}
-                      className="rounded-sm border border-pink-200 bg-pink-50 px-5 py-3 text-xs text-pink-700 transition hover:border-pink-200"
+                      className="rounded-sm border border-you/35 bg-you/10 px-5 py-3 text-xs text-you transition hover:border-you/35"
                     >
                       Open AI Relationship Coach
                     </button>
                     <button
                       onClick={() => setOpenChain(open ? '' : chain.chainId)}
-                      className="rounded-sm border border-line bg-paper px-5 py-3 text-xs text-smoke transition hover:border-purple-200"
+                      className="rounded-sm border border-line bg-paper px-5 py-3 text-xs text-smoke transition hover:border-signal/35"
                     >
                       {open ? 'Hide reports' : 'View reports'}
                     </button>
@@ -191,7 +191,7 @@ export default function ReportsPage() {
                   {open && (
                     <div className="mt-5 grid gap-3">
                       {chain.reports.map((report) => (
-                        <div key={report.analysisId} className="border border-line bg-well p-4 transition hover:border-purple-200">
+                        <div key={report.analysisId} className="border border-line bg-well p-4 transition hover:border-signal/35">
                           <button onClick={() => openReport(report)} className="w-full text-left">
                             <div className="flex flex-wrap justify-between gap-3">
                               <span className="text-bone">{new Date(report.dateAnalysed).toLocaleString()}</span>
@@ -206,7 +206,7 @@ export default function ReportsPage() {
                                 <button
                                   onClick={() => removeReport(report)}
                                   disabled={deletingId === report.analysisId}
-                                  className="rounded-sm border border-rose-200 bg-rose-50 px-4 py-2 text-xs text-rose-700 transition hover:border-rose-200 disabled:opacity-60"
+                                  className="rounded-sm border border-risk/35 bg-risk/10 px-4 py-2 text-xs text-risk transition hover:border-risk/35 disabled:opacity-60"
                                 >
                                   {deletingId === report.analysisId ? 'Deleting…' : 'Yes, delete'}
                                 </button>
@@ -220,7 +220,7 @@ export default function ReportsPage() {
                             ) : (
                               <button
                                 onClick={() => setConfirmDeleteId(report.analysisId)}
-                                className="rounded-sm border border-line bg-paper px-4 py-2 text-xs text-smoke transition hover:border-rose-200 hover:text-rose-700"
+                                className="rounded-sm border border-line bg-paper px-4 py-2 text-xs text-smoke transition hover:border-risk/35 hover:text-risk"
                               >
                                 Delete report
                               </button>

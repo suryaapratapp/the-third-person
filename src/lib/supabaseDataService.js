@@ -6,6 +6,7 @@ import {
   saveAnalysisReport,
   saveRelationshipPersonalityCardLocal,
 } from './reportsStore.js';
+import { clearAllCoachThreads } from './coachThreadStore.js';
 import { clearAnalysisCache } from './conversationFingerprint.js';
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 
@@ -331,11 +332,14 @@ export async function deleteAllMyAnalysisData() {
 }
 
 // Removes on-device copies of analysis data: locally saved reports/cards, the
-// cached Know Yourself profile, and the fingerprint→report cache.
+// cached Know Yourself profile, the fingerprint→report cache, and every saved
+// coach conversation. Coach threads reason about a chat we promised to discard,
+// so "delete everything" has to reach them too.
 export function clearLocalAnalysisData() {
   if (typeof window === 'undefined') return;
   window.localStorage.removeItem(UNDERSTAND_YOURSELF_KEY);
   clearLocalReportsAndCards();
+  clearAllCoachThreads();
   clearAnalysisCache();
 }
 

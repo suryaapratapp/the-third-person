@@ -199,7 +199,9 @@ export function computeToneSeries(messages = [], maxBuckets = 12) {
     const index = Math.min(bucketCount - 1, Math.floor((time - first) / width));
     const entry = buckets[index].bySender.get(message.sender);
     if (!entry) return;
-    entry.total += toneOf(message.message);
+    // rawBody, not message: `message` has been emoji-stripped by the parser,
+    // so scoring it meant the emoji half of this signal never fired at all.
+    entry.total += toneOf(message.rawBody ?? message.message);
     entry.messages += 1;
   });
 

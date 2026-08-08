@@ -69,7 +69,7 @@ function ExportHelpDialog({ platform, onClose }) {
       aria-labelledby="export-guide-heading"
       onKeyDown={(event) => { if (event.key === 'Escape') onClose(); }}
     >
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto border border-purple-200 bg-well p-5 shadow-glow sm:p-7">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto border border-signal/35 bg-well p-5 shadow-glow sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-paper text-xl">
@@ -85,17 +85,17 @@ function ExportHelpDialog({ platform, onClose }) {
 
         <div className="mt-5 flex flex-wrap gap-2">
           <span className="flex items-center gap-2 rounded-sm border border-line bg-paper px-4 py-2 text-xs text-smoke">
-            <PiClockLight className="text-sm text-purple-700" aria-hidden="true" />
+            <PiClockLight className="text-sm text-signal" aria-hidden="true" />
             {guide.estimatedTime}
           </span>
           <span className="flex items-center gap-2 rounded-sm border border-line bg-paper px-4 py-2 text-xs text-smoke">
-            <PiFileTextLight className="text-sm text-purple-700" aria-hidden="true" />
+            <PiFileTextLight className="text-sm text-signal" aria-hidden="true" />
             {guide.fileFormat}
           </span>
         </div>
 
         {guide.note && (
-          <div className="mt-4 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm leading-6 text-smoke">
+          <div className="mt-4 rounded-2xl border border-warn/35 bg-warn/10 p-4 text-sm leading-6 text-smoke">
             {guide.note}
           </div>
         )}
@@ -109,7 +109,7 @@ function ExportHelpDialog({ platform, onClose }) {
                 role="tab"
                 aria-selected={osTab === index}
                 onClick={() => setOsTab(index)}
-                className={`rounded-sm border px-5 py-2 text-xs transition ${osTab === index ? 'border-purple-200 bg-purple-50 text-bone' : 'border-line bg-paper text-smoke hover:border-purple-200'}`}
+                className={`rounded-sm border px-5 py-2 text-xs transition ${osTab === index ? 'border-signal/35 bg-signal/10 text-bone' : 'border-line bg-paper text-smoke hover:border-signal/35'}`}
               >
                 {variant.os}
               </button>
@@ -120,14 +120,14 @@ function ExportHelpDialog({ platform, onClose }) {
         <ol className="mt-5 space-y-3">
           {steps.map((step, index) => (
             <li key={step} className="flex gap-3 border border-line p-3 text-sm leading-6 text-smoke">
-              <span className="font-mono text-purple-700">{String(index + 1).padStart(2, '0')}</span>
+              <span className="font-mono text-signal">{String(index + 1).padStart(2, '0')}</span>
               <span>{step}</span>
             </li>
           ))}
         </ol>
 
-        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-          <PiShieldCheckLight className="mt-0.5 shrink-0 text-lg text-emerald-700" aria-hidden="true" />
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-good/35 bg-good/10 p-4">
+          <PiShieldCheckLight className="mt-0.5 shrink-0 text-lg text-good" aria-hidden="true" />
           <p className="text-sm leading-6 text-smoke">{guide.privacyNote}</p>
         </div>
 
@@ -135,7 +135,7 @@ function ExportHelpDialog({ platform, onClose }) {
           <button
             type="button"
             onClick={() => navigate(`/blog/${guide.blogSlug}`)}
-            className="mt-4 flex items-center gap-2 text-sm text-purple-700 underline hover:text-bone"
+            className="mt-4 flex items-center gap-2 text-sm text-signal underline hover:text-bone"
           >
             Read the full guide with screenshots
             <PiArrowRight aria-hidden="true" />
@@ -185,7 +185,7 @@ export default function PlatformSelector({ value, onChange }) {
                 <span className="min-w-0 flex-1 text-[0.95rem] font-medium text-ink">{platform}</span>
                 <span
                   className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition ${
-                    selected ? 'border-signal bg-signal text-white' : 'border-lineStrong'
+                    selected ? 'border-signal bg-signal text-[color:var(--on-solid)]' : 'border-lineStrong'
                   }`}
                   aria-hidden="true"
                 >

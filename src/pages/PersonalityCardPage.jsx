@@ -21,49 +21,49 @@ const emptyText = 'Not enough evidence yet.';
 const worldSlots = [
   {
     key: 'friends',
-    tileClass: 'border-yellow-200/45',
+    tileClass: 'border-warn/35',
     label: 'With Friends',
     match: /friend/i,
     icon: '♊',
     number: '01',
     accentClass: '',
-    iconClass: 'text-yellow-700 bg-yellow-50 border-yellow-200/22',
+    iconClass: 'text-warn bg-warn/10 border-warn/35',
     fallback: 'Upload a friends chat to see how you show up in your social world.',
     keywords: ['Supportive', 'Funny', 'Real'],
   },
   {
     key: 'family',
-    tileClass: 'border-rose-200',
+    tileClass: 'border-risk/35',
     label: 'With Family',
     match: /family|mom|dad|brother|sister|cousin/i,
     icon: '⌂',
     number: '02',
     accentClass: '',
-    iconClass: 'text-rose-700 bg-rose-50 border-rose-200',
+    iconClass: 'text-risk bg-risk/10 border-risk/35',
     fallback: 'Upload a family chat to understand your care, boundaries, and emotional role.',
     keywords: ['Caring', 'Responsible', 'Warm'],
   },
   {
     key: 'partner',
-    tileClass: 'border-pink-200',
+    tileClass: 'border-you/35',
     label: 'With Partner',
     match: /partner|dating|crush|love|boyfriend|girlfriend|wife|husband|spouse/i,
     icon: '♡',
     number: '03',
     accentClass: '',
-    iconClass: 'text-pink-700 bg-pink-50 border-pink-200',
+    iconClass: 'text-you bg-you/10 border-you/35',
     fallback: 'Upload a love or partner chat to reveal your romantic communication pattern.',
     keywords: ['Romantic', 'Loyal', 'Intense'],
   },
   {
     key: 'ex',
-    tileClass: 'border-fuchsia-200',
+    tileClass: 'border-you/35',
     label: 'With Ex',
     match: /ex/i,
     icon: '↺',
     number: '04',
     accentClass: '',
-    iconClass: 'text-fuchsia-700 bg-fuchsia-50 border-fuchsia-200',
+    iconClass: 'text-you bg-you/10 border-you/35',
     fallback: 'Upload an ex chat to understand old patterns, closure, and emotional residue.',
     keywords: ['Reflective', 'Careful', 'Healing'],
   },
@@ -143,7 +143,7 @@ function ProfileAvatar({ profile }) {
       {profile.profileImage ? (
         <img src={profile.profileImage} alt="Profile" className="h-full w-full object-cover" />
       ) : (
-        <div className="flex h-full w-full items-center justify-center bg-signal text-3xl font-semibold text-white">
+        <div className="flex h-full w-full items-center justify-center bg-signal text-3xl font-semibold text-[color:var(--on-solid)]">
           {getInitials(profile)}
         </div>
       )}
@@ -231,13 +231,13 @@ function OverallReport({ profile, overall }) {
       <div className="relative grid gap-8 xl:grid-cols-[1.25fr_.75fr]">
         <div className="grid gap-8 lg:grid-cols-[1fr_220px]">
           <div>
-            <p className="tech-label text-purple-700">Know Yourself</p>
+            <p className="tech-label text-signal">Know Yourself</p>
             <h2 className="serif-title mt-6 text-6xl leading-none text-bone sm:text-8xl">{name}</h2>
-            <p className="mt-2 font-serif text-3xl italic text-pink-700">{overall.overallPersonalityLabel || overall.shareableLabel || 'Your personality map is forming'}</p>
+            <p className="mt-2 font-serif text-3xl italic text-you">{overall.overallPersonalityLabel || overall.shareableLabel || 'Your personality map is forming'}</p>
             <p className="mt-5 max-w-3xl text-base leading-8 text-smoke">{safe(overall.summaryParagraph, 'Generate Know Yourself after a few relationship personality cards to see a deeper profile.')}</p>
             <div className="mt-6 flex flex-wrap gap-2">
               <span className="rounded-sm border border-line px-4 py-2 text-xs text-bone">{overall.personalityTypeSignal || 'Personality signal forming'}</span>
-              {zodiac && <span className="rounded-sm border border-pink-200 px-4 py-2 text-xs text-pink-700">{getZodiacGlyph(zodiac)} {zodiac}</span>}
+              {zodiac && <span className="rounded-sm border border-you/35 px-4 py-2 text-xs text-you">{getZodiacGlyph(zodiac)} {zodiac}</span>}
             </div>
           </div>
           <div className="flex items-start justify-center lg:justify-end">
@@ -250,14 +250,14 @@ function OverallReport({ profile, overall }) {
           </div>
 
           <div className="grid gap-5 md:grid-cols-2 lg:col-span-2">
-            <div className="rounded-sm border border-emerald-200 bg-emerald-50 p-5">
-              <p className="tech-label text-emerald-700">Green flags</p>
+            <div className="rounded-sm border border-good/35 bg-good/10 p-5">
+              <p className="tech-label text-good">Green flags</p>
               <ul className="mt-4 space-y-2 text-sm leading-7 text-smoke">
                 {greenFlags.map((item) => <li key={item}>• {item}</li>)}
               </ul>
             </div>
-            <div className="rounded-sm border border-pink-200 bg-pink-50 p-5">
-              <p className="tech-label text-pink-700">Red flags, lovingly</p>
+            <div className="rounded-sm border border-you/35 bg-you/10 p-5">
+              <p className="tech-label text-you">Red flags, lovingly</p>
               <ul className="mt-4 space-y-2 text-sm leading-7 text-smoke">
                 {redFlags.map((item) => <li key={item}>• {item}</li>)}
               </ul>
@@ -267,7 +267,7 @@ function OverallReport({ profile, overall }) {
 
         <aside className="grid gap-5">
           <div className="rounded-sm border border-line bg-paper p-6">
-            <p className="tech-label text-orange-700">Best matches</p>
+            <p className="tech-label text-warn">Best matches</p>
             <div className="mt-5 space-y-4">
               {bestMatches.map((match, index) => (
                 <div key={`${match}-${index}`} className="rounded-2xl border border-line bg-well p-4">
@@ -277,13 +277,13 @@ function OverallReport({ profile, overall }) {
             </div>
           </div>
           <div className="rounded-sm border border-line bg-paper p-6">
-            <p className="tech-label text-purple-700">You are...</p>
+            <p className="tech-label text-signal">You are...</p>
             <div className="mt-5 flex flex-wrap gap-2">
               {keywords.map((keyword) => (
                 <span key={keyword} className="rounded-sm border border-line px-3 py-2 text-sm text-bone">{keyword}</span>
               ))}
             </div>
-            <blockquote className="mt-7 border-t border-line pt-6 font-serif text-2xl italic leading-9 text-pink-700">
+            <blockquote className="mt-7 border-t border-line pt-6 font-serif text-2xl italic leading-9 text-you">
               “{overall.viralOneLiner || 'You are still becoming easier to understand, one conversation at a time.'}”
             </blockquote>
           </div>
@@ -422,19 +422,19 @@ export default function PersonalityCardPage() {
   };
 
   return (
-    <section className="page-self relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
+    <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <div id="personality-page-export" data-export-bg="#ffffff" className="relative mx-auto max-w-[1440px]">
         <header className="accent-panel relative mb-6 overflow-hidden p-5 sm:p-9">
           <div className="relative flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-4xl">
-              <p className="tech-label text-pink-700">Know Yourself</p>
+              <p className="tech-label text-you">Know Yourself</p>
               <h1 className="serif-title mt-3 text-4xl leading-[1.05] text-bone sm:text-6xl">Who You Actually Are</h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-smoke sm:text-base sm:leading-8">
                 Fifteen traits, read from how you really talk — and how they shift from person to person.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-sm border border-purple-200 px-3 py-1.5 text-xs text-purple-700">{relationshipCards.length} cards</span>
-                <span className="rounded-sm border border-orange-200 px-3 py-1.5 text-xs text-orange-700">{hasPaidAccess ? 'Paid access' : 'Locked'}</span>
+                <span className="rounded-sm border border-signal/35 px-3 py-1.5 text-xs text-signal">{relationshipCards.length} cards</span>
+                <span className="rounded-sm border border-warn/35 px-3 py-1.5 text-xs text-warn">{hasPaidAccess ? 'Paid access' : 'Locked'}</span>
               </div>
             </div>
             <div data-export-ignore className="flex w-full flex-wrap gap-2 sm:w-auto sm:min-w-[240px] sm:flex-col">
@@ -462,7 +462,7 @@ export default function PersonalityCardPage() {
 
           <div className="relative flex flex-wrap items-start justify-between gap-6">
             <div>
-              <p className="tech-label text-purple-700">Relationship Worlds</p>
+              <p className="tech-label text-signal">Relationship Worlds</p>
               <h2 className="serif-title mt-3 max-w-3xl text-3xl leading-tight text-bone sm:text-5xl">Who you are with each of them</h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-smoke">Tap a world to see how you show up there.</p>
             </div>
@@ -480,7 +480,7 @@ export default function PersonalityCardPage() {
         {personalityHistory.length > 0 && (
           <section className="accent-panel relative mb-7 overflow-hidden p-5 sm:p-8">
             <div className="relative">
-              <p className="tech-label text-emerald-700">Profile evolution</p>
+              <p className="tech-label text-good">Profile evolution</p>
               <h2 className="serif-title mt-3 text-4xl leading-tight text-bone sm:text-5xl">How your profile is evolving</h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-smoke">
                 Every new analysis refines your personality map instead of replacing it. These are the latest updates from your conversations.
@@ -489,7 +489,7 @@ export default function PersonalityCardPage() {
                 {personalityHistory.slice(0, 6).map((entry) => (
                   <div key={entry.id} className="rounded-sm border border-line bg-paper p-4">
                     <div className="flex flex-wrap items-center gap-2 text-xs text-ash">
-                      <span className="rounded-sm border border-purple-200 bg-purple-50 px-2.5 py-1 text-purple-700">{entry.relationshipWorld}</span>
+                      <span className="rounded-sm border border-signal/35 bg-signal/10 px-2.5 py-1 text-signal">{entry.relationshipWorld}</span>
                       <span>{new Date(entry.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       <span className="rounded-sm border border-line bg-paper px-2.5 py-1">{entry.confidenceLevel}</span>
                     </div>

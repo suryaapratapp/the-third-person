@@ -44,14 +44,14 @@ function Frame({ kind = 'phone', children, label }) {
   );
 }
 
-const HL = 'border-violet-200 bg-violet-50 text-bone';
+const HL = 'border-signal/35 bg-signal/10 text-bone';
 const PLAIN = 'border-line bg-paper text-smoke';
 
 function Row({ text, highlight, trailing }) {
   return (
     <div className={`flex items-center justify-between gap-2 rounded-lg border px-2 py-1.5 ${highlight ? HL : PLAIN}`}>
       <span className="truncate text-[0.6rem] leading-4">{text}</span>
-      {trailing ?? <PiCaretRight className={`shrink-0 text-[0.6rem] ${highlight ? 'text-violet-700' : 'text-ash'}`} aria-hidden="true" />}
+      {trailing ?? <PiCaretRight className={`shrink-0 text-[0.6rem] ${highlight ? 'text-signal' : 'text-ash'}`} aria-hidden="true" />}
     </div>
   );
 }
@@ -75,14 +75,14 @@ function Visual({ spec }) {
           <span className="h-4 w-4 shrink-0 rounded-full bg-signal" />
           <span className="flex-1 truncate text-[0.6rem] text-bone">{spec.name || 'Riya'}</span>
           <PiDotsThreeVertical
-            className={`shrink-0 rounded text-[0.7rem] ${spec.highlight === 'menu' ? 'bg-violet-50 text-bone ring-1 ring-violet-200/70' : 'text-ash'}`}
+            className={`shrink-0 rounded text-[0.7rem] ${spec.highlight === 'menu' ? 'bg-signal/10 text-bone ring-1 ring-signal/35' : 'text-ash'}`}
             aria-hidden="true"
           />
         </div>
         <div className="grid gap-1">
           {(spec.bubbles || [['in', 'good morning'], ['out', 'just reached'], ['in', 'ok call me later']]).map(([side, text], i) => (
             <div key={i} className={`flex ${side === 'out' ? 'justify-end' : 'justify-start'}`}>
-              <span className={`max-w-[80%] truncate rounded-lg px-1.5 py-1 text-[0.55rem] ${side === 'out' ? 'bg-violet-50 text-bone' : 'bg-paper text-smoke'}`}>
+              <span className={`max-w-[80%] truncate rounded-lg px-1.5 py-1 text-[0.55rem] ${side === 'out' ? 'bg-signal/10 text-bone' : 'bg-paper text-smoke'}`}>
                 {text}
               </span>
             </div>
@@ -99,7 +99,7 @@ function Visual({ spec }) {
         <div className="ml-auto w-[86%] rounded-lg border border-line bg-paper p-1 shadow-lg">
           <div className="grid gap-1">
             {spec.items.map((item, i) => (
-              <div key={item} className={`truncate rounded px-1.5 py-1 text-[0.58rem] ${i === spec.highlight ? 'bg-violet-50 text-bone ring-1 ring-violet-200/60' : 'text-smoke'}`}>
+              <div key={item} className={`truncate rounded px-1.5 py-1 text-[0.58rem] ${i === spec.highlight ? 'bg-signal/10 text-bone ring-1 ring-signal/35' : 'text-smoke'}`}>
                 {item}
               </div>
             ))}
@@ -131,7 +131,7 @@ function Visual({ spec }) {
               text={label}
               highlight={i === spec.highlight}
               trailing={
-                <span className={`grid h-3 w-3 shrink-0 place-items-center rounded-sm border ${on ? 'border-transparent bg-violet-50 text-ink' : 'border-line'}`}>
+                <span className={`grid h-3 w-3 shrink-0 place-items-center rounded-sm border ${on ? 'border-transparent bg-signal/10 text-ink' : 'border-line'}`}>
                   {on && <PiCheck className="text-[0.45rem]" aria-hidden="true" />}
                 </span>
               }
@@ -154,7 +154,7 @@ function Visual({ spec }) {
           {spec.body && <p className="mt-1 text-[0.52rem] leading-3 text-ash">{spec.body}</p>}
           <div className="mt-2 grid gap-1">
             {spec.actions.map((a, i) => (
-              <div key={a} className={`truncate rounded px-1.5 py-1 text-center text-[0.55rem] ${i === spec.highlight ? 'bg-violet-50 text-bone ring-1 ring-violet-200/60' : 'bg-paper text-smoke'}`}>
+              <div key={a} className={`truncate rounded px-1.5 py-1 text-center text-[0.55rem] ${i === spec.highlight ? 'bg-signal/10 text-bone ring-1 ring-signal/35' : 'bg-paper text-smoke'}`}>
                 {a}
               </div>
             ))}
@@ -188,7 +188,7 @@ function Visual({ spec }) {
     const Icon = spec.icon === 'wait' ? PiHourglassMedium : spec.icon === 'download' ? PiDownloadSimple : PiCheckCircle;
     return (
       <div className="grid place-items-center py-5 text-center">
-        <Icon className="text-2xl text-violet-700" aria-hidden="true" />
+        <Icon className="text-2xl text-signal" aria-hidden="true" />
         <p className="mt-2 px-2 text-[0.6rem] leading-4 text-bone">{spec.title}</p>
         {spec.body && <p className="mt-1 px-2 text-[0.52rem] leading-3 text-ash">{spec.body}</p>}
       </div>
@@ -210,8 +210,8 @@ function Visual({ spec }) {
             <p className="mt-1.5 font-mono text-[0.5rem] text-ash">1,204 characters</p>
           </>
         ) : (
-          <div className="rounded-lg border border-dashed border-violet-200 bg-violet-50 py-3 text-center">
-            <PiExport className="mx-auto text-base text-violet-700" aria-hidden="true" />
+          <div className="rounded-lg border border-dashed border-signal/35 bg-signal/10 py-3 text-center">
+            <PiExport className="mx-auto text-base text-signal" aria-hidden="true" />
             <p className="mt-1 text-[0.55rem] text-bone">{spec.file || 'chat.txt'}</p>
             <p className="text-[0.5rem] text-ash">ready to analyse</p>
           </div>
@@ -228,7 +228,7 @@ function Visual({ spec }) {
       <div className="grid grid-cols-[34%_1fr] gap-1.5">
         <div className="grid gap-1">
           {[0, 1, 2].map((i) => (
-            <div key={i} className={`h-4 rounded ${i === 0 ? 'bg-violet-50' : 'bg-paper'}`} />
+            <div key={i} className={`h-4 rounded ${i === 0 ? 'bg-signal/10' : 'bg-paper'}`} />
           ))}
         </div>
         <div>
@@ -239,7 +239,7 @@ function Visual({ spec }) {
           <div className="grid gap-1">
             {['good morning', 'just reached', 'call me later'].map((t, i) => (
               <div key={t} className={`flex ${i === 1 ? 'justify-end' : ''}`}>
-                <span className={`truncate rounded px-1 py-0.5 text-[0.5rem] ${i === 1 ? 'bg-violet-50 text-bone' : 'bg-paper text-smoke'}`}>{t}</span>
+                <span className={`truncate rounded px-1 py-0.5 text-[0.5rem] ${i === 1 ? 'bg-signal/10 text-bone' : 'bg-paper text-smoke'}`}>{t}</span>
               </div>
             ))}
           </div>

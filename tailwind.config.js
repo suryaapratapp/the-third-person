@@ -21,46 +21,49 @@ export default {
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       colors: {
-        /* Ink, three steps. */
-        bone: '#0d1017',
-        ink: '#0d1017',
-        smoke: '#383d49',
-        graphite: '#383d49',
-        ash: '#585e6d',
-        muted: '#585e6d',
+        /* Every colour is `rgb(var(--x-rgb) / <alpha-value>)` rather than a
+         * literal. That is what lets `.theme-deep` repaint whole pages by
+         * overriding variables: a Tailwind literal compiles to a fixed hex and
+         * would ignore any scoped theme entirely.
+         *
+         * The `<alpha-value>` placeholder keeps opacity modifiers working, so
+         * `bg-signal/45` still means 45% of whatever `--accent-rgb` currently
+         * is. */
+        bone: 'rgb(var(--ink-rgb) / <alpha-value>)',
+        ink: 'rgb(var(--ink-rgb) / <alpha-value>)',
+        smoke: 'rgb(var(--graphite-rgb) / <alpha-value>)',
+        graphite: 'rgb(var(--graphite-rgb) / <alpha-value>)',
+        ash: 'rgb(var(--muted-rgb) / <alpha-value>)',
+        muted: 'rgb(var(--muted-rgb) / <alpha-value>)',
 
-        /* Ground, three steps. The page is `canvas`, a card is `paper`. */
-        canvas: '#eef0f4',
-        paper: '#ffffff',
-        surface: '#ffffff',
-        panel: '#ffffff',
-        well: '#e4e7ee',
-        line: '#d9dce4',
-        lineStrong: '#bfc4d0',
+        canvas: 'rgb(var(--canvas-rgb) / <alpha-value>)',
+        paper: 'rgb(var(--paper-rgb) / <alpha-value>)',
+        surface: 'rgb(var(--paper-rgb) / <alpha-value>)',
+        panel: 'rgb(var(--paper-rgb) / <alpha-value>)',
+        well: 'rgb(var(--well-rgb) / <alpha-value>)',
+        line: 'rgb(var(--line-rgb) / <alpha-value>)',
+        lineStrong: 'rgb(var(--line-strong-rgb) / <alpha-value>)',
 
-        /* One action colour. Dark enough to also be used as text. */
-        signal: '#4338ca',
-        signalStrong: '#362ba6',
-        accent: '#4338ca',
-        accentWash: '#eceafb',
-        accentLine: '#c5bff4',
+        signal: 'rgb(var(--accent-rgb) / <alpha-value>)',
+        signalStrong: 'rgb(var(--accent-ink-rgb) / <alpha-value>)',
+        accent: 'rgb(var(--accent-rgb) / <alpha-value>)',
+        accentWash: 'rgb(var(--accent-wash-rgb) / <alpha-value>)',
+        accentLine: 'rgb(var(--accent-line-rgb) / <alpha-value>)',
 
-        /* Per-person identity, constant across every chart. */
-        you: '#bb1f57',
-        them: '#0f5cb8',
+        you: 'rgb(var(--you-rgb) / <alpha-value>)',
+        them: 'rgb(var(--them-rgb) / <alpha-value>)',
 
-        /* Semantic. */
-        good: '#0a7350',
-        warn: '#8a5a0b',
-        risk: '#bd2f26',
+        good: 'rgb(var(--good-rgb) / <alpha-value>)',
+        warn: 'rgb(var(--warn-rgb) / <alpha-value>)',
+        risk: 'rgb(var(--risk-rgb) / <alpha-value>)',
 
         /* Legacy accent names, repointed so old markup stays legible. */
-        bloom: '#bb1f57',
-        bloomStrong: '#9a1848',
-        ember: '#8a5a0b',
-        emberSoft: '#a06b0d',
-        electric: '#0f5cb8',
-        electricDim: '#0c4a94',
+        bloom: 'rgb(var(--you-rgb) / <alpha-value>)',
+        bloomStrong: 'rgb(var(--you-rgb) / <alpha-value>)',
+        ember: 'rgb(var(--warn-rgb) / <alpha-value>)',
+        emberSoft: 'rgb(var(--warn-rgb) / <alpha-value>)',
+        electric: 'rgb(var(--them-rgb) / <alpha-value>)',
+        electricDim: 'rgb(var(--them-rgb) / <alpha-value>)',
       },
       borderRadius: {
         none: '0',

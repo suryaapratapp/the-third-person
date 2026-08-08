@@ -2,8 +2,8 @@ import RouteLink from '../components/RouteLink.jsx';
 import { BLOG_POSTS_META } from '../lib/blogPostsMeta.js';
 
 const CATEGORY_ACCENTS = {
-  'Export Guides': 'border-purple-200 text-purple-700',
-  'Relationship Science': 'border-pink-200 text-pink-700',
+  'Export Guides': 'border-signal/35 text-signal',
+  'Relationship Science': 'border-you/35 text-you',
 };
 
 export default function BlogIndexPage() {
@@ -33,7 +33,7 @@ export default function BlogIndexPage() {
               </div>
               <h2 className="serif-title mt-5 text-2xl leading-tight text-bone group-hover:text-bone">{post.title}</h2>
               <p className="mt-3 flex-1 text-sm leading-7 text-smoke">{post.excerpt}</p>
-              <span className="mt-5 text-xs text-purple-700">Read more →</span>
+              <span className="mt-5 text-xs text-signal">Read more →</span>
             </RouteLink>
           ))}
         </div>

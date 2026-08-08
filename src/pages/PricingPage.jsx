@@ -93,14 +93,14 @@ export default function PricingPage() {
 
       <div className="relative mx-auto max-w-[760px]">
         {reason === 'usage-limit' && (
-          <div className="mb-6 rounded-sm border border-orange-200 bg-orange-50 p-4 sm:p-5">
-            <p className="tech-label text-orange-700">You’re out of credits</p>
+          <div className="mb-6 rounded-sm border border-warn/35 bg-warn/10 p-4 sm:p-5">
+            <p className="tech-label text-warn">You’re out of credits</p>
             <p className="mt-2.5 text-sm leading-7 text-smoke">Top up below to keep analysing conversations and asking the coach.</p>
           </div>
         )}
 
         <div className="text-center">
-          <p className="tech-label text-purple-700">Pricing</p>
+          <p className="tech-label text-signal">Pricing</p>
           <h1 className="serif-title mt-4 text-4xl leading-tight sm:text-6xl">Pay for what you use.</h1>
           <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-smoke sm:text-base sm:leading-8">
             No subscription. One price per report, and every report comes with {CHATS_PER_REPORT} coach chats
@@ -109,7 +109,7 @@ export default function PricingPage() {
         </div>
 
         {hasBalance && (
-          <p className="mt-7 rounded-sm border border-emerald-200 bg-emerald-50 px-5 py-3 text-center text-sm text-smoke">
+          <p className="mt-7 rounded-sm border border-good/35 bg-good/10 px-5 py-3 text-center text-sm text-smoke">
             You have <span className="text-bone">{balances.paidRelationshipReportsLeft}</span> report
             {balances.paidRelationshipReportsLeft === 1 ? '' : 's'} and{' '}
             <span className="text-bone">{balances.paidBestieChatsLeft}</span> coach chat
@@ -121,7 +121,7 @@ export default function PricingPage() {
           <span className="hud-corner hud-corner-tl" aria-hidden="true" />
           <span className="hud-corner hud-corner-br" aria-hidden="true" />
           <div className="flex items-baseline justify-between gap-4">
-            <p className="tech-label text-purple-700">How many reports?</p>
+            <p className="tech-label text-signal">How many reports?</p>
             <span className="neon-chip">₹{PRICE_PER_REPORT} each</span>
           </div>
 
@@ -131,7 +131,7 @@ export default function PricingPage() {
               onClick={() => updateReports(reportCount - 1)}
               disabled={reportCount <= MIN_REPORTS}
               aria-label="Decrease reports"
-              className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-line bg-paper text-bone transition hover:border-purple-200 disabled:opacity-35"
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-line bg-paper text-bone transition hover:border-signal/35 disabled:opacity-35"
             >
               <PiMinus />
             </button>
@@ -146,14 +146,14 @@ export default function PricingPage() {
               /* Not `serif-title`: Cormorant's lining "1" is nearly identical
                  to a capital I at this size, which is a bad look on the field
                  that decides what someone pays. */
-              className="h-16 w-28 rounded-sm border border-purple-200 bg-well text-center text-4xl font-light text-bone outline-none focus:border-purple-200"
+              className="h-16 w-28 rounded-sm border border-signal/35 bg-well text-center text-4xl font-light text-bone outline-none focus:border-signal/35"
             />
             <button
               type="button"
               onClick={() => updateReports(reportCount + 1)}
               disabled={reportCount >= MAX_REPORTS}
               aria-label="Increase reports"
-              className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-line bg-paper text-bone transition hover:border-purple-200 disabled:opacity-35"
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-line bg-paper text-bone transition hover:border-signal/35 disabled:opacity-35"
             >
               <PiPlus />
             </button>
@@ -167,8 +167,8 @@ export default function PricingPage() {
                 onClick={() => updateReports(count)}
                 className={`min-h-[44px] rounded-sm border px-5 text-xs transition ${
                   reportCount === count
-                    ? 'border-purple-200 bg-purple-50 text-bone'
-                    : 'border-line bg-paper text-smoke hover:border-purple-200'
+                    ? 'border-signal/35 bg-signal/10 text-bone'
+                    : 'border-line bg-paper text-smoke hover:border-signal/35'
                 }`}
               >
                 {count}
@@ -202,9 +202,9 @@ export default function PricingPage() {
 
           <p className="mt-4 text-center text-xs leading-6 text-ash">
             By continuing you agree to our{' '}
-            <button type="button" onClick={() => navigate('/terms')} className="-my-3 py-3 text-purple-700 underline hover:text-bone">Terms of Service</button>
+            <button type="button" onClick={() => navigate('/terms')} className="-my-3 py-3 text-signal underline hover:text-bone">Terms of Service</button>
             {' '}and{' '}
-            <button type="button" onClick={() => navigate('/refund-policy')} className="-my-3 py-3 text-purple-700 underline hover:text-bone">Refund Policy</button>.
+            <button type="button" onClick={() => navigate('/refund-policy')} className="-my-3 py-3 text-signal underline hover:text-bone">Refund Policy</button>.
           </p>
         </div>
 
@@ -219,7 +219,7 @@ export default function PricingPage() {
         <div className="mt-8 grid gap-2.5">
           {FACTS.map(([title, body]) => (
             <div key={title} className="flex gap-3 rounded-sm border border-line bg-paper p-4">
-              <PiCheck className="mt-1 shrink-0 text-emerald-700" aria-hidden="true" />
+              <PiCheck className="mt-1 shrink-0 text-good" aria-hidden="true" />
               <div>
                 <p className="text-sm text-bone">{title}</p>
                 <p className="mt-1 text-sm leading-6 text-smoke">{body}</p>
@@ -229,7 +229,7 @@ export default function PricingPage() {
         </div>
 
         {message && (
-          <p className="mt-5 rounded-sm border border-purple-200 bg-purple-50 p-4 text-sm leading-7 text-smoke">
+          <p className="mt-5 rounded-sm border border-signal/35 bg-signal/10 p-4 text-sm leading-7 text-smoke">
             {message}
           </p>
         )}

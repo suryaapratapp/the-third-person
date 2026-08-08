@@ -37,8 +37,8 @@ const POINTS = [
 export default function PrivacyAssurance({ compact = false, className = '' }) {
   if (compact) {
     return (
-      <div className={`rounded-sm border border-emerald-200 bg-emerald-50 p-4 ${className}`}>
-        <p className="tech-label text-emerald-700">Your privacy</p>
+      <div className={`rounded-sm border border-good/35 bg-good/10 p-4 ${className}`}>
+        <p className="tech-label text-good">Your privacy</p>
         <ul className="mt-3 grid gap-2 text-sm leading-6 text-smoke">
           <li>🔒 Locked to your account — no other user can see it</li>
           <li>🧼 Phone numbers, emails and IDs stripped before analysis</li>
@@ -54,7 +54,7 @@ export default function PrivacyAssurance({ compact = false, className = '' }) {
   return (
     <section className={`accent-panel relative overflow-hidden p-5 sm:p-8 ${className}`}>
       <div className="relative">
-        <p className="tech-label text-emerald-700">Privacy first</p>
+        <p className="tech-label text-good">Privacy first</p>
         <h2 className="serif-title mt-3 text-4xl leading-tight sm:text-5xl">
           Your conversations stay yours.
         </h2>
@@ -74,7 +74,7 @@ export default function PrivacyAssurance({ compact = false, className = '' }) {
         </div>
         <p className="mt-6 text-xs leading-6 text-ash">
           Full detail — including which AI provider processes your text and how long anything is kept — is in our{' '}
-          <a href="/privacy" className="-my-3 inline-block py-3 text-purple-700 underline hover:text-bone">Privacy Policy</a>.
+          <a href="/privacy" className="-my-3 inline-block py-3 text-signal underline hover:text-bone">Privacy Policy</a>.
         </p>
       </div>
     </section>

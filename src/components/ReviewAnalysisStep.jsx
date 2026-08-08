@@ -349,7 +349,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
   })();
 
   return (
-    <div className="relative grid gap-5 lg:grid-cols-[1fr_380px]">
+    <div className="relative grid items-start gap-4 lg:grid-cols-[1fr_320px]">
       {creditBlock && (
         <UsageWarningModal
           feature="report"
@@ -373,8 +373,8 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
               progress checklist and never changed state. An indeterminate bar
               is the honest signal when there is no real per-step progress. */}
           <div className="accent-panel w-full max-w-md p-6 text-center sm:p-7">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-purple-200 bg-purple-50">
-              <div className="h-9 w-9 animate-spin rounded-full border-2 border-purple-200 border-t-transparent" />
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-signal/35 bg-signal/10">
+              <div className="h-9 w-9 animate-spin rounded-full border-2 border-signal/35 border-t-transparent" />
             </div>
             <h3 id="analysis-progress-heading" className="serif-title mt-5 text-3xl leading-tight sm:text-4xl">
               Reading your conversation…
@@ -394,8 +394,8 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
           </div>
         </div>
       )}
-      <div className="thin-panel p-4 sm:p-5">
-        <p className="tech-label text-smoke">What will be analysed</p>
+      <div className="rounded-lg border border-line bg-paper p-4 sm:p-5">
+        <p className="tech-label">What will be analysed</p>
         <dl className="mt-4 divide-y divide-line">
           {rows.map(([label, value]) => (
             <div key={label} className="flex items-start justify-between gap-4 py-3">
@@ -406,54 +406,56 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         </dl>
       </div>
 
-      <div className="grid gap-4">
+      {/* `content-start` is doing real work here. Without it the grid stretches
+          its rows to match the tall summary column beside it, and the primary
+          button inflated to about 200px of solid indigo with the label floating
+          in the middle of it. */}
+      <div className="grid content-start gap-3">
         {sampleWarning && (
-          <div className="flex gap-3 rounded-sm border border-orange-200 bg-orange-50 p-4">
-            <PiWarning className="mt-0.5 shrink-0 text-lg text-orange-700" aria-hidden="true" />
+          <div className="flex gap-2.5 rounded-lg border border-warn/40 bg-warn/10 p-3">
+            <PiWarning className="mt-0.5 shrink-0 text-base text-warn" aria-hidden="true" />
             <p className="text-sm leading-6 text-smoke">{sampleWarning}</p>
           </div>
         )}
 
-        {/* The price, or the balance, stated plainly right above the button that
-            spends it — this used to be one of four small boxes of prose. */}
-        <div className="rounded-sm border border-line bg-paper p-4">
+        {/* Price and action in one card. They were two boxes and three lines of
+            explanatory prose; the only question at this point is "what does it
+            cost and where do I press". */}
+        <div className="rounded-lg border border-line bg-paper p-4">
           {!entitlements ? (
             <p className="text-sm leading-6 text-smoke">Checking your balance…</p>
           ) : entitlements.relationshipReportsLeft > 0 ? (
             <p className="text-sm leading-6 text-smoke">
-              This uses <span className="text-bone">1 of your {entitlements.relationshipReportsLeft}</span> report
-              credit{entitlements.relationshipReportsLeft === 1 ? '' : 's'}, and leaves{' '}
-              <span className="text-bone">{entitlements.paidBestieChatsLeft}</span> coach chats available.
+              Uses <span className="font-semibold text-bone">1 of {entitlements.relationshipReportsLeft}</span> report
+              credit{entitlements.relationshipReportsLeft === 1 ? '' : 's'} · {entitlements.paidBestieChatsLeft} coach chats left
             </p>
           ) : (
             <div className="flex items-baseline justify-between gap-3">
-              <p className="text-sm leading-6 text-smoke">Secure checkout opens when you start.</p>
-              <p className="serif-title shrink-0 text-3xl leading-none text-bone">₹199</p>
+              <p className="text-sm text-smoke">Secure checkout</p>
+              <p className="shrink-0 text-2xl font-semibold leading-none text-bone">₹199</p>
             </div>
+          )}
+
+          <button
+            disabled={!canStart || isGenerating || isPaying}
+            onClick={startAnalysis}
+            className="btn btn-primary mt-3 w-full"
+          >
+            {isGenerating ? 'Preparing analysis…' : isPaying ? 'Opening checkout…' : 'Start analysis'}
+          </button>
+
+          {!canStart && (
+            <p className="mt-2 text-center text-xs leading-5 text-ash">
+              Finish every step and add a conversation first.
+            </p>
           )}
         </div>
 
-        <button
-          disabled={!canStart || isGenerating || isPaying}
-          onClick={startAnalysis}
-          className="btn btn-primary min-h-[52px] w-full text-sm disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          {isGenerating ? 'Preparing analysis…' : isPaying ? 'Opening checkout…' : 'Start analysis'}
-        </button>
-
         {analysisError && (
-          <p className="rounded-sm border border-orange-200 bg-orange-50 p-3 text-sm leading-6 text-orange-700">
+          <p className="rounded-lg border border-risk/40 bg-risk/10 p-3 text-sm leading-6 text-risk">
             {analysisError}
           </p>
         )}
-        {!canStart && (
-          <p className="text-center text-xs leading-6 text-ash">
-            Finish every step and add a conversation before starting.
-          </p>
-        )}
-        <p className="text-center text-xs leading-6 text-ash">
-          One conversation produces your report and updates your Know Yourself profile.
-        </p>
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ export default class ErrorBoundary extends Component {
     return (
       <section className="flex min-h-screen items-center justify-center px-4 py-24">
         <div className="accent-panel w-full max-w-lg p-7 text-center sm:p-9">
-          <p className="tech-label text-orange-700">Something broke on this page</p>
+          <p className="tech-label text-warn">Something broke on this page</p>
           <h1 className="serif-title mt-4 text-4xl leading-tight sm:text-5xl">
             Sorry — that didn’t load properly.
           </h1>

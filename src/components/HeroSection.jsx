@@ -55,7 +55,7 @@ export default function HeroSection() {
         </button>
 
         <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-smoke">
-          <PiLockSimple className="text-emerald-700" aria-hidden="true" />
+          <PiLockSimple className="text-good" aria-hidden="true" />
           <span>Private to your account</span>
           <span className="text-ash" aria-hidden="true">·</span>
           <span>From ₹199 per report</span>

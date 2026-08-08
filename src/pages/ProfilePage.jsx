@@ -120,10 +120,10 @@ export default function ProfilePage() {
               </p>
             </div>
             <div className="flex flex-col items-center gap-3">
-              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-signal text-3xl font-semibold text-white">
+              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-signal text-3xl font-semibold text-[color:var(--on-solid)]">
                 {profile.profileImage ? <img src={profile.profileImage} alt="Profile preview" className="h-full w-full object-cover" /> : getInitials(profile)}
               </div>
-              {zodiac && <span className=" text-xs text-purple-700">{getZodiacGlyph(zodiac)} {zodiac}</span>}
+              {zodiac && <span className=" text-xs text-signal">{getZodiacGlyph(zodiac)} {zodiac}</span>}
             </div>
           </div>
 
@@ -142,7 +142,7 @@ export default function ProfilePage() {
                   value={profile[field]}
                   onChange={(event) => update(field, event.target.value)}
                   placeholder={label}
-                  className="mt-2 w-full border border-line bg-well px-4 py-3 text-sm outline-none focus:border-purple-200"
+                  className="mt-2 w-full border border-line bg-well px-4 py-3 text-sm outline-none focus:border-signal/35"
                 />
               </label>
             ))}
@@ -153,7 +153,7 @@ export default function ProfilePage() {
               </select>
             </label>
             <div className="sm:col-span-2 rounded-sm border border-line bg-paper p-5">
-              <p className="tech-label text-purple-700">Preferred analysis languages</p>
+              <p className="tech-label text-signal">Preferred analysis languages</p>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-smoke">
                 Select the languages that commonly appear in your conversations. ThirdPerson AI will try to match the tone and language style in your reports and coach replies.
               </p>
@@ -165,7 +165,7 @@ export default function ProfilePage() {
                       key={language}
                       type="button"
                       onClick={() => toggleLanguage(language)}
-                      className={`rounded-sm border px-3 py-2 text-xs transition ${active ? 'border-purple-200 bg-purple-50 text-bone' : 'border-line bg-well text-ash hover:border-purple-200 hover:text-bone'}`}
+                      className={`rounded-sm border px-3 py-2 text-xs transition ${active ? 'border-signal/35 bg-signal/10 text-bone' : 'border-line bg-well text-ash hover:border-signal/35 hover:text-bone'}`}
                     >
                       {language}
                     </button>
@@ -176,7 +176,7 @@ export default function ProfilePage() {
                 Selected: {(profile.preferredAnalysisLanguages || []).join(', ') || 'None yet'}
               </p>
             </div>
-            <label className="sm:col-span-2 flex cursor-pointer flex-col border border-dashed border-line bg-well p-5 transition hover:border-purple-200">
+            <label className="sm:col-span-2 flex cursor-pointer flex-col border border-dashed border-line bg-well p-5 transition hover:border-signal/35">
               <span className="tech-label text-smoke">Profile image</span>
               <span className="mt-3 text-sm text-ash">Upload JPG, PNG, or WebP under 2MB.</span>
               <input className="sr-only" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={handleImage} />
@@ -190,7 +190,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="thin-panel mt-6 p-6 sm:p-8">
-          <p className="tech-label text-rose-700">Your data</p>
+          <p className="tech-label text-risk">Your data</p>
           <h2 className="serif-title mt-3 text-4xl leading-tight">Delete your analysis data.</h2>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-smoke">
             This permanently removes every Relationship Report, the personality cards and profile built from them,
@@ -203,9 +203,9 @@ export default function ProfilePage() {
           </div>
 
           {wipeResult ? (
-            <p className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-7 text-smoke">{wipeResult}</p>
+            <p className="mt-5 rounded-2xl border border-good/35 bg-good/10 p-4 text-sm leading-7 text-smoke">{wipeResult}</p>
           ) : confirmWipe ? (
-            <div className="mt-5 rounded-sm border border-rose-200 bg-rose-50 p-5">
+            <div className="mt-5 rounded-sm border border-risk/35 bg-risk/10 p-5">
               <p className="text-sm leading-7 text-bone">
                 Delete all analysis data permanently? Your reports, personality profile, and coach history will be gone for good.
               </p>
@@ -213,7 +213,7 @@ export default function ProfilePage() {
                 <button
                   onClick={wipeData}
                   disabled={wiping}
-                  className="rounded-sm border border-rose-200 bg-rose-50 px-5 py-3 text-xs text-rose-700 transition hover:border-rose-200 disabled:opacity-60"
+                  className="rounded-sm border border-risk/35 bg-risk/10 px-5 py-3 text-xs text-risk transition hover:border-risk/35 disabled:opacity-60"
                 >
                   {wiping ? 'Deleting…' : 'Yes, delete everything'}
                 </button>
@@ -229,7 +229,7 @@ export default function ProfilePage() {
           ) : (
             <button
               onClick={() => setConfirmWipe(true)}
-              className="mt-5 rounded-sm border border-rose-200 bg-rose-50 px-5 py-4 text-xs text-rose-700 transition hover:border-rose-200"
+              className="mt-5 rounded-sm border border-risk/35 bg-risk/10 px-5 py-4 text-xs text-risk transition hover:border-risk/35"
             >
               Delete all my analysis data
             </button>
