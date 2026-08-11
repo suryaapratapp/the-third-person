@@ -218,20 +218,53 @@ function buildDayNightBreakdown(messages) {
   });
 }
 
-function topWordsFrom(messages) {
-  const counts = new Map();
+function countWords(messages, into = new Map()) {
   messages.forEach(({ message }) => {
     // eslint-disable-next-line no-misleading-character-class -- Devanagari range is intentional for Hindi word detection
-    message.toLowerCase().replace(/[^a-z\u0900-\u097F\s']/g, ' ').split(/\s+/).forEach((raw) => {
+    String(message || '').toLowerCase().replace(/[^a-z\u0900-\u097F\s']/g, ' ').split(/\s+/).forEach((raw) => {
       const word = raw.replace(/'/g, '');
       if (word.length < 3 || stopWords.has(word)) return;
-      counts.set(word, (counts.get(word) || 0) + 1);
+      into.set(word, (into.get(word) || 0) + 1);
     });
   });
+  return into;
+}
+
+function rankWords(counts, limit) {
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 18)
+    .slice(0, limit)
     .map(([word, count]) => ({ word, count }));
+}
+
+function topWordsFrom(messages) {
+  return rankWords(countWords(messages), 18);
+}
+
+// Per-person vocabularies, which is the version worth showing.
+//
+// A single merged cloud is dominated by whichever person typed more and tells
+// you nothing about either of them. Split by sender and the difference is the
+// insight: one person's cloud full of "missed", "sorry", "busy" next to
+// another's full of "haha", "chal", "plan" IS the relationship.
+//
+// 60 words per person, because a cloud needs a long tail to look like a cloud.
+export function topWordsBySender(messages = [], limit = 60) {
+  const bySender = new Map();
+  messages.forEach((message) => {
+    if (!message?.sender) return;
+    const list = bySender.get(message.sender) || [];
+    list.push(message);
+    bySender.set(message.sender, list);
+  });
+  return [...bySender.entries()]
+    .map(([sender, list]) => ({
+      sender,
+      messages: list.length,
+      words: rankWords(countWords(list), limit),
+    }))
+    .filter((entry) => entry.words.length >= 5)
+    .sort((a, b) => b.messages - a.messages);
 }
 
 export function parseConversationText(rawText = '', platform = 'Unknown') {
@@ -407,6 +440,7 @@ export function prepareConversationForAnalysis(rawText = '', options = {}) {
     parseConfidence: parsedConversation.parseConfidence,
     importantMoments,
     topWords: topWordsFrom(messages),
+    topWordsBySender: topWordsBySender(messages),
     parsedMessages: messages,
     // Counted locally, not by the AI. Emojis are read from the ORIGINAL upload
     // because cleanConversationLine() strips them before parsing.

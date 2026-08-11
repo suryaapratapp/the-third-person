@@ -8,6 +8,9 @@ import { buildAnalysisChainContext, getChainById, groupReports } from '../lib/re
 import QuickStats from '../components/QuickStats.jsx';
 import RhythmHeatmap from '../components/RhythmHeatmap.jsx';
 import ToneOverTime from '../components/ToneOverTime.jsx';
+import KeyMoments from '../components/KeyMoments.jsx';
+import WordCloud from '../components/WordCloud.jsx';
+import Recommendations from '../components/Recommendations.jsx';
 import { buildZodiacMatch } from '../lib/zodiac.js';
 import { shareCardSummary } from '../lib/exportElementAsImage.js';
 import { exportElementAsPdf, pdfFileName } from '../lib/exportPdf.js';
@@ -44,6 +47,12 @@ function safe(value, fallback = emptyText) {
   if (value === 0) return value;
   if (value && typeof value === 'object') return stringifyUnexpectedValue(value) || fallback;
   return value || fallback;
+}
+
+function effortPeopleNames(prepared = {}, analysis = null) {
+  const fromEffort = (prepared.localMetrics?.effort?.people || []).map((person) => person.sender);
+  if (fromEffort.length) return fromEffort;
+  return prepared.participants || prepared.participantNames || analysis?.participants?.detectedParticipants || [];
 }
 
 function list(value) {
@@ -494,6 +503,15 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
       : 'var(--you)'
   );
   const emojis = list(metrics.emojis);
+  // Whoever is not the named other person. Exports label the account holder
+  // inconsistently, so this is derived the same way `colorFor` derives it
+  // rather than trusting a field.
+  const youName = list(effortPeopleNames(prepared, analysis))
+    .find((name) => String(name).trim().toLowerCase() !== String(personName).trim().toLowerCase()) || 'You';
+  const keyMoments = list(analysis?.relationshipReport?.keyMoments);
+  const subtext = list(analysis?.relationshipReport?.readingBetweenTheLines);
+  const wordsBySender = list(prepared.topWordsBySender);
+  const recommendations = analysis?.recommendations || null;
   const effort = metrics.effort || null;
   // Scored on dimensions chosen for THIS relationship type — a partner report
   // and a parent report are measured on different things, not one shared rubric.
@@ -830,6 +848,52 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
             </CardShell>
           )}
 
+          {keyMoments.length > 0 && (
+            <CardShell
+              id="key-moments"
+              title="Key Moments"
+              emoji="🗓️"
+              summary={`${keyMoments.length} moments worth remembering.`}
+              accent="pink"
+            >
+              <p className="max-w-3xl text-sm leading-7 text-smoke">
+                The things that would stand out in anyone’s ordinary week — read
+                from the messages around them, not from the words alone.
+              </p>
+              <div className="mt-5">
+                <KeyMoments moments={keyMoments} />
+              </div>
+            </CardShell>
+          )}
+
+          {subtext.length > 0 && (
+            <CardShell
+              id="between-the-lines"
+              title="Between The Lines"
+              emoji="🎭"
+              summary="Lines that do not mean what they say."
+              accent="purple"
+            >
+              <p className="max-w-3xl text-sm leading-7 text-smoke">
+                Read literally, these say one thing. Read the way the two of you
+                actually talk, they say another.
+              </p>
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                {subtext.slice(0, 8).map((item, index) => (
+                  <div key={`${item.line}-${index}`} className="rounded-lg border border-line bg-paper p-4">
+                    <p className="text-sm font-medium leading-6 text-ink">“{safe(item.line)}”</p>
+                    <p className="mt-2 text-xs leading-5 text-ash">
+                      <span className="font-medium">Sounds like: </span>{safe(item.literalReading)}
+                    </p>
+                    <p className="mt-1.5 text-sm leading-6 text-smoke">
+                      <span className="font-medium text-ink">Actually: </span>{safe(item.actualMeaning)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardShell>
+          )}
+
           {(metrics.rhythm || metrics.tone) && (
             <CardShell
               id="conversation-patterns"
@@ -1037,6 +1101,29 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
               <button onClick={shareSummary} className="btn btn-secondary">Share summary</button>
             </div>
           </CardShell>
+
+          {wordsBySender.length > 0 && (
+            <CardShell id="word-cloud-pair" title="Word Cloud" emoji="☁️" summary="The words each of you reaches for." accent="blue">
+              <WordCloud bySender={wordsBySender} colorFor={colorFor} />
+            </CardShell>
+          )}
+
+          {recommendations && (
+            <CardShell
+              id="recommendations"
+              title="For Each Of You"
+              emoji="🎁"
+              summary="Music, films, books and gifts picked from what you each talk about."
+              accent="orange"
+            >
+              <Recommendations
+                recommendations={recommendations}
+                youName={youName}
+                themName={personName}
+                colorFor={colorFor}
+              />
+            </CardShell>
+          )}
 
           <AfterReportActions onOpenCoach={() => setCoachOpen(true)} />
 

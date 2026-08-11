@@ -156,8 +156,33 @@ const personProfileJsonSchema = S.obj({
   personFacts: S.arr(personFactSchema, 'Everything the messages actually reveal about this person; omit anything you cannot quote'),
 });
 
+// What actually happened in a period, as opposed to what was merely said.
+//
+// The filter is the whole point: a chat is 95% logistics and greetings, and a
+// timeline that lists "they said good morning" is worse than no timeline. Only
+// things that would stand out in an ordinary week get in.
+const keyEventSchema = S.obj({
+  date: S.str('The real date this happened, copied from the message, or empty string'),
+  title: S.str('5-8 words naming the event concretely, e.g. "Fight about the missed flight"'),
+  whatHappened: S.str('2-3 sentences of what actually occurred, in plain words'),
+  category: S.enum([
+    'milestone', 'conflict', 'repair', 'distance', 'reunion', 'support',
+    'confession', 'plan', 'loss', 'celebration', 'decision', 'other',
+  ]),
+  emotion: S.str('The dominant feeling in this moment, named plainly'),
+  whoDroveIt: S.str('Which participant drove this moment, by name'),
+  significance: S.enum(['major', 'notable']),
+  quote: S.str('A short REAL quote from this event as evidence'),
+});
+
 const chunkSummaryJsonSchema = S.obj({
   period: S.str(),
+  // Deliberately first in the schema: the model fills a strict schema in key
+  // order, so the thing that matters most should not be competing for
+  // attention with six fields it has already written.
+  keyEvents: S.arr(keyEventSchema, 'Only genuinely notable moments. An ordinary day of small talk produces ZERO events — return an empty array rather than padding it.'),
+  emotionalArc: S.str('One sentence: where this period started emotionally and where it ended'),
+  sarcasmNotes: S.arr(S.str('A line that reads harsh or cold literally but is affectionate/joking in context, or the reverse — with the reason'), 'Empty array if nothing was ambiguous'),
   relationshipSignals: S.arr(S.str()),
   personalitySignalsForMainUser: S.arr(S.str()),
   redFlags: S.arr(S.obj({ label: S.str(), quote: S.str('Real quote from this chunk, or empty string') })),
@@ -233,7 +258,7 @@ async function summarizeChunk({
       lastMessages: chunk.lastMessages,
       representativeMessages: chunkMessagesForAi(chunk),
     },
-    instruction: 'Extract relationship signals, main-user personality signals, gentle red and green flags, turning points, useful quotes, and AI Relationship Coach context. Every red and green flag must carry a short REAL quote copied from this chunk\'s messages as evidence — if no real quote supports a flag, drop the flag. Also fill personFacts: concrete things this period reveals about the OTHER person (their work or study, interests, routines, places, people in their life, plans, likes, dislikes, values, stressors), each with a verbatim quote from THEIR OWN messages. Never infer a fact you cannot quote — omit it instead. Keep it concise. If evidence is weak, say not enough evidence yet.',
+    instruction: 'FIRST fill keyEvents: the moments in this period that would stand out in anyone\'s ordinary week — a fight, a confession, a reunion after distance, a plan made or broken, a loss, a milestone, someone asking for help. Skip routine logistics, greetings, and small talk entirely; a quiet period must return an EMPTY keyEvents array rather than manufactured ones. Then fill emotionalArc (where the period started and ended emotionally) and sarcasmNotes (lines whose literal reading is the OPPOSITE of their real meaning — insults used as affection between close friends, "fine"/"whatever" that is not fine, exaggerated praise meant as mockery — and why context shows it). Then extract relationship signals, main-user personality signals, gentle red and green flags, turning points, useful quotes, and AI Relationship Coach context. Every red and green flag must carry a short REAL quote copied from this chunk\'s messages as evidence — if no real quote supports a flag, drop the flag. Also fill personFacts: concrete things this period reveals about the OTHER person (their work or study, interests, routines, places, people in their life, plans, likes, dislikes, values, stressors), each with a verbatim quote from THEIR OWN messages. Never infer a fact you cannot quote — omit it instead. Keep it concise. If evidence is weak, say not enough evidence yet.',
   });
   return callOpenAiJson({
     apiKey,
@@ -272,7 +297,7 @@ async function summarizeChunksForLongChat({
   // chats exceeded the edge timeout. Sample chunks evenly across the whole
   // history (always keeping the first and last) so the arc stays intact while
   // the number of AI calls, and the size of the final synthesis prompt, drop.
-  const MAX_SUMMARY_CHUNKS = 10;
+  const MAX_SUMMARY_CHUNKS = 24;
   let chunks = allChunks;
   if (allChunks.length > MAX_SUMMARY_CHUNKS) {
     const step = (allChunks.length - 1) / (MAX_SUMMARY_CHUNKS - 1);
@@ -290,8 +315,8 @@ async function summarizeChunksForLongChat({
   // slightly less detailed report instead of timing out and burning a credit.
   // Budget + per-call timeout are sized so the two phases together stay inside
   // the 150s edge limit: ~45s of chunk summaries, then ~60s max of synthesis.
-  const CONCURRENCY = 10;
-  const BUDGET_MS = 45_000;
+  const CONCURRENCY = 12;
+  const BUDGET_MS = 62_000;
   const startedAt = Date.now();
   const summaries: Array<Record<string, any>> = new Array(chunks.length);
   let cursor = 0;
@@ -509,6 +534,11 @@ function compactReportForExistingUi(ai: Record<string, any>, draft: Record<strin
     improvedGreenFlags: report.greenFlags || draft.improvedGreenFlags || [],
     timeline: report.timeline || report.timelineSummary || draft.timeline || [],
     timelineArc: report.timelineArc || draft.timelineArc || '',
+    // The detailed event log and the sarcasm decoder. This object is rebuilt
+    // field by field rather than spread, so a new schema key that is not named
+    // here is silently dropped on its way to the client.
+    keyMoments: report.keyMoments || draft.keyMoments || [],
+    readingBetweenTheLines: report.readingBetweenTheLines || draft.readingBetweenTheLines || [],
     screenshotWorthySummary: screenshotSummary || ai.screenshotWorthySummary || draft.screenshotWorthySummary,
     mixedSignalsMap: report.mixedSignalsMap || {
       ...(draft.mixedSignalsMap || {}),
@@ -623,6 +653,25 @@ async function openAiAnalysis(body: Record<string, any>) {
     confidence: S.enum(CONFIDENCE),
   });
 
+  // The detailed event log. Phases say "things cooled off in the spring";
+  // this says what actually happened on the day it turned, which is the thing
+  // people came here to read.
+  const keyMoment = S.obj({
+    date: S.str('Real date from the messages, or empty string'),
+    period: S.str('Which phase this belongs to'),
+    title: S.str('5-8 concrete words naming the moment'),
+    whatHappened: S.str('2-3 plain sentences'),
+    category: S.enum([
+      'milestone', 'conflict', 'repair', 'distance', 'reunion', 'support',
+      'confession', 'plan', 'loss', 'celebration', 'decision', 'other',
+    ]),
+    emotion: S.str('The dominant feeling, named plainly'),
+    whoDroveIt: S.str('Participant name'),
+    significance: S.enum(['major', 'notable']),
+    whyItMattered: S.str('One sentence on what this changed'),
+    quote: S.str('Short REAL quote as evidence'),
+  });
+
   const reportCoreJsonSchema = S.obj({
     relationshipReport: S.obj({
       summaryParagraph: S.str('3-5 sentences: the overall vibe, its health, and one key highlight'),
@@ -634,6 +683,13 @@ async function openAiAnalysis(body: Record<string, any>) {
       simpleSummaryForYoungAudience: S.str(),
       timelineArc: S.str('One sentence describing the shape of the whole relationship'),
       timeline: S.arr(timelinePhase, '3-6 phases from real message clusters; fewer when evidence is thin'),
+      keyMoments: S.arr(keyMoment, 'Every genuinely notable moment from the period summaries, in date order. Aim for 8-20 across the whole history. Never invent one to hit a number, and never include routine logistics or small talk.'),
+      readingBetweenTheLines: S.arr(S.obj({
+        line: S.str('The message as written'),
+        literalReading: S.str('What it says on its face'),
+        actualMeaning: S.str('What it means here, given who these two are'),
+        signal: S.enum(['affection-as-insult', 'insult-as-affection', 'not-actually-fine', 'mock-praise', 'deflection', 'other']),
+      }), 'Lines whose literal reading is misleading. Empty array if the chat is straightforward.'),
     }),
   });
 
@@ -699,6 +755,41 @@ async function openAiAnalysis(body: Record<string, any>) {
   // personalityCardUpdate is deliberately NOT requested: compactReportForExistingUi
   // already derives it from relationshipPersonalityCard, so asking for it again
   // would pay twice for the same content.
+  // What to send them, watch, read, hear.
+  //
+  // Grounded in what the person ACTUALLY revealed — their work, their taste,
+  // the things they complained about — not in demographics. A gift idea that
+  // could be given to anyone is worse than no gift idea, so each carries the
+  // reason it fits.
+  const recommendationsFor = (who: string) => S.obj({
+    music: S.arr(S.obj({
+      title: S.str('Song title only'),
+      artist: S.str(),
+      why: S.str('One line tying it to something they actually said or like'),
+    }), `4 songs ${who} would plausibly love, in a language and genre their messages support`),
+    movies: S.arr(S.obj({
+      title: S.str('Film or series title only'),
+      year: S.str('Release year if known, else empty string'),
+      why: S.str('One line tying it to their taste or situation'),
+    }), `4 films or series for ${who}`),
+    books: S.arr(S.obj({
+      title: S.str(),
+      author: S.str(),
+      why: S.str('One line tying it to their interests or what they are going through'),
+    }), `4 books for ${who}`),
+    gifts: S.arr(S.obj({
+      idea: S.str('A specific, buyable thing — not a category'),
+      why: S.str('The exact detail from the conversation that makes this land'),
+    }), `4 gift ideas for ${who}, each traceable to something specific they said`),
+  });
+
+  const recommendationsJsonSchema = S.obj({
+    recommendations: S.obj({
+      forMainUser: recommendationsFor('the main user'),
+      forOtherPerson: recommendationsFor('the other person'),
+    }),
+  });
+
   const personaJsonSchema = S.obj({
     mainUserPersonalitySignals: S.obj({
       communicationStyle: S.str(),
@@ -847,7 +938,10 @@ async function openAiAnalysis(body: Record<string, any>) {
   });
 
   const reportCoreMessages = messagesForChatCompletions(promptFor(
-    'THIS REQUEST GENERATES THE REPORT NARRATIVE AND TIMELINE ONLY. Return exactly the relationshipReport keys described in combinedGenerationSchema (summary, dynamic, tone, communication patterns, timeline, timelineArc). The timeline is the priority of this request — do not produce flags, scores, advice, personality card, or coach context here.',
+    'THIS REQUEST GENERATES THE REPORT NARRATIVE, TIMELINE AND KEY MOMENTS ONLY. Return exactly the relationshipReport keys described in combinedGenerationSchema (summary, dynamic, tone, timeline, timelineArc, keyMoments, readingBetweenTheLines). '
+    + 'keyMoments is the priority of this request. Build it from the keyEvents in the period summaries: merge duplicates, put them in date order, and keep only what would stand out in an ordinary week — a fight, a repair, a confession, a plan made or broken, a reunion after distance, a loss, a milestone, someone asking for or giving real support. Routine logistics, greetings and small talk are NOT key moments. If the whole history genuinely contains six notable moments, return six; padding it with ordinary days makes the timeline worthless. '
+    + 'readingBetweenTheLines decodes the lines whose literal meaning is misleading: insults used as affection, "fine" that is not fine, exaggerated praise meant as mockery, deflection dressed as a joke. Use the sarcasmNotes from the period summaries and the pair\'s established banter style — judge each line by how THIS pair talks to each other, not by how the words would read between strangers. '
+    + 'Do not produce flags, scores, advice, personality card, or coach context here.',
   ));
   const reportSignalsMessages = messagesForChatCompletions(promptFor(
     'THIS REQUEST GENERATES THE REPORT SIGNAL CARDS ONLY. Return exactly the relationshipReport keys described in combinedGenerationSchema (red flags, green flags, scores, advice, next best move, signature metrics, energy match). Evidence-backed red and green flags are the priority of this request — do not produce the timeline, personality card, or coach context here. relationshipReport.signatureMetrics must contain exactly the four metrics named in the SIGNATURE METRICS list above, using those exact keys and in that order, each scored 0-100 with a reading grounded in these specific messages.',
@@ -894,13 +988,22 @@ async function openAiAnalysis(body: Record<string, any>) {
     `THIS REQUEST EXTRACTS FACTS ABOUT ${prepared.metadata?.personName || 'THE OTHER PERSON'} ONLY. Read their messages and list everything they actually reveal about themselves — work or study, interests, routines, places, people in their life, plans, likes, dislikes, values, stressors. Every entry MUST include a verbatim quote from their own messages; if you cannot quote it, leave it out entirely. Do not infer, guess, or describe the relationship here.`,
   ));
 
-  const [reportCorePart, reportSignalsPart, personaPart, personPart] = await Promise.all([
+  // A fifth concurrent pass. Recommendations need a different kind of reading
+  // from the rest of the report — taste and circumstance rather than dynamics —
+  // and folding them into the persona pass made that schema large enough that
+  // the model started thinning both halves.
+  const recommendationMessages = messagesForChatCompletions(promptFor(
+    'THIS REQUEST PRODUCES RECOMMENDATIONS ONLY. For EACH of the two people separately, suggest music, films or series, books, and gifts. Ground every single one in something the messages actually show about that person — the work they do, the things they complain about, what they find funny, where they live, what they are saving for, a hobby they mentioned. Match the language and culture of their own taste: if they quote Punjabi rap, recommend Punjabi rap, not a Billboard chart. A gift that could be given to any human being is a failed suggestion — the "why" must name the specific detail from the conversation that makes it land. Do not produce report narrative, flags, scores, or personality content here.',
+  ));
+
+  const [reportCorePart, reportSignalsPart, personaPart, personPart, recommendationPart] = await Promise.all([
     callWithFallback(reportCoreMessages, reportCoreJsonSchema, 'relationship_report_core', { critical: true }),
     callWithFallback(reportSignalsMessages, reportSignalsJsonSchema, 'relationship_report_signals'),
     callWithFallback(personaMessages, personaJsonSchema, 'personality_layer'),
     needsDirectPersonPass
       ? callWithFallback(personMessages, personProfileJsonSchema, 'person_profile')
       : Promise.resolve({}),
+    callWithFallback(recommendationMessages, recommendationsJsonSchema, 'recommendations'),
   ]);
 
   const personProfile = mergePersonFacts([
@@ -911,7 +1014,12 @@ async function openAiAnalysis(body: Record<string, any>) {
     normalizeAiShape(reportSignalsPart).relationshipReport || {},
     normalizeAiShape(reportCorePart).relationshipReport || {},
   ));
-  const analysis = normalizeAiShape({ ...personaPart, relationshipReport: mergedReport, personProfile });
+  const analysis = normalizeAiShape({
+    ...personaPart,
+    relationshipReport: mergedReport,
+    personProfile,
+    recommendations: (recommendationPart as Record<string, any>).recommendations || {},
+  });
   return {
     ...analysis,
     analysisPipeline: {
@@ -1088,7 +1196,8 @@ const RETAINED_CONVERSATION_KEYS = [
   'warningFlags',
   'languageStyle',
   'languageProfile',
-  'topWords',            // word + frequency
+  'topWords',
+  'topWordsBySender',   // per-person vocabularies for the word cloud            // word + frequency
   'localMetrics',        // effort, activity buckets, emoji counts
   'sensitiveDataProtectionSummary',
 ];

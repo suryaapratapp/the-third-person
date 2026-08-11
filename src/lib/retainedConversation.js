@@ -24,7 +24,8 @@ export const RETAINED_CONVERSATION_KEYS = [
   'warningFlags',
   'languageStyle',
   'languageProfile',
-  'topWords',            // word + frequency
+  'topWords',
+  'topWordsBySender',   // per-person vocabularies for the word cloud            // word + frequency
   'localMetrics',        // effort, activity buckets, emoji counts
   'sensitiveDataProtectionSummary',
 ];

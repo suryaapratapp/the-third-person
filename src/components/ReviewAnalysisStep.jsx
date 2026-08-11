@@ -11,8 +11,8 @@ import { generateRelationshipReportViaSupabase } from '../lib/backendAiService.j
 import { fetchUsageEntitlements } from '../lib/creditsService.js';
 import { runRazorpayCheckout } from '../lib/paymentsService.js';
 import { useAuth } from '../state/AuthContext.jsx';
-import RotatingQuote from './RotatingQuote.jsx';
 import UsageWarningModal from './UsageWarningModal.jsx';
+import AnalysisProgress from './AnalysisProgress.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 import {
   fetchRelationshipReportById,
@@ -360,40 +360,9 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         />
       )}
       {isGenerating && (
-        <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-well px-4 "
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="analysis-progress-heading"
-          aria-live="polite"
-        >
-          {/* Only the live `processingStage` is shown. There used to be four
-              more lines under it — "Mapping conversation phases", "Creating
-              clarity notes" and so on — which were static text dressed up as a
-              progress checklist and never changed state. An indeterminate bar
-              is the honest signal when there is no real per-step progress. */}
-          <div className="accent-panel w-full max-w-md p-6 text-center sm:p-7">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-signal/35 bg-signal/10">
-              <div className="h-9 w-9 animate-spin rounded-full border-2 border-signal/35 border-t-transparent" />
-            </div>
-            <h3 id="analysis-progress-heading" className="serif-title mt-5 text-3xl leading-tight sm:text-4xl">
-              Reading your conversation…
-            </h3>
-            <p className="mt-3 min-h-[3rem] text-sm leading-6 text-smoke">
-              {processingStage || 'Preparing private relationship intelligence…'}
-            </p>
-            <div className="mt-2 h-1 overflow-hidden rounded-full bg-well">
-              <div className="analysis-progress h-full w-1/3 rounded-full accent-gradient" />
-            </div>
-            <p className="mt-4 text-xs leading-6 text-ash">
-              This usually takes under two minutes. Keep this tab open.
-            </p>
-            <div className="mt-5 border-t border-line pt-5">
-              <RotatingQuote />
-            </div>
-          </div>
-        </div>
+        <AnalysisProgress stage={processingStage} messageCount={flow?.preparedConversation?.messageCount || 0} />
       )}
+
       <div className="rounded-lg border border-line bg-paper p-4 sm:p-5">
         <p className="tech-label">What will be analysed</p>
         <dl className="mt-4 divide-y divide-line">

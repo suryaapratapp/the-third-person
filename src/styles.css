@@ -705,6 +705,44 @@ select:focus-visible,
 }
 
 /* -------------------------------------------------------------------- *
+ * Analysis progress
+ * The one screen people stare at, so it gets the one animated gradient
+ * in the product. Both animations stop under prefers-reduced-motion via
+ * the global rule at the end of this file.
+ * -------------------------------------------------------------------- */
+.progress-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--you-rgb)),
+    rgb(var(--accent-rgb)),
+    rgb(var(--them-rgb)),
+    rgb(var(--accent-rgb)),
+    rgb(var(--you-rgb))
+  );
+  background-size: 300% 100%;
+  animation: progressSlide 2.6s linear infinite;
+}
+
+@keyframes progressSlide {
+  from { background-position: 0% 50%; }
+  to { background-position: -300% 50%; }
+}
+
+/* Three dots that fill and clear. `content` rather than three elements so
+   the markup for a purely decorative tick stays a single span. */
+.loading-dots::after {
+  content: '·';
+  animation: loadingDots 1.4s steps(4, end) infinite;
+}
+
+@keyframes loadingDots {
+  0% { content: '·'; }
+  25% { content: '··'; }
+  50% { content: '···'; }
+  75% { content: '··'; }
+}
+
+/* -------------------------------------------------------------------- *
  * CoachBot mascot
  * The one piece of character that survives. Motion only, no glow.
  * -------------------------------------------------------------------- */
