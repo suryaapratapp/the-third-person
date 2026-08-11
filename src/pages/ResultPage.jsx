@@ -497,17 +497,30 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
   // legend on each figure. Anyone who is not the named other person is you —
   // exports name the account holder inconsistently, and defaulting the unknown
   // case to "them" would mislabel the person reading their own report.
-  const colorFor = (sender) => (
-    String(sender || '').trim().toLowerCase() === String(personName || '').trim().toLowerCase()
-      ? 'var(--them)'
-      : 'var(--you)'
-  );
+  // ONE colour per participant, decided here and passed to every chart, so a
+  // reader learns "pink is me, blue is them" once instead of re-reading a
+  // legend on each figure.
+  //
+  // Assigned by position in the sender list, not by matching `personName`.
+  // Export display names ("Manhar Solan UOL") rarely equal the name on the
+  // report, so the match silently failed and every chart painted BOTH people
+  // the same colour. Position always resolves; the name is only a tiebreak for
+  // which of the two is "them".
+  const senderNames = effortPeopleNames(prepared, analysis).filter(Boolean);
+  const themIndex = Math.max(0, senderNames.findIndex((name) => (
+    String(name).trim().toLowerCase().includes(String(personName || '').trim().toLowerCase())
+    || String(personName || '').trim().toLowerCase().includes(String(name).trim().toLowerCase())
+  )));
+  const colorFor = (sender) => {
+    const index = senderNames.indexOf(sender);
+    if (index === -1) return 'var(--you)';
+    return index === themIndex ? 'var(--them)' : 'var(--you)';
+  };
   const emojis = list(metrics.emojis);
   // Whoever is not the named other person. Exports label the account holder
   // inconsistently, so this is derived the same way `colorFor` derives it
   // rather than trusting a field.
-  const youName = list(effortPeopleNames(prepared, analysis))
-    .find((name) => String(name).trim().toLowerCase() !== String(personName).trim().toLowerCase()) || 'You';
+  const youName = senderNames.find((_, index) => index !== themIndex) || 'You';
   const keyMoments = list(analysis?.relationshipReport?.keyMoments);
   const subtext = list(analysis?.relationshipReport?.readingBetweenTheLines);
   const wordsBySender = list(prepared.topWordsBySender);
@@ -1076,6 +1089,30 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
             </CardShell>
           )}
 
+
+          {wordsBySender.length > 0 && (
+            <CardShell id="word-cloud-pair" title="Word Cloud" emoji="☁️" summary="The words each of you reaches for." accent="blue">
+              <WordCloud bySender={wordsBySender} colorFor={colorFor} />
+            </CardShell>
+          )}
+
+          {recommendations && (
+            <CardShell
+              id="recommendations"
+              title="For Each Of You"
+              emoji="🎁"
+              summary="Music, films, books and gifts picked from what you each talk about."
+              accent="orange"
+            >
+              <Recommendations
+                recommendations={recommendations}
+                youName={youName}
+                themName={personName}
+                colorFor={colorFor}
+              />
+            </CardShell>
+          )}
+
           <CardShell id="next-best-move" title="Next Best Move" emoji="💬" summary={analysis.advice?.nextBestStep}>
             <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
               <div>
@@ -1101,29 +1138,6 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
               <button onClick={shareSummary} className="btn btn-secondary">Share summary</button>
             </div>
           </CardShell>
-
-          {wordsBySender.length > 0 && (
-            <CardShell id="word-cloud-pair" title="Word Cloud" emoji="☁️" summary="The words each of you reaches for." accent="blue">
-              <WordCloud bySender={wordsBySender} colorFor={colorFor} />
-            </CardShell>
-          )}
-
-          {recommendations && (
-            <CardShell
-              id="recommendations"
-              title="For Each Of You"
-              emoji="🎁"
-              summary="Music, films, books and gifts picked from what you each talk about."
-              accent="orange"
-            >
-              <Recommendations
-                recommendations={recommendations}
-                youName={youName}
-                themName={personName}
-                colorFor={colorFor}
-              />
-            </CardShell>
-          )}
 
           <AfterReportActions onOpenCoach={() => setCoachOpen(true)} />
 

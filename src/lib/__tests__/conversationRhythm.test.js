@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  computeCallStats,
   computeMilestones,
   computeQuickStats,
   computeRhythm,
@@ -192,5 +193,46 @@ describe('computeQuickStats', () => {
     const emoji = stats.find((stat) => stat.key === 'emoji');
     expect(emoji.value).toBe('😂');
     expect(emoji.hint).toBe('42 times');
+  });
+});
+
+describe('computeCallStats', () => {
+  const raw = [
+    '[05/05/2024, 14:00:00] Surya: Missed voice call',
+    '[06/05/2024, 14:00:00] Manhar: Missed video call',
+    '[07/05/2024, 14:00:00] Surya: Voice call, 12 min',
+    '[08/05/2024, 14:00:00] Manhar: Video call, 3 min',
+    // iOS exports wrap system lines in bidi marks.
+    '‎[09/05/2024, 14:00:00] Surya: ‎Missed voice call',
+    '[10/05/2024, 14:00:00] Surya: hey how are you',
+  ].join('\n');
+
+  it('returns null when the chat contains no calls', () => {
+    expect(computeCallStats('')).toBeNull();
+    expect(computeCallStats('[01/01/2024, 10:00:00] A: just talking')).toBeNull();
+  });
+
+  it('counts voice, video and missed separately', () => {
+    const stats = computeCallStats(raw);
+    expect(stats.missedVoice).toBe(2);
+    expect(stats.missedVideo).toBe(1);
+    expect(stats.voice).toBe(1);
+    expect(stats.video).toBe(1);
+  });
+
+  it('never double-counts a missed call as a connected one', () => {
+    // "Missed video call" also contains "video call"; testing the general
+    // pattern first would count it twice.
+    const stats = computeCallStats('[01/01/2024, 10:00:00] A: Missed video call');
+    expect(stats.video).toBe(0);
+    expect(stats.missedVideo).toBe(1);
+    expect(stats.total).toBe(1);
+  });
+
+  it('reports the miss rate across all calls', () => {
+    const stats = computeCallStats(raw);
+    expect(stats.total).toBe(5);
+    expect(stats.missed).toBe(3);
+    expect(stats.missedShare).toBe(60);
   });
 });

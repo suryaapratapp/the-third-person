@@ -21,7 +21,7 @@ const KINDS = {
     label: 'Music',
     Icon: PiMusicNotes,
     title: (item) => item.title,
-    subtitle: (item) => item.artist,
+    subtitle: (item) => item.artist || '',
     links: (item) => [
       ['Spotify', `https://open.spotify.com/search/${q(`${item.title} ${item.artist || ''}`)}`],
       ['YouTube', `https://www.youtube.com/results?search_query=${q(`${item.title} ${item.artist || ''}`)}`],
@@ -34,17 +34,17 @@ const KINDS = {
     subtitle: (item) => item.year,
     links: (item) => [
       ['TMDB', `https://www.themoviedb.org/search?query=${q(item.title)}`],
-      ['Search', `https://duckduckgo.com/?q=${q(`${item.title} ${item.year || ''} watch`)}`],
+      ['Google', `https://www.google.com/search?q=${q(`${item.title} ${item.year || ''} film`)}`],
     ],
   },
   books: {
     label: 'Read',
     Icon: PiBook,
     title: (item) => item.title,
-    subtitle: (item) => item.author,
+    subtitle: (item) => item.author || '',
     links: (item) => [
       ['Goodreads', `https://www.goodreads.com/search?q=${q(`${item.title} ${item.author || ''}`)}`],
-      ['Search', `https://duckduckgo.com/?q=${q(`${item.title} ${item.author || ''} book`)}`],
+      ['Google', `https://www.google.com/search?q=${q(`${item.title} ${item.author || ''} book`)}`],
     ],
   },
   gifts: {
@@ -53,7 +53,7 @@ const KINDS = {
     title: (item) => item.idea,
     subtitle: () => '',
     links: (item) => [
-      ['Search', `https://duckduckgo.com/?q=${q(`buy ${item.idea}`)}`],
+      ['Google', `https://www.google.com/search?q=${q(`buy ${item.idea}`)}`],
     ],
   },
 };

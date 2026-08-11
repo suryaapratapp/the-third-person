@@ -763,8 +763,8 @@ async function openAiAnalysis(body: Record<string, any>) {
   // reason it fits.
   const recommendationsFor = (who: string) => S.obj({
     music: S.arr(S.obj({
-      title: S.str('Song title only'),
-      artist: S.str(),
+      title: S.str('Exact song title'),
+      artist: S.str('The artist who actually performs THIS song. If you are not certain the pairing is correct return an empty string — a wrong attribution is worse than none.'),
       why: S.str('One line tying it to something they actually said or like'),
     }), `4 songs ${who} would plausibly love, in a language and genre their messages support`),
     movies: S.arr(S.obj({
@@ -774,7 +774,7 @@ async function openAiAnalysis(body: Record<string, any>) {
     }), `4 films or series for ${who}`),
     books: S.arr(S.obj({
       title: S.str(),
-      author: S.str(),
+      author: S.str('The real author of THIS book. Empty string if unsure — a wrong attribution is worse than none.'),
       why: S.str('One line tying it to their interests or what they are going through'),
     }), `4 books for ${who}`),
     gifts: S.arr(S.obj({
@@ -939,7 +939,8 @@ async function openAiAnalysis(body: Record<string, any>) {
 
   const reportCoreMessages = messagesForChatCompletions(promptFor(
     'THIS REQUEST GENERATES THE REPORT NARRATIVE, TIMELINE AND KEY MOMENTS ONLY. Return exactly the relationshipReport keys described in combinedGenerationSchema (summary, dynamic, tone, timeline, timelineArc, keyMoments, readingBetweenTheLines). '
-    + 'keyMoments is the priority of this request. Build it from the keyEvents in the period summaries: merge duplicates, put them in date order, and keep only what would stand out in an ordinary week — a fight, a repair, a confession, a plan made or broken, a reunion after distance, a loss, a milestone, someone asking for or giving real support. Routine logistics, greetings and small talk are NOT key moments. If the whole history genuinely contains six notable moments, return six; padding it with ordinary days makes the timeline worthless. '
+    + 'keyMoments is the priority of this request. Build it from the keyEvents in the period summaries: merge duplicates, put them in date order, and keep only what would stand out in an ordinary week — a fight, a repair, a confession, a plan made or broken, a reunion after distance, a loss, a milestone, someone asking for or giving real support. Routine logistics, greetings and small talk are NOT key moments. SCALE THE COUNT TO THE HISTORY: a chat spanning many months or years with thousands of messages must produce AT LEAST 10 key moments, and 15-20 is normal for a multi-year history — a long relationship with only four notable moments means you have not looked hard enough, so go back through the period summaries and pull the ones you skipped. A genuinely short chat of a few weeks may honestly have three or four. Never invent a moment to hit a number, and never stop at four on a four-year chat. '
+    + 'EVIDENCE QUOTES: every quote anywhere in this response must be copied EXACTLY from the supplied messages — never paraphrased, reconstructed or translated. Use a DIFFERENT quote for every item: no quote may appear twice across keyMoments, readingBetweenTheLines or anywhere else. Prefer lines that make sense to someone who has not read the chat, and prefer a line that shows the moment happening over one that merely refers to it. If no distinct real quote supports an item, leave its quote empty rather than reusing one. '
     + 'readingBetweenTheLines decodes the lines whose literal meaning is misleading: insults used as affection, "fine" that is not fine, exaggerated praise meant as mockery, deflection dressed as a joke. Use the sarcasmNotes from the period summaries and the pair\'s established banter style — judge each line by how THIS pair talks to each other, not by how the words would read between strangers. '
     + 'Do not produce flags, scores, advice, personality card, or coach context here.',
   ));
@@ -993,7 +994,7 @@ async function openAiAnalysis(body: Record<string, any>) {
   // and folding them into the persona pass made that schema large enough that
   // the model started thinning both halves.
   const recommendationMessages = messagesForChatCompletions(promptFor(
-    'THIS REQUEST PRODUCES RECOMMENDATIONS ONLY. For EACH of the two people separately, suggest music, films or series, books, and gifts. Ground every single one in something the messages actually show about that person — the work they do, the things they complain about, what they find funny, where they live, what they are saving for, a hobby they mentioned. Match the language and culture of their own taste: if they quote Punjabi rap, recommend Punjabi rap, not a Billboard chart. A gift that could be given to any human being is a failed suggestion — the "why" must name the specific detail from the conversation that makes it land. Do not produce report narrative, flags, scores, or personality content here.',
+    'THIS REQUEST PRODUCES RECOMMENDATIONS ONLY. ACCURACY FIRST: only name a song, film or book you are genuinely confident exists, and only pair it with an artist or author you are confident is correct. A real song credited to the wrong singer is the most visibly wrong thing in the whole report — if you are unsure of the performer, leave the artist field empty and keep the title, or choose a different track you are sure of. Never invent a title. For EACH of the two people separately, suggest music, films or series, books, and gifts. Ground every single one in something the messages actually show about that person — the work they do, the things they complain about, what they find funny, where they live, what they are saving for, a hobby they mentioned. Match the language and culture of their own taste: if they quote Punjabi rap, recommend Punjabi rap, not a Billboard chart. A gift that could be given to any human being is a failed suggestion — the "why" must name the specific detail from the conversation that makes it land. Do not produce report narrative, flags, scores, or personality content here.',
   ));
 
   const [reportCorePart, reportSignalsPart, personaPart, personPart, recommendationPart] = await Promise.all([

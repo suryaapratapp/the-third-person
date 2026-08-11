@@ -319,7 +319,7 @@ export function computeMilestones(messages = []) {
  * there is one definition of "busiest day" in the product, not three
  * that disagree by a day.
  * ------------------------------------------------------------------ */
-export function computeQuickStats({ messages = [], effort = null, milestones = null, emojis = [] } = {}) {
+export function computeQuickStats({ messages = [], effort = null, milestones = null, emojis = [], calls = null } = {}) {
   const usable = messages.filter((message) => message.sender);
   if (!usable.length) return null;
 
@@ -365,6 +365,29 @@ export function computeQuickStats({ messages = [], effort = null, milestones = n
     }
   }
 
+  // Calls get their own three cards. For a lot of relationships the calls ARE
+  // the relationship, and a miss rate says something no message count can.
+  if (calls) {
+    stats.push({
+      key: 'voiceCalls',
+      label: 'Voice calls',
+      value: calls.voice.toLocaleString(),
+      hint: calls.missedVoice ? `${calls.missedVoice.toLocaleString()} missed` : 'None missed',
+    });
+    stats.push({
+      key: 'videoCalls',
+      label: 'Video calls',
+      value: calls.video.toLocaleString(),
+      hint: calls.missedVideo ? `${calls.missedVideo.toLocaleString()} missed` : 'None missed',
+    });
+    stats.push({
+      key: 'missedCalls',
+      label: 'Missed calls',
+      value: calls.missed.toLocaleString(),
+      hint: `${calls.missedShare}% of all calls`,
+    });
+  }
+
   if (effort?.people?.length === 2) {
     const [lead] = effort.people;
     stats.push({
@@ -380,4 +403,79 @@ export function computeQuickStats({ messages = [], effort = null, milestones = n
   }
 
   return stats;
+}
+
+/* ------------------------------------------------------------------ *
+ * Calls
+ *
+ * Counted from the RAW upload, deliberately, because the parser throws
+ * call lines away: "missed voice call" and friends are on the media/
+ * export noise list, so by the time messages exist every call has
+ * already been filtered out as junk. They are not junk — for a lot of
+ * relationships the calls ARE the relationship, and a chat that shows
+ * 300 missed calls says something no message count can.
+ *
+ * Patterns cover the WhatsApp variants people actually export: iOS and
+ * Android wording, the "‎" bidi marks WhatsApp injects, and the common
+ * Hinglish/Hindi locale strings.
+ * ------------------------------------------------------------------ */
+const CALL_PATTERNS = {
+  missedVoice: [
+    /missed voice call/i,
+    /voice call.*\bno answer\b/i,
+    /छूटी हुई वॉइस कॉल/i,
+  ],
+  missedVideo: [
+    /missed video call/i,
+    /video call.*\bno answer\b/i,
+    /छूटी हुई वीडियो कॉल/i,
+  ],
+  voice: [
+    /\bvoice call\b/i,
+    /वॉइस कॉल/i,
+  ],
+  video: [
+    /\bvideo call\b/i,
+    /वीडियो कॉल/i,
+  ],
+};
+
+function matchesAny(line, patterns) {
+  return patterns.some((pattern) => pattern.test(line));
+}
+
+export function computeCallStats(rawText = '') {
+  const text = String(rawText || '');
+  if (!text.trim()) return null;
+
+  const stats = { voice: 0, video: 0, missedVoice: 0, missedVideo: 0 };
+
+  text.split(/\r?\n/).forEach((rawLine) => {
+    // WhatsApp wraps system lines in bidi marks; strip them or the anchored
+    // patterns never match on an iOS export.
+    const line = rawLine.replace(/[‎‏‪-‮]/g, '').trim();
+    if (!line) return;
+
+    // Missed is checked FIRST and returns: "Missed video call" also contains
+    // "video call", so testing the general pattern first would count every
+    // missed call twice — once as missed and once as connected.
+    if (matchesAny(line, CALL_PATTERNS.missedVideo)) { stats.missedVideo += 1; return; }
+    if (matchesAny(line, CALL_PATTERNS.missedVoice)) { stats.missedVoice += 1; return; }
+    if (matchesAny(line, CALL_PATTERNS.video)) { stats.video += 1; return; }
+    if (matchesAny(line, CALL_PATTERNS.voice)) { stats.voice += 1; }
+  });
+
+  const total = stats.voice + stats.video + stats.missedVoice + stats.missedVideo;
+  if (!total) return null;
+
+  const missed = stats.missedVoice + stats.missedVideo;
+  return {
+    ...stats,
+    connected: stats.voice + stats.video,
+    missed,
+    total,
+    // The number worth reading: a high miss rate is the thing people
+    // recognise instantly about a drifting relationship.
+    missedShare: percent(missed, total),
+  };
 }

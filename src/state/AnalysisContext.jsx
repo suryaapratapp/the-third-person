@@ -7,6 +7,10 @@ const initialFlow = {
   platform: '',
   relationshipType: '',
   personName: '',
+  // Which display name in the export belongs to whom. Set by WhoIsWhoStep from
+  // the parsed participants, so downstream code never has to guess.
+  mainUserSender: '',
+  otherPersonSender: '',
   otherPersonDateOfBirth: '',
   chatText: '',
   sourceMode: 'paste',

@@ -3,6 +3,7 @@ import { PiArrowLeft, PiArrowRight, PiCheck } from 'react-icons/pi';
 import PlatformSelector from '../components/PlatformSelector.jsx';
 import RelationshipSelector from '../components/RelationshipSelector.jsx';
 import PersonDetailsForm from '../components/PersonDetailsForm.jsx';
+import WhoIsWhoStep from '../components/WhoIsWhoStep.jsx';
 import UploadOrPasteChat from '../components/UploadOrPasteChat.jsx';
 import ReviewAnalysisStep from '../components/ReviewAnalysisStep.jsx';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
@@ -22,8 +23,12 @@ import { useRouter } from '../state/RouterContext.jsx';
 const steps = [
   { label: 'Select messaging app', short: 'App' },
   { label: 'Select relationship type', short: 'Relationship' },
-  { label: 'Enter person name', short: 'Person' },
   { label: 'Upload or paste chat', short: 'Chat' },
+  // Naming moved AFTER the upload. Asking first meant asking people to type a
+  // name from memory and hoping it matched the export's display name; when it
+  // did not, every downstream "who is who" decision attached to the wrong
+  // person and nothing surfaced the mistake. Now both names come from the file.
+  { label: 'Who is who', short: 'People' },
   { label: 'Review and start', short: 'Review' },
 ];
 
@@ -36,8 +41,8 @@ export default function NewAnalysisPage() {
   const canContinue = useMemo(() => {
     if (step === 0) return Boolean(flow.platform);
     if (step === 1) return Boolean(flow.relationshipType);
-    if (step === 2) return Boolean(flow.personName.trim());
-    if (step === 3) return flow.chatText.trim().length > 10;
+    if (step === 2) return flow.chatText.trim().length > 10;
+    if (step === 3) return Boolean(flow.personName.trim());
     return true;
   }, [flow, step]);
 
@@ -69,13 +74,6 @@ export default function NewAnalysisPage() {
       updateFlow({ relationshipType });
       window.setTimeout(() => setStep(2), 220);
     }} />,
-    <PersonDetailsForm
-      key="person-details"
-      value={flow.personName}
-      onChange={(personName) => updateFlow({ personName })}
-      dateOfBirth={flow.otherPersonDateOfBirth}
-      onDateChange={(otherPersonDateOfBirth) => updateFlow({ otherPersonDateOfBirth })}
-    />,
     <UploadOrPasteChat
       key="upload"
       mode={flow.sourceMode}
@@ -84,6 +82,16 @@ export default function NewAnalysisPage() {
       text={flow.chatText}
       onChange={updateFlow}
     />,
+    <div key="who-is-who" className="grid gap-5">
+      <WhoIsWhoStep flow={flow} updateFlow={updateFlow} />
+      <PersonDetailsForm
+        value={flow.personName}
+        onChange={(personName) => updateFlow({ personName })}
+        dateOfBirth={flow.otherPersonDateOfBirth}
+        onDateChange={(otherPersonDateOfBirth) => updateFlow({ otherPersonDateOfBirth })}
+        nameHandledElsewhere
+      />
+    </div>,
     <ReviewAnalysisStep key="review" flow={flow} updateFlow={updateFlow} onStart={(target = '/analysis/result') => navigate(target)} />,
   ];
 

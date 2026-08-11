@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 // One cloud per person, side by side.
 //
 // A single merged cloud is dominated by whoever typed more and says nothing
@@ -14,73 +12,64 @@ import { useMemo } from 'react';
 // layout wraps naturally at any width, stays selectable and searchable, and
 // costs nothing.
 
-const STEPS = 7;
+// Sizes come from each person's OWN top count, so the biggest word in a
+// column is always their most-used one and the smallest is their least. A
+// shared scale would size both columns against whoever typed more, which made
+// the quieter person's cloud uniformly tiny.
+const MIN_REM = 0.8;
+const MAX_REM = 2.6;
 
-// Font sizes are assigned by RANK, not by raw count. Word frequency is
-// Zipfian: the top word often occurs three times as often as the fifth, so
-// scaling linearly by count makes one word enormous and flattens the rest into
-// identical mush. Ranking spreads the sizes evenly across the tail.
-const SIZE_REM = [2.35, 1.9, 1.55, 1.3, 1.1, 0.95, 0.82];
-const WEIGHT = [700, 700, 650, 600, 550, 500, 500];
-const OPACITY = [1, 1, 0.94, 0.86, 0.78, 0.68, 0.6];
-
-function bucketFor(index, total) {
-  if (total <= 1) return 0;
-  return Math.min(STEPS - 1, Math.floor((index / total) * STEPS));
+// Square-root rather than linear. Word frequency is Zipfian — the top word can
+// occur ten times as often as the tenth — so a linear scale makes one word
+// enormous and crushes everything else to the floor. sqrt keeps the ordering
+// exactly right while leaving the tail readable.
+function sizeFor(count, top, floor) {
+  if (top <= floor) return (MIN_REM + MAX_REM) / 2;
+  const ratio = (Math.sqrt(count) - Math.sqrt(floor)) / (Math.sqrt(top) - Math.sqrt(floor));
+  return MIN_REM + ratio * (MAX_REM - MIN_REM);
 }
 
-// Deterministic shuffle. A cloud in strict frequency order reads as a ranked
-// list and looks like a bar chart in disguise; a random order looks like a
-// cloud. Seeded so it does not reshuffle on every render.
-function scatter(words, seed) {
-  const out = [...words];
-  let state = seed || 1;
-  for (let i = out.length - 1; i > 0; i -= 1) {
-    state = (state * 1103515245 + 12345) % 2147483648;
-    const j = state % (i + 1);
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
+function Cloud({ entry, color }) {
+  const words = (entry.words || []).slice(0, 44);
+  if (words.length < 3) return null;
 
-function Cloud({ entry, color, seed }) {
-  const laidOut = useMemo(() => {
-    const words = entry.words || [];
-    return scatter(words.map((word, index) => ({ ...word, bucket: bucketFor(index, words.length) })), seed);
-  }, [entry, seed]);
-
-  if (!laidOut.length) return null;
+  const top = words[0].count;
+  const floor = words[words.length - 1].count;
 
   return (
     <div className="rounded-lg border border-line bg-paper p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h3 className="text-sm font-semibold" style={{ color }}>
-          {entry.sender}
-        </h3>
+        <h3 className="text-sm font-semibold" style={{ color }}>{entry.sender}</h3>
         <p className="text-xs text-ash">{entry.messages.toLocaleString()} messages</p>
       </div>
 
-      <p className="mt-3 flex flex-wrap items-baseline justify-center gap-x-2.5 gap-y-1 leading-tight">
-        {laidOut.map((word) => (
-          <span
-            key={word.word}
-            title={`${word.word} — ${word.count} times`}
-            className="whitespace-nowrap transition-opacity hover:!opacity-100"
-            style={{
-              fontSize: `${SIZE_REM[word.bucket]}rem`,
-              fontWeight: WEIGHT[word.bucket],
-              opacity: OPACITY[word.bucket],
-              // Top two buckets carry the person's colour, the rest are ink.
-              // Colouring everything turns the cloud into a solid block; this
-              // keeps the frequent words legible as the subject.
-              color: word.bucket <= 1 ? color : 'var(--graphite)',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            {word.word}
-          </span>
-        ))}
-      </p>
+      {/* Kept in rank order rather than shuffled. Shuffling looked more like a
+          classic word cloud but made the size scale impossible to read: with
+          the biggest word buried in the middle, nobody could tell whether size
+          meant anything at all. Reading order now matches frequency order. */}
+      <div className="mt-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5">
+        {words.map((word, index) => {
+          const rem = sizeFor(word.count, top, floor);
+          return (
+            <span
+              key={word.word}
+              title={`${word.word} — used ${word.count.toLocaleString()} times`}
+              className="whitespace-nowrap leading-none"
+              style={{
+                fontSize: `${rem.toFixed(2)}rem`,
+                // Weight and colour follow size, so the hierarchy reads even
+                // in a screenshot where the tooltip is not available.
+                fontWeight: rem > 1.9 ? 700 : rem > 1.3 ? 600 : 500,
+                color: index < 6 ? color : 'var(--graphite)',
+                opacity: index < 6 ? 1 : Math.max(0.55, rem / MAX_REM),
+                letterSpacing: '-0.015em',
+              }}
+            >
+              {word.word}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -93,18 +82,13 @@ export default function WordCloud({ bySender = [], colorFor }) {
     <section aria-label="Most used words">
       <p className="tech-label">What each of you actually says</p>
       <div className="mt-3 grid gap-3 lg:grid-cols-2">
-        {usable.slice(0, 2).map((entry, index) => (
-          <Cloud
-            key={entry.sender}
-            entry={entry}
-            color={colorFor(entry.sender)}
-            seed={index + 7}
-          />
+        {usable.slice(0, 2).map((entry) => (
+          <Cloud key={entry.sender} entry={entry} color={colorFor(entry.sender)} />
         ))}
       </div>
       <p className="mt-2 text-xs leading-5 text-ash">
-        Counted from the messages themselves, with filler words removed. Size is
-        rank, not raw count.
+        Counted from the messages themselves, with filler words removed. Biggest
+        word is that person’s most-used one.
       </p>
     </section>
   );

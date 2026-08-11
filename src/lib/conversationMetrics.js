@@ -7,6 +7,7 @@
 // as ground truth so it interprets facts instead of guessing at them.
 
 import {
+  computeCallStats,
   computeMilestones,
   computeQuickStats,
   computeRhythm,
@@ -298,6 +299,8 @@ export function computeLocalMetrics({ messages = [], rawText = '' } = {}) {
   const emojis = computeEmojiUsage(messageBodiesFor(messages, rawText));
   const effort = computeEffortMetrics(messages);
   const milestones = computeMilestones(messages);
+  // From the RAW upload: the parser drops call lines as export noise.
+  const calls = computeCallStats(rawText);
 
   return {
     emojis,
@@ -306,6 +309,7 @@ export function computeLocalMetrics({ messages = [], rawText = '' } = {}) {
     rhythm: computeRhythm(messages),
     tone: computeToneSeries(messages),
     milestones,
-    quickStats: computeQuickStats({ messages, effort, milestones, emojis }),
+    calls,
+    quickStats: computeQuickStats({ messages, effort, milestones, emojis, calls }),
   };
 }

@@ -5,11 +5,15 @@ import { getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
 // field they described, and the zodiac result — the only live feedback in the
 // whole wizard — appeared as a 10px mono line that was easy to miss.
 
-export default function PersonDetailsForm({ value, onChange, dateOfBirth = '', onDateChange }) {
+// `nameHandledElsewhere` suppresses the name field when WhoIsWhoStep is
+// already showing it above. Two inputs bound to the same value on one screen is
+// a bug report waiting to happen.
+export default function PersonDetailsForm({ value, onChange, dateOfBirth = '', onDateChange, nameHandledElsewhere = false }) {
   const sign = getZodiacSign(dateOfBirth);
 
   return (
     <div className="grid max-w-2xl gap-6">
+      {!nameHandledElsewhere && (
       <div>
         <label className="tech-label text-smoke" htmlFor="person-name">
           Their name or nickname
@@ -26,6 +30,7 @@ export default function PersonDetailsForm({ value, onChange, dateOfBirth = '', o
           Used throughout your report. Pick something distinctive if you know two people with the same name.
         </p>
       </div>
+      )}
 
       <div className="rounded-sm border border-signal/35 bg-signal/10 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
