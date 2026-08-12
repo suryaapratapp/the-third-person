@@ -4,7 +4,7 @@ import { formatDuration } from '../lib/conversationMetrics.js';
 import AfterReportActions from '../components/AfterReportActions.jsx';
 import FloatingCoach from '../components/FloatingCoach.jsx';
 import CoachDialog from '../components/CoachDialog.jsx';
-import { buildAnalysisChainContext, getChainById, groupReports } from '../lib/reportsStore.js';
+import { buildAnalysisChainContext, buildReportCoachContext, getChainById, groupReports } from '../lib/reportsStore.js';
 import QuickStats from '../components/QuickStats.jsx';
 import RhythmHeatmap from '../components/RhythmHeatmap.jsx';
 import ToneOverTime from '../components/ToneOverTime.jsx';
@@ -333,7 +333,11 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
     };
   }, [coachOpen, chainId]);
 
-  const coachContext = useMemo(() => buildAnalysisChainContext(coachChain), [coachChain]);
+  // Chain context when it resolves (it can see patterns across several reports),
+  // otherwise the report on screen. Never null while a report is open: telling
+  // someone to "run an analysis first" while they are reading their analysis
+  // was the single most confusing thing in the product.
+  const chainContext = useMemo(() => buildAnalysisChainContext(coachChain), [coachChain]);
 
   const analysis = source?.analysisResult || null;
   const prepared = source?.preparedConversation || {};
@@ -521,6 +525,14 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
   // inconsistently, so this is derived the same way `colorFor` derives it
   // rather than trusting a field.
   const youName = senderNames.find((_, index) => index !== themIndex) || 'You';
+  const coachContext = chainContext || buildReportCoachContext({
+    analysis,
+    prepared,
+    personName,
+    relationshipType: meta.relationshipType || source?.relationshipType,
+    chainId,
+    dateRange: prepared.estimatedDateRange,
+  });
   const keyMoments = list(analysis?.relationshipReport?.keyMoments);
   const subtext = list(analysis?.relationshipReport?.readingBetweenTheLines);
   const wordsBySender = list(prepared.topWordsBySender);

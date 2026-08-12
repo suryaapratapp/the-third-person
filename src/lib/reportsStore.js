@@ -206,6 +206,76 @@ export function getChainById(chainId) {
   return groupReports(getReports()).get(chainId) || null;
 }
 
+// Coach context from the ONE report currently on screen.
+//
+// The chain builder needs a saved, grouped chain, and there are two ordinary
+// moments where that does not exist yet: a report generated seconds ago has not
+// synced into the reports list, and a report opened by id may carry no chainId
+// at all. In both cases the chain lookup returned null and the coach told the
+// user to "run an analysis first" — while they were sitting there reading the
+// analysis.
+//
+// This produces the same shape from a single report, so the coach always has
+// something to answer from. The chain version is still preferred when it
+// resolves, because it can see patterns across several reports.
+export function buildReportCoachContext({
+  analysis,
+  prepared = {},
+  personName,
+  relationshipType,
+  chainId = null,
+  dateRange = '',
+} = {}) {
+  if (!analysis) return null;
+  const report = analysis.relationshipReport || {};
+  const flagPair = (items) => (Array.isArray(items) ? items : []).slice(0, 4)
+    .map((flag) => ({ label: flag?.label, whyItMatters: flag?.whyItMatters }))
+    .filter((flag) => flag.label);
+
+  const redFlags = flagPair(report.redFlags || analysis.redFlags);
+  const greenFlags = flagPair(report.greenFlags || analysis.greenFlags);
+
+  return {
+    chainId,
+    personName: personName || prepared.metadata?.personName || 'them',
+    relationshipType: relationshipType || prepared.metadata?.relationshipType || 'Relationship',
+    reportCount: 1,
+    dateRange: dateRange || prepared.estimatedDateRange || 'Unknown',
+    latestSummary: report.summaryParagraph
+      || analysis.summary?.relationshipOverview
+      || analysis.screenshotWorthySummary
+      || '',
+    latestReport: {
+      overallDynamic: report.overallDynamic || analysis.summary?.currentDynamic || '',
+      emotionalTone: report.emotionalTone || analysis.summary?.mainEmotionalPattern || '',
+      timelineArc: report.timelineArc || '',
+      nextBestMove: report.nextBestMove || analysis.advice?.nextBestStep || '',
+      compatibility: analysis.scores?.compatibility,
+      energyMatch: report.energyMatchScore?.score ?? analysis.energyMatchScore?.score,
+      redFlags,
+      greenFlags,
+    },
+    // The event log is the most useful thing the coach can cite, so it goes in
+    // even though the chain builder predates it.
+    keyMoments: (report.keyMoments || []).slice(0, 12)
+      .map((moment) => ({ date: moment.date, title: moment.title, category: moment.category })),
+    personFacts: (analysis.personProfile?.items || []).slice(0, 12)
+      .map((item) => ({ category: item.category, fact: item.fact })),
+    repeatedRedFlags: redFlags.map((flag) => flag.label),
+    repeatedGreenFlags: greenFlags.map((flag) => flag.label),
+    compatibilityMovement: 0,
+    emotionalTrendAcrossReports: report.emotionalTone || '',
+    bestieContextSummary: analysis.bestieContextSummary,
+    reportSummaryForFutureUse: analysis.reportSummaryForFutureUse,
+    mainUserPersonalitySignals: analysis.mainUserPersonalitySignals,
+    languageProfile: prepared.languageProfile || analysis.detectedLanguageStyle || null,
+    languageStyle: prepared.languageProfile?.recommendedOutputStyle
+      || analysis.detectedLanguageStyle?.recommendedOutputStyle
+      || prepared.languageStyle
+      || 'English',
+  };
+}
+
 export function buildAnalysisChainContext(chain) {
   if (!chain?.reports?.length) return null;
   const sorted = [...chain.reports].sort((a, b) => new Date(a.dateAnalysed) - new Date(b.dateAnalysed));

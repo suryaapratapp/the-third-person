@@ -38,6 +38,8 @@ export default function AuthPage() {
   const [captchaToken, setCaptchaToken] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState('');
+  const [resending, setResending] = useState(false);
   const captchaRequired = !isLocalAuthTesting();
 
   async function handleEmail(event) {
@@ -76,9 +78,32 @@ export default function AuthPage() {
       if (data?.session) {
         upsertRemoteProfile(profilePayload).catch(() => null);
       }
+      // With email confirmation ON, signUp succeeds but returns NO session —
+      // the account exists and is unverified. Navigating anyway would drop the
+      // user on a gated page that immediately bounces them back to sign-in,
+      // with no explanation and an unread email they never think to open.
+      if (!data?.session) {
+        setAwaitingConfirmation(email.trim());
+        return;
+      }
     }
-    setMessage(mode === 'sign-up' ? 'Account created. Check your email if confirmation is enabled.' : 'Signed in successfully.');
+    setMessage(mode === 'sign-up' ? 'Account created.' : 'Signed in successfully.');
     window.setTimeout(() => navigate(nextPath()), 500);
+  }
+
+  async function resendConfirmation() {
+    if (!awaitingConfirmation || resending) return;
+    setResending(true);
+    setMessage('');
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: awaitingConfirmation,
+      options: { emailRedirectTo: `${window.location.origin}${nextPath()}` },
+    });
+    setResending(false);
+    setMessage(error
+      ? (error.message || 'We could not resend it. Try again in a minute.')
+      : 'Sent again. It can take a minute to arrive.');
   }
 
   async function handleGoogle() {
@@ -117,6 +142,39 @@ export default function AuthPage() {
           </div>
         </div>
 
+        {awaitingConfirmation ? (
+          <div className="thin-panel p-6">
+            <p className="tech-label text-smoke">One more step</p>
+            <h2 className="serif-title mt-3 text-3xl leading-tight">Check your email</h2>
+            <p className="mt-4 text-sm leading-7 text-smoke">
+              We sent a confirmation link to{' '}
+              <span className="font-semibold text-ink">{awaitingConfirmation}</span>. Open it and
+              you are in — the link signs you in on this device.
+            </p>
+            <p className="mt-3 text-sm leading-7 text-ash">
+              Nothing yet? It can take a minute, and it sometimes lands in spam
+              or the Promotions tab.
+            </p>
+            <div className="mt-6 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={resendConfirmation}
+                disabled={resending}
+                className="btn btn-secondary disabled:opacity-50"
+              >
+                {resending ? 'Sending…' : 'Send it again'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAwaitingConfirmation(''); setMode('sign-in'); setMessage(''); }}
+                className="btn btn-ghost"
+              >
+                Use a different email
+              </button>
+            </div>
+            {message && <p className="mt-4 text-sm leading-6 text-smoke">{message}</p>}
+          </div>
+        ) : (
         <form onSubmit={handleEmail} className="thin-panel p-6">
           <p className="tech-label text-smoke">{mode === 'sign-up' ? 'Create account' : 'Sign in'}</p>
           {!isConfigured ? (
@@ -173,6 +231,7 @@ export default function AuthPage() {
             </>
           )}
         </form>
+        )}
       </div>
     </section>
   );
