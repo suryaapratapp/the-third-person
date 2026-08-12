@@ -41,30 +41,70 @@ are relaxed alignment, which is the forgiving setting.
 Brevo will show you a DKIM record and a verification record. Keep that tab
 open — you need the exact values.
 
-## 2. Edit DNS at GoDaddy
+## 2. DNS at GoDaddy — one edit, three additions
 
 GoDaddy: **My Products → Domains → thethirdperson.ai → DNS → Manage Zones.**
 
-**a. EDIT the existing SPF record.** Find the TXT record on `@` whose value
-starts `v=spf1`. Change it to:
+GoDaddy appends the domain to whatever you type in Name, so enter the short
+form (`brevo1._domainkey`), never the full hostname.
+
+### EDIT — the existing SPF record
+
+Find the TXT record on `@` whose value starts `v=spf1` and change it to:
 
 ```
 v=spf1 include:secureserver.net include:spf.brevo.com -all
 ```
 
-Keep `include:secureserver.net` — removing it breaks the mail you already
-receive and send through GoDaddy. Keep `-all`. Do **not** create a second
-`v=spf1` record.
+Keep `include:secureserver.net` or the mail you already send and receive
+through GoDaddy starts failing. Keep `-all`. Do **not** add a second `v=spf1`
+record.
 
-**b. ADD the DKIM record** exactly as Brevo shows it. It will be a TXT record
-on a host like `mail._domainkey` or `brevo._domainkey`. Copy the value
-verbatim — DKIM keys are long and a truncated one fails silently.
+### ADD — three new records
 
-**c. ADD Brevo's verification TXT** if it gives you one.
+| Type | Name | Value |
+|---|---|---|
+| TXT | `@` | `brevo-code:84b17c410cd73dfbb149b72705edffdf` |
+| CNAME | `brevo1._domainkey` | `b1.thethirdperson-ai.dkim.brevo.com` |
+| CNAME | `brevo2._domainkey` | `b2.thethirdperson-ai.dkim.brevo.com` |
 
-**d. Leave MX alone.** Brevo sends only; your inbound mail stays at GoDaddy.
+Two things worth being precise about:
 
-GoDaddy TTL defaults to 1 hour, so allow that before expecting verification.
+- **The DKIM records are CNAME, not TXT.** Brevo hosts the keys and rotates
+  them; a CNAME follows that automatically. Entering them as TXT silently
+  fails verification.
+- **A second TXT on `@` is fine.** The "never two records" rule applies only
+  to SPF — `@` already holds a google-site-verification TXT and the Brevo code
+  sits happily beside it.
+
+### DO NOT TOUCH — DMARC
+
+Brevo suggests `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com`.
+
+**Ignore it.** The domain already has:
+
+```
+v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:dmarc_rua@onsecureserver.net;
+```
+
+`p=quarantine` is *stronger* than the `p=none` Brevo proposes, and Brevo
+already reports this record as matching — it only checks that a valid DMARC
+record exists, not that it matches its suggestion. Replacing it would weaken
+the domain's protection for no gain.
+
+Optional, and the only DMARC change worth making: append Brevo's reporting
+address so failures show up in the Brevo dashboard, without changing policy.
+
+```
+v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:dmarc_rua@onsecureserver.net,mailto:rua@dmarc.brevo.com;
+```
+
+### Leave MX alone
+
+Brevo sends only. Inbound mail stays at `secureserver.net`.
+
+GoDaddy's default TTL is 1 hour, so allow that before expecting Brevo to
+verify.
 
 ## 3. Confirm it actually resolves
 
@@ -72,12 +112,17 @@ Before touching Supabase:
 
 ```bash
 dig +short TXT thethirdperson.ai | grep spf1
-dig +short TXT mail._domainkey.thethirdperson.ai
+dig +short TXT thethirdperson.ai | grep brevo-code
+dig +short CNAME brevo1._domainkey.thethirdperson.ai
+dig +short CNAME brevo2._domainkey.thethirdperson.ai
 ```
 
-The first must show **one** record containing both `secureserver.net` and
-`spf.brevo.com`. The second must return the DKIM key. If either is wrong, stop
-here — every step after this depends on them.
+Expected: **one** SPF line containing both `secureserver.net` and
+`spf.brevo.com`, the brevo-code TXT, and both CNAMEs resolving to
+`b1./b2.thethirdperson-ai.dkim.brevo.com`.
+
+If any of those is missing or duplicated, stop here — every step after this
+depends on them, and a wrong DKIM record fails silently rather than loudly.
 
 ## 4. SMTP credentials
 
