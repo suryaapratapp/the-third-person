@@ -35,6 +35,23 @@ export function removeEmojiAndControlNoise(text = '') {
     .trim();
 }
 
+// Control characters and bidi marks only — emoji survive.
+//
+// The pre-parse pass needs this rather than cleanConversationLine(). WhatsApp
+// injects bidi marks around its system lines, so the timestamp patterns will
+// not match unless they are stripped first — but stripping EMOJI at that stage
+// destroys the one copy of the text that emoji counting and the warmth signal
+// depend on. The parser still cleans each message BODY afterwards, so the text
+// sent to the AI is unchanged.
+export function stripInvisibleNoise(text = '') {
+  return String(text)
+    // eslint-disable-next-line no-control-regex -- intentionally stripping control characters from uploaded chat text
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
+    .replace(/\u200E|\u200F|\u202A|\u202B|\u202C|\u202D|\u202E/g, '')
+    .replace(/[^\S\r\n]+/g, ' ')
+    .trim();
+}
+
 export function cleanConversationLine(text = '') {
   const cleaned = removeEmojiAndControlNoise(text)
     .replace(/\u200E|\u200F|\u202A|\u202B|\u202C|\u202D|\u202E/g, '')

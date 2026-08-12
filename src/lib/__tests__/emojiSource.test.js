@@ -5,6 +5,7 @@ import {
   isEmojiCluster,
   messageBodiesFor,
 } from '../conversationMetrics.js';
+import { prepareConversationForAnalysis } from '../conversationPreprocessor.js';
 
 // The bug this file exists for: WhatsApp repeats the sender on every line, and
 // people put an emoji in their display name. Counting the raw export made that
@@ -90,5 +91,42 @@ describe('emoji cluster detection', () => {
   it('counts a flag through the full usage path', () => {
     const usage = computeEmojiUsage('proud 🇮🇳 today ™ ™ ™');
     expect(usage.map((entry) => entry.emoji)).toEqual(['🇮🇳']);
+  });
+});
+
+describe('emoji survive the preparation pipeline', () => {
+  // The regression this file exists for the second time: the preprocessor
+  // cleaned the WHOLE file before parsing, which stripped every emoji, so the
+  // `rawBody` that emoji counting reads had none left in it and Top Emojis
+  // came back empty on every real report.
+  const EXPORT = [
+    '[18/05/2022, 15:40:41] Surya 🚀: bro 😂😂 kya scene hai',
+    '[18/05/2022, 15:41:02] Bittu: haha 😂 sahi hai',
+    '[18/05/2022, 15:42:11] Surya 🚀: chal ❤️ milte hain',
+    '[18/05/2022, 15:43:00] Bittu: theek hai 👍',
+  ].join('\n');
+
+  it('keeps emoji on the parsed message bodies', () => {
+    const prepared = prepareConversationForAnalysis(EXPORT, { platform: 'WhatsApp' });
+    const bodies = prepared.parsedMessages.map((message) => message.rawBody).join(' ');
+    expect(bodies).toContain('😂');
+    expect(bodies).toContain('❤️');
+  });
+
+  it('still strips emoji from the text handed to the AI', () => {
+    const prepared = prepareConversationForAnalysis(EXPORT, { platform: 'WhatsApp' });
+    const forAi = prepared.parsedMessages.map((message) => message.message).join(' ');
+    expect(forAi).not.toContain('😂');
+    expect(forAi).toContain('kya scene hai');
+  });
+
+  it('produces a real Top Emojis list, without the sender-name emoji', () => {
+    const prepared = prepareConversationForAnalysis(EXPORT, { platform: 'WhatsApp' });
+    const emojis = prepared.localMetrics.emojis;
+    expect(emojis.length).toBeGreaterThan(0);
+    expect(emojis[0].emoji).toBe('😂');
+    expect(emojis[0].count).toBe(3);
+    // 🚀 lives only in the display name and must not be counted.
+    expect(emojis.map((entry) => entry.emoji)).not.toContain('🚀');
   });
 });

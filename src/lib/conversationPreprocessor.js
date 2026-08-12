@@ -1,5 +1,5 @@
 import { detectConversationLanguageProfile } from './languageDetection.js';
-import { buildAnalysisPipeline, cleanConversationLine, isConversationNoise } from './analysisPipeline.js';
+import { buildAnalysisPipeline, cleanConversationLine, isConversationNoise, stripInvisibleNoise } from './analysisPipeline.js';
 import { computeLocalMetrics } from './conversationMetrics.js';
 
 const emotionalKeywords = [
@@ -421,10 +421,20 @@ function compress(messages, importantMoments) {
 }
 
 export function prepareConversationForAnalysis(rawText = '', options = {}) {
+  // `stripInvisibleNoise`, NOT `cleanConversationLine`.
+  //
+  // This was the emoji bug. Cleaning the whole file here stripped every emoji
+  // BEFORE parsing, so `rawBody` — the field emoji counting and the warmth
+  // signal both read — was captured from text that had none left in it. Top
+  // Emojis came back empty on every report with emoji in it.
+  //
+  // The parser still runs cleanConversationLine() on each message body, so the
+  // text handed to the AI is byte-for-byte what it was; only the copy kept for
+  // local counting changes.
   const cleanRaw = String(rawText)
     .replace(/<\/?UNTRUSTED_CHAT_DATA>/g, '')
     .split(/\r?\n/)
-    .map((line) => cleanConversationLine(line))
+    .map((line) => stripInvisibleNoise(line))
     .filter((line) => line && !isConversationNoise(line))
     .join('\n')
     .trim();

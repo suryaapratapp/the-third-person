@@ -1,0 +1,51 @@
+<!-- Supabase → Authentication → Emails → Confirm signup.
+     Inline styles only: every mail client strips <style> blocks, and none
+     support CSS variables, so the theme tokens cannot be used here.
+     Leave {{ .ConfirmationURL }} exactly as written — Supabase substitutes it. -->
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+       style="background:#eef0f4;margin:0;padding:32px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+             style="max-width:480px;background:#ffffff;border:1px solid #d9dce4;border-radius:10px;">
+        <tr>
+          <td style="padding:32px 28px 8px;">
+            <p style="margin:0;font-size:14px;font-weight:600;color:#585e6d;">ThirdPerson AI</p>
+            <h1 style="margin:12px 0 0;font-size:26px;line-height:1.25;font-weight:660;color:#0d1017;letter-spacing:-0.02em;">
+              Confirm your email
+            </h1>
+            <p style="margin:14px 0 0;font-size:15px;line-height:1.6;color:#383d49;">
+              Tap the button and you are in. The link signs you in on this
+              device, so there is nothing else to remember.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 28px 8px;">
+            <!-- A real <a>, not a button: Outlook does not render button
+                 elements reliably and the click target must never fail. -->
+            <a href="{{ .ConfirmationURL }}"
+               style="display:block;background:#4338ca;color:#ffffff;text-decoration:none;text-align:center;font-size:15px;font-weight:600;padding:14px 20px;border-radius:8px;">
+              Confirm my email
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 28px 28px;">
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#585e6d;">
+              Button not working? Paste this into your browser:
+            </p>
+            <p style="margin:8px 0 0;font-size:12px;line-height:1.5;word-break:break-all;">
+              <a href="{{ .ConfirmationURL }}" style="color:#4338ca;">{{ .ConfirmationURL }}</a>
+            </p>
+            <p style="margin:20px 0 0;padding-top:16px;border-top:1px solid #e5e5ea;font-size:12px;line-height:1.6;color:#6e6e7a;">
+              If you did not create a ThirdPerson AI account, ignore this email
+              and nothing happens. Your conversations stay private — we never
+              sell your data or use it to train AI models.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
