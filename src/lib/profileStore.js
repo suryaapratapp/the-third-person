@@ -33,3 +33,37 @@ export function getInitials(profile = {}) {
   const last = profile.lastName?.trim()?.[0] || '';
   return `${first}${last}`.toUpperCase() || 'TP';
 }
+
+// Fields the analysis genuinely uses, and the reason each one is required.
+//
+// This is not a data grab. Every field here changes the output:
+//   firstName/lastName  — identifies which participant is the reader, which
+//                         drives every "you" in the report
+//   genderIdentity      — how the coach and report refer to the reader
+//   dateOfBirth         — the zodiac layer, and nothing else
+//   languages           — whether a Hinglish chat is read as Hinglish
+//
+// `preferredLanguageTone` and phone/photo are deliberately NOT required: the
+// first has a sensible default and the others change nothing about the report.
+export const REQUIRED_PROFILE_FIELDS = [
+  { key: 'firstName', label: 'First name' },
+  { key: 'lastName', label: 'Last name' },
+  { key: 'genderIdentity', label: 'Gender' },
+  { key: 'dateOfBirth', label: 'Date of birth' },
+  { key: 'preferredAnalysisLanguages', label: 'Languages you chat in' },
+];
+
+export function missingProfileFields(profile = {}) {
+  return REQUIRED_PROFILE_FIELDS.filter(({ key }) => {
+    const value = profile[key];
+    if (Array.isArray(value)) return value.length === 0;
+    // "Prefer not to say" is the stored default, so it cannot count as an
+    // answer — otherwise everyone is silently "complete" on day one.
+    if (key === 'genderIdentity') return !value || value === 'Prefer not to say';
+    return !String(value || '').trim();
+  });
+}
+
+export function isProfileComplete(profile = {}) {
+  return missingProfileFields(profile).length === 0;
+}

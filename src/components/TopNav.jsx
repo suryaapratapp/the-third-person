@@ -169,6 +169,19 @@ export default function TopNav() {
             Vision
           </button>
 
+          {/* The one thing the whole product is building towards, so it earns a
+              spot in the nav — with the tag making it unmissable that it does
+              not exist yet. Nobody should click this and expect to match. */}
+          <button
+            onClick={() => menuNavigate('/#kindred')}
+            className="flex items-center gap-1.5 text-xs text-smoke transition hover:text-bone"
+          >
+            Kindred
+            <span className="rounded-full bg-you/15 px-1.5 py-0.5 text-[0.6rem] font-semibold text-you">
+              Soon
+            </span>
+          </button>
+
           <button
             onClick={() => menuNavigate('/blog')}
             className=" text-xs text-smoke transition hover:text-bone"

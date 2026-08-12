@@ -1,9 +1,25 @@
+import { useEffect } from 'react';
+import { getUserProfile, isProfileComplete } from '../lib/profileStore.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
 export default function ProtectedRoute({ children }) {
   const { isConfigured, loading, user } = useAuth();
   const { path, navigate } = useRouter();
+
+  // A signed-in account with no profile gets sent to fill one in.
+  //
+  // Not cosmetic: without a name we cannot tell which participant in an export
+  // is the reader, so every "you" in the report is a guess. Without languages
+  // a Hinglish chat is read as broken English. The analysis is materially
+  // worse, and the person paying for it has no way to know why.
+  //
+  // /profile itself is exempt, or this loops forever.
+  const needsProfile = Boolean(user) && path !== '/profile' && !isProfileComplete(getUserProfile());
+
+  useEffect(() => {
+    if (needsProfile) navigate('/profile?setup=1');
+  }, [needsProfile, navigate]);
 
   if (!isConfigured) {
     return (
@@ -49,6 +65,8 @@ export default function ProtectedRoute({ children }) {
       </section>
     );
   }
+
+  if (needsProfile) return null;
 
   return children;
 }

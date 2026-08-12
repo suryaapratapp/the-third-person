@@ -27,7 +27,7 @@ const STEPS = [
   },
   {
     step: '04',
-    title: 'Then we match people on that',
+    title: 'Kindred — then we match people on that',
     body: 'A friendship and dating layer where compatibility comes from how two people actually communicate — not from a bio they wrote about themselves.',
     upcoming: true,
   },
@@ -35,7 +35,9 @@ const STEPS = [
 
 export default function MissionSection() {
   return (
-    <section className="accent-panel relative overflow-hidden p-5 sm:p-9">
+    // `scroll-mt` clears the fixed header — without it an anchor jump puts the
+    // heading underneath the nav bar, which reads as landing in the wrong place.
+    <section id="kindred" className="accent-panel relative scroll-mt-24 overflow-hidden p-5 sm:p-9">
 
       <div className="relative">
         <p className="tech-label text-signal">Where this is going</p>

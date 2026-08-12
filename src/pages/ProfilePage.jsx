@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { emptyProfile, getInitials, getUserProfile, saveUserProfile } from '../lib/profileStore.js';
+import { emptyProfile, getInitials, getUserProfile, saveUserProfile, missingProfileFields } from '../lib/profileStore.js';
 import { deleteAllMyAnalysisData, fetchRemoteProfile, remoteProfileToLocal, upsertRemoteProfile } from '../lib/supabaseDataService.js';
 import { getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
 import { useAuth } from '../state/AuthContext.jsx';
@@ -33,6 +33,10 @@ export default function ProfilePage() {
   const [wiping, setWiping] = useState(false);
   const [wipeResult, setWipeResult] = useState('');
   const zodiac = useMemo(() => getZodiacSign(profile.dateOfBirth), [profile.dateOfBirth]);
+  const missing = useMemo(() => missingProfileFields(profile), [profile]);
+  // Set by the email-confirmation redirect, so a first-time arrival gets a
+  // welcome rather than a scolding about missing fields.
+  const isSetup = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('setup') === '1';
 
   useEffect(() => {
     let mounted = true;
@@ -110,6 +114,40 @@ export default function ProfilePage() {
   return (
     <section className="relative min-h-screen overflow-hidden px-4 pb-16 pt-28 sm:px-8">
       <div className="relative mx-auto max-w-5xl">
+        {/* Shown until the required fields are answered. Every line names what
+            the field actually changes — "we need your data" earns nothing, and
+            a form nobody understands is a form nobody finishes honestly. */}
+        {missing.length > 0 && (
+          <div className="mb-5 rounded-lg border border-signal bg-accentWash p-5 sm:p-6">
+            <p className="text-xs font-semibold text-signalStrong">
+              {isSetup ? 'Email confirmed — one last step' : 'Finish your profile'}
+            </p>
+            <h2 className="serif-title mt-2 text-2xl leading-tight sm:text-3xl">
+              {isSetup ? 'Welcome. Tell us who you are.' : 'A few details are missing.'}
+            </h2>
+            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-smoke">
+              These are the details the analysis actually uses. Without a name we
+              cannot tell which person in your chat is you, and every “you” in the
+              report becomes a guess. Without your languages, a Hinglish chat gets
+              read as broken English.
+            </p>
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {missing.map((field) => (
+                <li
+                  key={field.key}
+                  className="rounded-md border border-signal/40 bg-paper px-2.5 py-1 text-xs font-medium text-signalStrong"
+                >
+                  {field.label}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-xs leading-5 text-ash">
+              Nothing here is shared with anyone. Your date of birth is used only
+              for the zodiac layer.
+            </p>
+          </div>
+        )}
+
         <div className="accent-panel p-6 sm:p-10">
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div>

@@ -57,7 +57,11 @@ export default function AuthPage() {
           password,
           options: {
             ...(captchaRequired ? { captchaToken } : {}),
-            emailRedirectTo: `${window.location.origin}${nextPath()}`,
+            // New accounts land on the profile, not back where they started: the
+            // report needs a name, a birthday and a language list to be any good,
+            // and asking at the moment of arrival is the only time anyone fills
+            // one in.
+            emailRedirectTo: `${window.location.origin}/profile?setup=1`,
           },
         })
       : supabase.auth.signInWithPassword({
@@ -98,7 +102,7 @@ export default function AuthPage() {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: awaitingConfirmation,
-      options: { emailRedirectTo: `${window.location.origin}${nextPath()}` },
+      options: { emailRedirectTo: `${window.location.origin}/profile?setup=1` },
     });
     setResending(false);
     setMessage(error
