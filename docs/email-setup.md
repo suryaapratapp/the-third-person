@@ -10,36 +10,76 @@ app already handles the confirmed and unconfirmed cases (see `AuthPage.jsx`).
 
 ---
 
-## 1. Brevo account and sender domain
+## 0. What is already on this domain
 
-1. Create the account at brevo.com.
-2. **Senders, Domains & Dedicated IPs → Domains → Add a domain**:
-   `thethirdperson.ai`
-3. Brevo shows three DNS records. Add all three at your DNS host:
+Checked live, and both of these change what you must do:
 
-   | Type | Host | Value |
-   |---|---|---|
-   | TXT | `brevo-code` (or as shown) | the verification string Brevo gives you |
-   | TXT | `mail._domainkey` | the DKIM key Brevo gives you |
-   | TXT | `@` | `v=spf1 include:spf.brevo.com mx ~all` |
+```
+NS      ns09/ns10.domaincontrol.com          → DNS is at GoDaddy
+TXT @   v=spf1 include:secureserver.net -all → SPF ALREADY EXISTS, hard-fail
+TXT     _dmarc → v=DMARC1; p=quarantine       → DMARC is already ENFORCING
+MX      secureserver.net                      → you receive mail here; do not touch MX
+```
 
-   If an SPF record already exists on `@`, **merge** it — do not add a second
-   one. Two SPF records is the same as none, and it is the most common reason
-   mail starts landing in spam after a provider change.
+**The existing SPF ends in `-all`.** That is a hard fail: any server not on
+that list is told to reject outright. Add Brevo as a second SPF record and
+nothing improves — two SPF records is an invalid config that behaves like
+none. The record has to be *edited*, not added.
 
-4. Add a DMARC record. Brevo does not require it; inbox providers increasingly
-   do, and without it a new sending domain is treated with suspicion:
+**DMARC is already `p=quarantine`, not `p=none`.** Mail that fails alignment
+goes to spam today, not after some future tightening. So DKIM has to be right
+before you enable confirmation, not after. The upside: `aspf=r` and `adkim=r`
+are relaxed alignment, which is the forgiving setting.
 
-   | Type | Host | Value |
-   |---|---|---|
-   | TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:dmarc@thethirdperson.ai;` |
+---
 
-   `p=none` is monitor-only, which is the correct place to start. Tighten to
-   `quarantine` after a couple of weeks of clean reports.
+## 1. Add the domain in Brevo
 
-5. Wait for Brevo to show the domain as verified. DNS can take up to an hour.
+**Senders, Domains & Dedicated IPs → Domains → Add a domain:**
+`thethirdperson.ai`
 
-## 2. SMTP credentials
+Brevo will show you a DKIM record and a verification record. Keep that tab
+open — you need the exact values.
+
+## 2. Edit DNS at GoDaddy
+
+GoDaddy: **My Products → Domains → thethirdperson.ai → DNS → Manage Zones.**
+
+**a. EDIT the existing SPF record.** Find the TXT record on `@` whose value
+starts `v=spf1`. Change it to:
+
+```
+v=spf1 include:secureserver.net include:spf.brevo.com -all
+```
+
+Keep `include:secureserver.net` — removing it breaks the mail you already
+receive and send through GoDaddy. Keep `-all`. Do **not** create a second
+`v=spf1` record.
+
+**b. ADD the DKIM record** exactly as Brevo shows it. It will be a TXT record
+on a host like `mail._domainkey` or `brevo._domainkey`. Copy the value
+verbatim — DKIM keys are long and a truncated one fails silently.
+
+**c. ADD Brevo's verification TXT** if it gives you one.
+
+**d. Leave MX alone.** Brevo sends only; your inbound mail stays at GoDaddy.
+
+GoDaddy TTL defaults to 1 hour, so allow that before expecting verification.
+
+## 3. Confirm it actually resolves
+
+Before touching Supabase:
+
+```bash
+dig +short TXT thethirdperson.ai | grep spf1
+dig +short TXT mail._domainkey.thethirdperson.ai
+```
+
+The first must show **one** record containing both `secureserver.net` and
+`spf.brevo.com`. The second must return the DKIM key. If either is wrong, stop
+here — every step after this depends on them.
+
+## 4. SMTP credentials
 
 **Brevo → SMTP & API → SMTP tab.** You need:
 
@@ -49,7 +89,7 @@ app already handles the confirmed and unconfirmed cases (see `AuthPage.jsx`).
   account email)
 - Password: the SMTP key — generate one, and treat it as a secret
 
-## 3. Point Supabase at it
+## 5. Point Supabase at it
 
 **Supabase Dashboard → Project Settings → Authentication → SMTP Settings.**
 
@@ -61,7 +101,7 @@ app already handles the confirmed and unconfirmed cases (see `AuthPage.jsx`).
 The sender address must be on the domain verified in step 1, or Brevo rejects
 the message.
 
-## 4. Turn confirmation on
+## 6. Turn confirmation on
 
 **Authentication → Providers → Email → Confirm email: ON.**
 
@@ -74,7 +114,7 @@ The app passes `emailRedirectTo` on sign-up, but Supabase only honours a
 redirect that matches this allowlist. Miss this and every confirmation link
 bounces the user to the Site URL root instead of back where they were.
 
-## 5. Templates
+## 7. Templates
 
 **Authentication → Emails → Templates.** Paste the files in `docs/email/` into
 the matching template. They are plain HTML with inline styles, because every
@@ -82,7 +122,7 @@ email client strips `<style>` blocks and none of them support CSS variables.
 
 Supabase substitutes `{{ .ConfirmationURL }}` — leave it exactly as written.
 
-## 6. Verify before announcing
+## 8. Verify before announcing
 
 1. Sign up with a real address on a domain you do not control (Gmail, Outlook).
 2. Confirm it arrives **in the inbox, not spam**.
