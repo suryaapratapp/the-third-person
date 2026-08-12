@@ -125,13 +125,13 @@ export default function PricingPage() {
             <span className="neon-chip">₹{PRICE_PER_REPORT} each</span>
           </div>
 
-          <div className="mt-5 flex items-center justify-center gap-4">
+          <div className="mt-5 flex items-center justify-center gap-3">
             <button
               type="button"
               onClick={() => updateReports(reportCount - 1)}
               disabled={reportCount <= MIN_REPORTS}
               aria-label="Decrease reports"
-              className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-line bg-paper text-bone transition hover:border-signal/35 disabled:opacity-35"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-line bg-paper text-ink transition hover:border-signal disabled:opacity-35"
             >
               <PiMinus />
             </button>
@@ -143,17 +143,17 @@ export default function PricingPage() {
               value={reportCount}
               onChange={(event) => updateReports(event.target.value)}
               aria-label="Number of reports"
-              /* Not `serif-title`: Cormorant's lining "1" is nearly identical
-                 to a capital I at this size, which is a bad look on the field
-                 that decides what someone pays. */
-              className="h-16 w-28 rounded-sm border border-signal/35 bg-well text-center text-4xl font-light text-bone outline-none focus:border-signal/35"
+              /* Sized to sit level with its own +/- buttons. At 64px tall and
+                 36px type it was larger than the page heading, for a number
+                 that is 1 on almost every purchase. */
+              className="h-11 w-20 rounded-lg border border-line bg-well text-center text-xl font-semibold text-ink outline-none focus:border-signal"
             />
             <button
               type="button"
               onClick={() => updateReports(reportCount + 1)}
               disabled={reportCount >= MAX_REPORTS}
               aria-label="Increase reports"
-              className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-line bg-paper text-bone transition hover:border-signal/35 disabled:opacity-35"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-line bg-paper text-ink transition hover:border-signal disabled:opacity-35"
             >
               <PiPlus />
             </button>
