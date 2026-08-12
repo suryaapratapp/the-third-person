@@ -21,12 +21,60 @@ const tensionSignals = [
   'mat karo', 'kyun', 'kyu', 'nahi baat', 'stop',
 ];
 
+// Words that survive a frequency count but carry no signal about a person.
+//
+// Three groups, and the second and third are what the old 52-word list missed:
+//
+//   1. English function words — articles, pronouns, conjunctions.
+//   2. Small common VERBS and auxiliaries. "send", "call", "come", "know",
+//      "want" topped almost every cloud and told you nothing; they are how
+//      anyone arranges anything.
+//   3. Hinglish/Hindi filler at the same scale — "hai", "kar", "kya", "toh",
+//      "abhi", "wala" — plus the chat-speak that is pure acknowledgement:
+//      "okk", "haa", "hmm", "yeah", "theek". Written in Latin script because
+//      that is how these chats are actually typed.
+//
+// Deliberately NOT filtered: swearing and affectionate insults. They are noise
+// in a corpus and signal in a relationship — "bsdk" appearing 400 times is a
+// real fact about how two people talk to each other.
 const stopWords = new Set([
+  // --- English function words ---
   'the', 'and', 'you', 'that', 'for', 'with', 'this', 'just', 'are', 'was', 'have',
   'not', 'but', 'what', 'your', 'from', 'like', 'they', 'will', 'can', 'about',
   'were', 'when', 'then', 'been', 'there', 'here', 'really', 'because', 'would',
-  'could', 'should', 'into', 'dont', 'didnt', 'cant', 'im', 'ive', 'its', 'youre',
-  'hai', 'haan', 'nahi', 'kya', 'aur', 'bhi', 'tha', 'thi', 'the', 'mera', 'meri',
+  'could', 'should', 'into', 'dont', 'didnt', 'cant', 'wont', 'isnt', 'thats',
+  'im', 'ive', 'its', 'youre', 'hes', 'shes', 'theyre', 'weve', 'lets', 'weve',
+  'all', 'any', 'one', 'two', 'now', 'out', 'off', 'own', 'too', 'very', 'some',
+  'such', 'than', 'them', 'these', 'those', 'their', 'other', 'also', 'still',
+  'even', 'ever', 'much', 'more', 'most', 'both', 'each', 'only', 'who', 'why',
+  'how', 'where', 'which', 'while', 'after', 'before', 'again', 'back', 'over',
+  'under', 'down', 'upon', 'through', 'between', 'been', 'being', 'having',
+  // --- small common verbs and auxiliaries ---
+  'get', 'got', 'getting', 'give', 'gave', 'take', 'took', 'make', 'made', 'come',
+  'came', 'coming', 'goes', 'going', 'went', 'gone', 'send', 'sent', 'sending',
+  'call', 'called', 'calling', 'tell', 'told', 'said', 'say', 'says', 'saying',
+  'know', 'knew', 'think', 'thought', 'want', 'wanted', 'need', 'needed', 'see',
+  'saw', 'seen', 'look', 'looking', 'let', 'put', 'keep', 'kept', 'find', 'found',
+  'ask', 'asked', 'try', 'tried', 'use', 'used', 'done', 'doing', 'does', 'did',
+  'will', 'shall', 'may', 'might', 'must', 'has', 'had', 'having', 'work',
+  'wait', 'waiting', 'talk', 'talking', 'meet', 'meeting', 'reach', 'reached',
+  // --- Hinglish / Hindi filler at the same scale ---
+  'hai', 'hain', 'haan', 'haa', 'haaa', 'nahi', 'nhi', 'nahin', 'kya', 'aur',
+  'bhi', 'tha', 'thi', 'the', 'mera', 'meri', 'mere', 'tera', 'teri', 'tere',
+  'apna', 'apne', 'apni', 'uska', 'uske', 'iska', 'iske', 'yeh', 'yah', 'woh',
+  'wo', 'kar', 'karo', 'karna', 'karne', 'karta', 'karti', 'krna', 'kro', 'kre',
+  'krio', 'raha', 'rahi', 'rahe', 'rha', 'rhi', 'hoga', 'hogi', 'hogya', 'hogyi',
+  'hua', 'hui', 'huaa', 'gaya', 'gayi', 'gya', 'gyi', 'toh', 'tho', 'abhi',
+  'phir', 'fir', 'bas', 'bus', 'sab', 'kuch', 'koi', 'kisi', 'jab', 'tab', 'tak',
+  'par', 'pe', 'pr', 'wala', 'wale', 'wali', 'waala', 'waale', 'liye', 'lie',
+  'kaise', 'kaisa', 'kahan', 'kaha', 'kab', 'kyu', 'kyun', 'kyunki', 'matlab',
+  'lekin', 'agar', 'jaise', 'bhej', 'bhejo', 'dena', 'dedo', 'lena', 'lelo',
+  'mujhe', 'tujhe', 'humko', 'hume', 'hum', 'mai', 'main', 'tum', 'aap', 'aapko',
+  // --- pure acknowledgement chat-speak ---
+  'ok', 'okk', 'okkk', 'okay', 'okayy', 'okie', 'yes', 'yeah', 'yep', 'yup',
+  'hmm', 'hmmm', 'hm', 'theek', 'thik', 'theeek', 'acha', 'accha', 'achaa',
+  'arey', 'are', 'abey', 'abe', 'bhai', 'bro', 'yaar', 'yr', 'sure', 'fine',
+  'good', 'nice', 'thanks', 'thank', 'thx', 'welcome', 'please', 'sorry',
 ]);
 
 function normalizeYear(year) {

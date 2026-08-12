@@ -684,62 +684,34 @@ select:focus-visible,
 .accent-text { color: var(--accent-ink); }
 .decorative-label { color: var(--muted); }
 
-/* The floating coach orb on a report. The only glow in the product, and
-   it earns it: on the deep theme a flat button in the corner of a dark
-   page is invisible, and this is the one control we actively want
-   people to find. It breathes rather than pulses — a hard blink in the
-   corner of something you are reading is an irritant. */
+/* The floating coach on a report.
+ *
+ * No ring and no plate: a circle drawn around a character makes it read
+ * as an avatar in a list rather than as something to press. Depth comes
+ * from a soft glow BEHIND the bot instead, which on the deep theme is
+ * the only thing that keeps it findable against a dark page.
+ *
+ * It breathes rather than blinks — a hard pulse in the corner of
+ * something you are reading is an irritant. */
+.coach-float {
+  filter: drop-shadow(0 6px 18px rgb(var(--accent-rgb) / 0.45));
+  animation: coachBreathe 3.8s ease-in-out infinite;
+}
+
+.coach-float:hover {
+  filter: drop-shadow(0 8px 26px rgb(var(--accent-rgb) / 0.65));
+}
+
+@keyframes coachBreathe {
+  0%, 100% { filter: drop-shadow(0 6px 16px rgb(var(--accent-rgb) / 0.35)); }
+  50% { filter: drop-shadow(0 8px 26px rgb(var(--accent-rgb) / 0.6)); }
+}
+
+/* Still used by the coach dialog header and the progress screen, where a
+   contained plate IS the right read. */
 .coach-orb {
   background: radial-gradient(circle at 50% 42%, rgb(var(--accent-rgb) / 0.34), rgb(var(--accent-rgb) / 0.1) 62%, transparent 74%);
   box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.34), 0 10px 30px rgb(var(--accent-rgb) / 0.32);
-  animation: coachGlow 3.6s ease-in-out infinite;
-}
-
-.coach-orb:hover {
-  box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.55), 0 14px 40px rgb(var(--accent-rgb) / 0.45);
-}
-
-@keyframes coachGlow {
-  0%, 100% { box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.3), 0 10px 26px rgb(var(--accent-rgb) / 0.26); }
-  50% { box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.5), 0 14px 40px rgb(var(--accent-rgb) / 0.46); }
-}
-
-/* -------------------------------------------------------------------- *
- * Analysis progress
- * The one screen people stare at, so it gets the one animated gradient
- * in the product. Both animations stop under prefers-reduced-motion via
- * the global rule at the end of this file.
- * -------------------------------------------------------------------- */
-.progress-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgb(var(--you-rgb)),
-    rgb(var(--accent-rgb)),
-    rgb(var(--them-rgb)),
-    rgb(var(--accent-rgb)),
-    rgb(var(--you-rgb))
-  );
-  background-size: 300% 100%;
-  animation: progressSlide 2.6s linear infinite;
-}
-
-@keyframes progressSlide {
-  from { background-position: 0% 50%; }
-  to { background-position: -300% 50%; }
-}
-
-/* Three dots that fill and clear. `content` rather than three elements so
-   the markup for a purely decorative tick stays a single span. */
-.loading-dots::after {
-  content: '·';
-  animation: loadingDots 1.4s steps(4, end) infinite;
-}
-
-@keyframes loadingDots {
-  0% { content: '·'; }
-  25% { content: '··'; }
-  50% { content: '···'; }
-  75% { content: '··'; }
 }
 
 /* -------------------------------------------------------------------- *

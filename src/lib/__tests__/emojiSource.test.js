@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { computeEmojiUsage, computeLocalMetrics, messageBodiesFor } from '../conversationMetrics.js';
+import {
+  computeEmojiUsage,
+  computeLocalMetrics,
+  isEmojiCluster,
+  messageBodiesFor,
+} from '../conversationMetrics.js';
 
 // The bug this file exists for: WhatsApp repeats the sender on every line, and
 // people put an emoji in their display name. Counting the raw export made that
@@ -50,5 +55,40 @@ describe('emoji counting source', () => {
   it('wires the body-only source through computeLocalMetrics', () => {
     const metrics = computeLocalMetrics({ messages: PARSED, rawText: RAW_EXPORT });
     expect(metrics.emojis.map((entry) => entry.emoji)).not.toContain('🚀');
+  });
+});
+
+describe('emoji cluster detection', () => {
+  it('rejects trademark and copyright symbols', () => {
+    // These are Extended_Pictographic but are typed as punctuation. They were
+    // beating real emoji to the top of the list on forwarded messages.
+    expect(isEmojiCluster('™')).toBe(false);
+    expect(isEmojiCluster('©')).toBe(false);
+    expect(isEmojiCluster('®')).toBe(false);
+  });
+
+  it('accepts country flags, which are regional-indicator pairs', () => {
+    expect(isEmojiCluster('🇮🇳')).toBe(true);
+  });
+
+  it('accepts keycaps, whose base is an ASCII digit', () => {
+    expect(isEmojiCluster('1️⃣')).toBe(true);
+  });
+
+  it('accepts hearts, skin tones and ZWJ families as single clusters', () => {
+    expect(isEmojiCluster('❤️')).toBe(true);
+    expect(isEmojiCluster('👍🏽')).toBe(true);
+    expect(isEmojiCluster('👨‍👩‍👧‍👦')).toBe(true);
+  });
+
+  it('keeps plain text out', () => {
+    expect(isEmojiCluster('a')).toBe(false);
+    expect(isEmojiCluster(' ')).toBe(false);
+    expect(isEmojiCluster('')).toBe(false);
+  });
+
+  it('counts a flag through the full usage path', () => {
+    const usage = computeEmojiUsage('proud 🇮🇳 today ™ ™ ™');
+    expect(usage.map((entry) => entry.emoji)).toEqual(['🇮🇳']);
   });
 });

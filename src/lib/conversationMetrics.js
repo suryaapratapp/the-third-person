@@ -46,6 +46,41 @@ export function formatDuration(minutes) {
 // the file and that rocket appears once per message that person ever sent, so
 // it wins "most used emoji" by a mile while saying nothing about the
 // conversation. `messageBodiesFor()` hands this only what was actually typed.
+// Symbols that are Extended_Pictographic but are typed as punctuation, not as
+// emoji. These were the visible bug: ™, © and ® appear in forwarded messages
+// and shop names constantly, and they were beating real emoji to the top of
+// the list.
+const TEXT_ONLY_SYMBOLS = new Set([0x2122, 0x00a9, 0x00ae, 0x2139]);
+
+const REGIONAL_A = 0x1f1e6;
+const REGIONAL_Z = 0x1f1ff;
+const KEYCAP = 0x20e3;
+const VARIATION_EMOJI = 0xfe0f;
+
+// `\p{Extended_Pictographic}` alone is both too broad and too narrow.
+//
+// Too broad: it matches ™ © ® and a pile of dingbat arrows that default to a
+// TEXT presentation and that nobody thinks of as emoji.
+//
+// Too narrow: country flags are pairs of regional indicators and keycaps are
+// an ASCII digit plus U+20E3 — neither carries the property on its base
+// character, so both were being dropped entirely. Every 🇮🇳 in an Indian
+// user's chat was invisible to this.
+export function isEmojiCluster(segment) {
+  if (!segment) return false;
+  const points = [...segment].map((character) => character.codePointAt(0));
+  if (TEXT_ONLY_SYMBOLS.has(points[0])) return false;
+  // Flag: exactly two regional indicators.
+  if (points.length === 2 && points.every((point) => point >= REGIONAL_A && point <= REGIONAL_Z)) return true;
+  if (points.includes(KEYCAP)) return true;
+  // An explicit emoji variation selector is the author saying "render this as
+  // an emoji", which is exactly what ❤️ needs.
+  if (points.includes(VARIATION_EMOJI)) return true;
+  // Otherwise the base must default to emoji presentation. This is the test
+  // that excludes the text-presentation dingbats.
+  return /\p{Emoji_Presentation}/u.test(segment);
+}
+
 export function computeEmojiUsage(rawText = '', limit = 9) {
   const text = String(rawText || '');
   if (!text) return [];
@@ -62,11 +97,11 @@ export function computeEmojiUsage(rawText = '', limit = 9) {
   if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
     const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
     for (const { segment } of segmenter.segment(text)) {
-      if (/\p{Extended_Pictographic}/u.test(segment)) record(segment);
+      if (isEmojiCluster(segment)) record(segment);
     }
   } else {
     const matches = text.match(/\p{Extended_Pictographic}(️|‍\p{Extended_Pictographic}|[\u{1F3FB}-\u{1F3FF}])*/gu) || [];
-    matches.forEach(record);
+    matches.filter(isEmojiCluster).forEach(record);
   }
 
   const total = [...counts.values()].reduce((sum, count) => sum + count, 0);

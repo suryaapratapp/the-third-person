@@ -247,14 +247,20 @@ export default function CorePersonality({ cards = [] }) {
       {/* ALL FIFTEEN — opt-in, and shown one family at a time so a phone gets
           five rows rather than fifteen. */}
       <div className="relative mt-8 border-t border-line pt-6">
-        <button
-          type="button"
-          onClick={() => setShowAll((current) => !current)}
-          aria-expanded={showAll}
-          className="btn btn-ghost w-full text-xs sm:w-auto"
-        >
-          {showAll ? 'Hide all traits' : `See all ${view.length} traits`}
-        </button>
+        {/* Centred and solid. As a ghost button flush-left it read as a caption
+            rather than the control that opens the other twelve traits — the
+            single most-missed thing on the page. */}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShowAll((current) => !current)}
+            aria-expanded={showAll}
+            className="btn btn-primary w-full max-w-xs sm:w-auto sm:min-w-[16rem]"
+          >
+            {showAll ? 'Hide the full list' : `See all ${view.length} traits`}
+            <span aria-hidden="true" className={`transition-transform ${showAll ? 'rotate-180' : ''}`}>⌄</span>
+          </button>
+        </div>
 
         {showAll && (
           <div className="mt-5">
