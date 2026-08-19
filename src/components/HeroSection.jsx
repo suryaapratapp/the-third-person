@@ -1,4 +1,5 @@
 import { useRouter } from '../state/RouterContext.jsx';
+import { useAuth } from '../state/AuthContext.jsx';
 import { PiArrowRight, PiLockSimple } from 'react-icons/pi';
 import { SiImessage, SiInstagram, SiMessenger, SiSnapchat, SiTelegram, SiWhatsapp } from 'react-icons/si';
 
@@ -28,6 +29,8 @@ const messagingApps = [
 
 export default function HeroSection() {
   const { navigate } = useRouter();
+  const { user } = useAuth();
+  const signedOut = !user;
 
   return (
     <section className="relative border-b border-line px-4 pb-12 pt-20 sm:px-8 sm:pb-16 sm:pt-24">
@@ -46,11 +49,21 @@ export default function HeroSection() {
           changed over time, and what to do next — backed by quotes from the chat itself.
         </p>
 
+        {/* The offer, stated before the button rather than after it. A visitor
+            deciding whether to bother needs to know it costs nothing to try,
+            and "from ₹199" underneath was answering the opposite question. */}
+        {signedOut && (
+          <p className="mt-6 inline-flex items-center gap-2 rounded-full border border-good/40 bg-good/10 px-3.5 py-1.5 text-sm font-semibold text-good">
+            <span aria-hidden="true">✦</span>
+            Sign up and your first report is free
+          </p>
+        )}
+
         <button
-          onClick={() => navigate('/analysis/new')}
-          className="btn btn-primary mt-7 w-full max-w-xs"
+          onClick={() => navigate(signedOut ? '/auth?next=%2Fanalysis%2Fnew' : '/analysis/new')}
+          className="btn btn-primary mt-5 w-full max-w-xs"
         >
-          Analyse a chat
+          {signedOut ? 'Get my free report' : 'Analyse a chat'}
           <PiArrowRight className="text-base" aria-hidden="true" />
         </button>
 
@@ -58,7 +71,7 @@ export default function HeroSection() {
           <PiLockSimple className="text-good" aria-hidden="true" />
           <span>Private to your account</span>
           <span className="text-ash" aria-hidden="true">·</span>
-          <span>From ₹199 per report</span>
+          <span>{signedOut ? 'First report free' : 'From ₹199 per report'}</span>
           <span className="text-ash" aria-hidden="true">·</span>
           <button
             type="button"

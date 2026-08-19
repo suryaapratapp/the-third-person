@@ -21,10 +21,13 @@ const KINDS = {
     label: 'Music',
     Icon: PiMusicNotes,
     title: (item) => item.title,
-    subtitle: (item) => item.artist || '',
+    // No artist line. The model's attributions were wrong often enough that
+    // the field cost more trust than it added; a title alone still searches
+    // correctly on both services.
+    subtitle: () => '',
     links: (item) => [
-      ['Spotify', `https://open.spotify.com/search/${q(`${item.title} ${item.artist || ''}`)}`],
-      ['YouTube', `https://www.youtube.com/results?search_query=${q(`${item.title} ${item.artist || ''}`)}`],
+      ['Spotify', `https://open.spotify.com/search/${q(item.title)}`],
+      ['YouTube', `https://www.youtube.com/results?search_query=${q(`${item.title} song`)}`],
     ],
   },
   movies: {

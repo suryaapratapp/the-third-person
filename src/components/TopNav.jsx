@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { PiArrowRight, PiCaretDown, PiList, PiX } from 'react-icons/pi';
+import ReportBalance from './ReportBalance.jsx';
 import Logo from './Logo.jsx';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
@@ -215,6 +216,8 @@ export default function TopNav() {
           >
             {user ? 'Sign out' : 'Sign in'}
           </button>
+          <ReportBalance signedIn={signedIn} />
+
           <button
             onClick={() => navigate('/analysis/new')}
             className="btn btn-primary hidden whitespace-nowrap !px-4 !py-2 !text-sm md:inline-flex"

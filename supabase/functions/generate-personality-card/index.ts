@@ -147,7 +147,14 @@ Deno.serve(async (req: Request) => {
     // (credits_granted > 0) instead of remaining balance, and never actually
     // debited a credit — making generation free and unlimited forever after
     // a single past purchase.
-    const reservation = await reserveCredit(admin, user.id, 'relationship_report');
+    // Know Yourself has its own credit type, so the free welcome grant gives a
+    // new user a report AND the profile it feeds rather than one or the other.
+    // Its own free credit is spent first; after that it falls back to the
+    // shared paid report pool, which is how it has always been billed.
+    let reservation = await reserveCredit(admin, user.id, 'personality_card', true);
+    if (!reservation.allowed) {
+      reservation = await reserveCredit(admin, user.id, 'relationship_report');
+    }
     if (!reservation.allowed) {
       return jsonResponse({
         code: 'OUT_OF_CREDITS',

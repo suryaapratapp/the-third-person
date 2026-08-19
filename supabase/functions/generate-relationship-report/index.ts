@@ -762,9 +762,10 @@ async function openAiAnalysis(body: Record<string, any>) {
   // could be given to anyone is worse than no gift idea, so each carries the
   // reason it fits.
   const recommendationsFor = (who: string) => S.obj({
+    // No artist field. Attribution was wrong often enough that it cost more
+    // trust than it added, and a title alone still searches correctly.
     music: S.arr(S.obj({
-      title: S.str('Exact song title'),
-      artist: S.str('The artist who actually performs THIS song. If you are not certain the pairing is correct return an empty string — a wrong attribution is worse than none.'),
+      title: S.str('Exact song title, no artist name'),
       why: S.str('One line tying it to something they actually said or like'),
     }), `4 songs ${who} would plausibly love, in a language and genre their messages support`),
     movies: S.arr(S.obj({
@@ -994,7 +995,7 @@ async function openAiAnalysis(body: Record<string, any>) {
   // and folding them into the persona pass made that schema large enough that
   // the model started thinning both halves.
   const recommendationMessages = messagesForChatCompletions(promptFor(
-    'THIS REQUEST PRODUCES RECOMMENDATIONS ONLY. ACCURACY FIRST: only name a song, film or book you are genuinely confident exists, and only pair it with an artist or author you are confident is correct. A real song credited to the wrong singer is the most visibly wrong thing in the whole report — if you are unsure of the performer, leave the artist field empty and keep the title, or choose a different track you are sure of. Never invent a title. For EACH of the two people separately, suggest music, films or series, books, and gifts. Ground every single one in something the messages actually show about that person — the work they do, the things they complain about, what they find funny, where they live, what they are saving for, a hobby they mentioned. Match the language and culture of their own taste: if they quote Punjabi rap, recommend Punjabi rap, not a Billboard chart. A gift that could be given to any human being is a failed suggestion — the "why" must name the specific detail from the conversation that makes it land. Do not produce report narrative, flags, scores, or personality content here.',
+    'THIS REQUEST PRODUCES RECOMMENDATIONS ONLY. ACCURACY FIRST: only name a song, film or book you are genuinely confident exists, and only pair it with an artist or author you are confident is correct. Song titles only — do NOT name the artist anywhere, including inside the title or the reason. Never invent a title. For EACH of the two people separately, suggest music, films or series, books, and gifts. Ground every single one in something the messages actually show about that person — the work they do, the things they complain about, what they find funny, where they live, what they are saving for, a hobby they mentioned. Match the language and culture of their own taste: if they quote Punjabi rap, recommend Punjabi rap, not a Billboard chart. A gift that could be given to any human being is a failed suggestion — the "why" must name the specific detail from the conversation that makes it land. Do not produce report narrative, flags, scores, or personality content here.',
   ));
 
   const [reportCorePart, reportSignalsPart, personaPart, personPart, recommendationPart] = await Promise.all([

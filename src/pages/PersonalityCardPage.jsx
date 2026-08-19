@@ -310,7 +310,12 @@ export default function PersonalityCardPage() {
   // generation (there is no separate credit type for it), so gate on actual
   // remaining balance rather than "has ever bought any pack" — otherwise the
   // button reads as unlocked for someone who is fully out of credits.
-  const hasPaidAccess = Boolean(credits?.paidRelationshipReportsLeft > 0);
+  // Its own free credit counts, so a new account can see Know Yourself once
+  // without paying — that is the point of the free tier. After that it falls
+  // back to the paid report pool, as before.
+  const hasPaidAccess = Boolean(
+    credits?.personalityCardsLeft > 0 || credits?.paidRelationshipReportsLeft > 0,
+  );
 
   useEffect(() => {
     let mounted = true;

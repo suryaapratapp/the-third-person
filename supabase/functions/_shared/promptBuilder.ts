@@ -164,6 +164,16 @@ function parsedConversationSummary(parsed: Record<string, any> = {}) {
     // median reply times, double-texting, conversation enders, and how those
     // changed from the start of the chat to now. Supersedes the old raw
     // replyGaps/dayNight dumps and is far cheaper to send.
+    // Stated in plain words as well as dates, because reports kept describing
+    // a four-year chat as "decades of shared history". A date range alone
+    // leaves the model free to characterise the span; this does not.
+    conversationSpan: parsed.localMetrics?.milestones ? {
+      firstMessage: parsed.localMetrics.milestones.first?.label,
+      lastMessage: parsed.localMetrics.milestones.last?.label,
+      totalDays: parsed.localMetrics.milestones.spanDays,
+      totalYears: Math.round((parsed.localMetrics.milestones.spanDays / 365) * 10) / 10,
+      rule: 'NEVER describe the length of this relationship as anything other than what these numbers say. Do not write "decades", "a lifetime", "years and years" or any similar phrase unless the numbers support it exactly.',
+    } : undefined,
     measuredFacts: parsed.localMetrics ? {
       conversationsStarted: parsed.localMetrics.effort?.conversations,
       perPerson: parsed.localMetrics.effort?.people,

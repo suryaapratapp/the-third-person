@@ -3,6 +3,7 @@ import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 export const EMPTY_CREDIT_BALANCE = {
   relationshipReportsLeft: 0,
   bestieChatsLeft: 0,
+  personalityCardsLeft: 0,
   paidRelationshipReportsLeft: 0,
   paidBestieChatsLeft: 0,
   freeReportsLeft: 0,
@@ -33,9 +34,12 @@ export async function fetchCreditBalances() {
       if (isPaid && row.credit_type === 'relationship_report') acc.paidRelationshipReportsLeft += remaining;
       if (isPaid && row.credit_type === 'bestie_message') acc.paidBestieChatsLeft += remaining;
       if (isFree && row.credit_type === 'relationship_report') acc.freeReportsLeft += remaining;
+      // Know Yourself has its own type so the welcome grant can cover both it
+      // and a report without either eating the other's credit.
+      if (row.credit_type === 'personality_card') acc.personalityCardsLeft += remaining;
       return acc;
     },
-    { relationshipReportsLeft: 0, bestieChatsLeft: 0, paidRelationshipReportsLeft: 0, paidBestieChatsLeft: 0, freeReportsLeft: 0, hasPaidPack: false, hasClaimedFreeReport: false },
+    { relationshipReportsLeft: 0, bestieChatsLeft: 0, personalityCardsLeft: 0, paidRelationshipReportsLeft: 0, paidBestieChatsLeft: 0, freeReportsLeft: 0, hasPaidPack: false, hasClaimedFreeReport: false },
   );
 
   return { ...balances, loading: false, available: true };
