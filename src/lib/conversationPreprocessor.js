@@ -302,7 +302,6 @@ const URL_SHAPED = /\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+\.(?:com|net|org|in|c
 
 function countWords(messages, into = new Map()) {
   messages.forEach(({ message }) => {
-    // eslint-disable-next-line no-misleading-character-class -- Devanagari range is intentional for Hindi word detection
     // \p{L}\p{M} rather than an explicit Devanagari range: it covers every
     // script at once and keeps matras attached to their consonant, so "खुश"
     // stays one word instead of three.
