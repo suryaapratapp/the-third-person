@@ -533,7 +533,6 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
     dateRange: prepared.estimatedDateRange,
   });
   const keyMoments = list(analysis?.relationshipReport?.keyMoments);
-  const subtext = list(analysis?.relationshipReport?.readingBetweenTheLines);
   const wordsBySender = list(prepared.topWordsBySender);
   const recommendations = analysis?.recommendations || null;
   const effort = metrics.effort || null;
