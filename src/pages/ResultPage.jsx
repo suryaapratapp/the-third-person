@@ -9,6 +9,7 @@ import QuickStats from '../components/QuickStats.jsx';
 import RhythmHeatmap from '../components/RhythmHeatmap.jsx';
 import KeyMoments from '../components/KeyMoments.jsx';
 import WordCloud from '../components/WordCloud.jsx';
+import RelationshipFingerprint from '../components/RelationshipFingerprint.jsx';
 import Recommendations from '../components/Recommendations.jsx';
 import { buildZodiacMatch } from '../lib/zodiac.js';
 import { shareCardSummary } from '../lib/exportElementAsImage.js';
@@ -614,6 +615,31 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
           {list(metrics.quickStats).length > 0 && (
             <CardShell id="quick-stats" title="At a glance" emoji="📌" summary="Exact counts from the conversation.">
               <QuickStats stats={list(metrics.quickStats)} />
+            </CardShell>
+          )}
+
+          {/* The report's signature image, generated from this relationship's
+              own numbers. Placed second — after the counted facts, before the
+              interpretation — because it is a picture OF those facts. */}
+          {metrics.effort?.people?.length >= 2 && (
+            <CardShell
+              id="relationship-fingerprint"
+              title="Your Fingerprint"
+              emoji="🌀"
+              summary="A mark generated from this conversation alone."
+            >
+              <p className="max-w-2xl text-sm leading-7 text-smoke">
+                Drawn entirely from your own numbers — who spoke, when, how
+                warmly, and how often a call went unanswered. No two
+                conversations produce the same shape.
+              </p>
+              <div className="mt-5">
+                <RelationshipFingerprint
+                  metrics={metrics}
+                  colorFor={colorFor}
+                  compatibility={scores.compatibility}
+                />
+              </div>
             </CardShell>
           )}
 
