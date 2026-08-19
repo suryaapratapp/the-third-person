@@ -70,6 +70,22 @@ const stopWords = new Set([
   'kaise', 'kaisa', 'kahan', 'kaha', 'kab', 'kyu', 'kyun', 'kyunki', 'matlab',
   'lekin', 'agar', 'jaise', 'bhej', 'bhejo', 'dena', 'dedo', 'lena', 'lelo',
   'mujhe', 'tujhe', 'humko', 'hume', 'hum', 'mai', 'main', 'tum', 'aap', 'aapko',
+  // --- export artefacts ---
+  //
+  // Belt and braces. The line filter in analysisPipeline.js drops the system
+  // lines these come from and the redaction tokens are stripped before
+  // counting, but exports vary by platform, locale and app version, and a
+  // pattern that misses one line should not put "protected" in someone's word
+  // cloud. Anything here is vocabulary the EXPORT wrote, never the people.
+  'protected', 'url', 'urls', 'omitted', 'encrypted', 'encryption', 'sticker',
+  'gif', 'attachment', 'attached', 'forwarded', 'deleted', 'edited',
+  'voice', 'video', 'audio', 'media', 'document', 'contact', 'vcf',
+  'missed', 'unanswered', 'ringing', 'declined',
+  'https', 'http', 'www', 'com', 'net', 'org', 'link', 'links',
+  'jpg', 'jpeg', 'png', 'webp', 'mp4', 'pdf', 'opus', 'mp3', 'zip',
+  'whatsapp', 'telegram', 'instagram', 'imessage', 'messenger', 'snapchat',
+  'null', 'undefined', 'unknown', 'sender', 'admin', 'group',
+  'sec', 'secs', 'min', 'mins', 'hrs',
   // --- pure acknowledgement chat-speak ---
   'ok', 'okk', 'okkk', 'okay', 'okayy', 'okie', 'yes', 'yeah', 'yep', 'yup',
   'hmm', 'hmmm', 'hm', 'theek', 'thik', 'theeek', 'acha', 'accha', 'achaa',
@@ -266,14 +282,41 @@ function buildDayNightBreakdown(messages) {
   });
 }
 
+// Our own redaction tokens, removed before anything counts words.
+//
+// `filterSensitiveData` rewrites a link as `[URL_PROTECTED]` and a number as
+// `[PHONE_PROTECTED]`. The word splitter then strips the brackets and
+// underscore, turning every redaction into the words "url" and "protected" —
+// so a chat with fifty links had "protected" as one of its most-used words.
+// It is our token, not anyone's vocabulary, so it is deleted rather than
+// blacklisted: blacklisting "protected" would also lose the real word.
+const REDACTION_TOKEN = /\[[A-Z]+(?:_[A-Z]+)*_PROTECTED\]/g;
+
+// Anything URL-shaped, removed before counting.
+//
+// The sensitive-data filter usually redacts links first, but it runs on upload
+// and this can be reached with unfiltered text — and a single missed link puts
+// its domain into the word cloud once per share. "example", "youtu", "amzn"
+// are not things either person said.
+const URL_SHAPED = /\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+\.(?:com|net|org|in|co|io|me|app|ly|be|gg)\b\S*/gi;
+
 function countWords(messages, into = new Map()) {
   messages.forEach(({ message }) => {
     // eslint-disable-next-line no-misleading-character-class -- Devanagari range is intentional for Hindi word detection
-    String(message || '').toLowerCase().replace(/[^a-z\u0900-\u097F\s']/g, ' ').split(/\s+/).forEach((raw) => {
-      const word = raw.replace(/'/g, '');
-      if (word.length < 3 || stopWords.has(word)) return;
-      into.set(word, (into.get(word) || 0) + 1);
-    });
+    // \p{L}\p{M} rather than an explicit Devanagari range: it covers every
+    // script at once and keeps matras attached to their consonant, so "खुश"
+    // stays one word instead of three.
+    String(message || '')
+      .replace(REDACTION_TOKEN, ' ')
+      .replace(URL_SHAPED, ' ')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{M}\s']/gu, ' ')
+      .split(/\s+/)
+      .forEach((raw) => {
+        const word = raw.replace(/'/g, '');
+        if (word.length < 3 || stopWords.has(word)) return;
+        into.set(word, (into.get(word) || 0) + 1);
+      });
   });
   return into;
 }

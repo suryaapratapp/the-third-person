@@ -6,6 +6,11 @@ const VERY_LONG_TARGET_CHUNK_TOKENS = 9000;
 const MAX_MESSAGE_CHARS = 420;
 const MAX_CHUNK_MESSAGES = 240;
 
+// System lines an export writes on the user's behalf. None of it is anything
+// either person typed, so it must not reach the word counts, the sentiment, or
+// the AI. The originals only covered "missed" calls, which meant every
+// CONNECTED call line ("Voice call, 12 min") survived and put "voice", "video",
+// "sec" and "min" straight into the word cloud.
 const mediaOrExportNoise = [
   /<media omitted>/i,
   /image omitted/i,
@@ -20,6 +25,22 @@ const mediaOrExportNoise = [
   /this message was deleted/i,
   /missed voice call/i,
   /missed video call/i,
+  // Connected calls, with or without a duration.
+  /^\s*(voice|video) call\b/i,
+  /\b(voice|video) call(,| ·|\s+\d)/i,
+  /^\s*call (started|ended|declined)\b/i,
+  // Group and account events.
+  /\b(joined|left|added|removed|changed the subject|changed this group|created group|changed their phone number)\b.*\b(group|using this|to \+)/i,
+  /^\s*you (joined|left|created|added|removed)\b/i,
+  /waiting for this message/i,
+  /this message was edited/i,
+  /^\s*<.*>\s*$/,
+  // Link previews and attachments that are not typed text.
+  /^\s*(document|file|attachment|location|live location|poll):/i,
+  /view once (photo|video|message)/i,
+  /tap to (learn more|download|view|change)/i,
+  /your (security code|messages are end-to-end encrypted)/i,
+  /disappearing messages (were|are)/i,
 ];
 
 export function estimateTokensFromText(text = '') {
