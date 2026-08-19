@@ -172,6 +172,23 @@ function parsedConversationSummary(parsed: Record<string, any> = {}) {
         granularity: parsed.localMetrics.activity?.granularity,
         buckets: (parsed.localMetrics.activity?.buckets || []).map((bucket: Record<string, any>) => `${bucket.label}:${bucket.count}`),
       },
+      // Computed locally with a VADER-style analyser (negation, intensifiers,
+      // caps, emoji, and Hindi post-negation). Handed over as measured fact so
+      // the model INTERPRETS it rather than re-deriving a worse version of it.
+      sentiment: parsed.localMetrics.sentiment ? {
+        perPerson: parsed.localMetrics.sentiment.people,
+        warmerPerson: parsed.localMetrics.sentiment.warmerPerson,
+        mostVolatile: parsed.localMetrics.sentiment.mostVolatile,
+        note: 'Lexicon-based. It cannot hear sarcasm — where these numbers disagree with the obvious reading of the messages, trust the messages and say so.',
+      } : undefined,
+      rhythm: parsed.localMetrics.burstiness ? {
+        shape: parsed.localMetrics.burstiness.label,
+        burstiness: parsed.localMetrics.burstiness.burstiness,
+        longestUnbrokenRun: parsed.localMetrics.burstiness.longestBurst,
+        separateBursts: parsed.localMetrics.burstiness.bursts,
+        medianGapMinutes: parsed.localMetrics.burstiness.medianGapMinutes,
+      } : undefined,
+      calls: parsed.localMetrics.calls || undefined,
     } : undefined,
     analysisRoute: parsed.analysisPipeline?.route,
     estimatedTokens: parsed.analysisPipeline?.estimatedTokens,

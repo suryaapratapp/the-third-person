@@ -107,134 +107,6 @@ export function computeRhythm(messages = []) {
 }
 
 /* ------------------------------------------------------------------ *
- * Tone over time, per person
- *
- * A deliberately modest signal: counts of warm and cold markers, plus
- * emoji, per person per time bucket. It is NOT sentiment analysis and
- * the report must not present it as one — it is "how warm the words
- * looked", and the UI says so.
- *
- * The lexicon covers English, Hindi and Hinglish in Latin script,
- * because that is what this product's chats are actually written in.
- * ------------------------------------------------------------------ */
-const WARM = [
-  'love', 'loved', 'miss', 'missed', 'thank', 'thanks', 'thankyou', 'sorry', 'please', 'happy',
-  'glad', 'great', 'good', 'nice', 'sweet', 'cute', 'proud', 'care', 'best', 'awesome', 'amazing',
-  'beautiful', 'excited', 'haha', 'hahaha', 'lol', 'lmao', 'congrats', 'congratulations', 'welcome',
-  'hug', 'kiss', 'babe', 'baby', 'dear', 'yaar', 'jaan', 'pyaar', 'accha', 'acha', 'theek', 'thik',
-  'shukriya', 'dhanyavad', 'khush', 'bahut', 'sahi', 'mast', 'badhiya', 'zabardast', 'maaf',
-];
-
-const COLD = [
-  'hate', 'angry', 'annoyed', 'annoying', 'upset', 'sad', 'hurt', 'tired', 'done', 'whatever',
-  'never', 'stop', 'wrong', 'stupid', 'ridiculous', 'unfair', 'ignore', 'ignored', 'ignoring',
-  'busy', 'later', 'forget', 'blocked', 'fight', 'fighting', 'argue', 'leave', 'alone', 'nothing',
-  'gussa', 'pareshan', 'bekar', 'galat', 'nahi', 'nahin', 'mat', 'chhodo', 'chodo', 'bakwas',
-];
-
-// Code-point ranges rather than a regex character class: hearts and several
-// smileys are routinely followed by a variation selector, and a class that
-// matches only the base character is the kind of half-match that silently
-// misreads whole conversations.
-const WARM_EMOJI = [
-  [0x1f600, 0x1f60f], [0x1f617, 0x1f61d], [0x1f642, 0x1f643], [0x1f495, 0x1f49f],
-  [0x2764, 0x2764], [0x1f970, 0x1f972], [0x1f929, 0x1f929], [0x1f917, 0x1f917],
-];
-const COLD_EMOJI = [
-  [0x1f620, 0x1f624], [0x1f61e, 0x1f61f], [0x1f62d, 0x1f62d], [0x1f612, 0x1f612],
-  [0x1f644, 0x1f644], [0x1f494, 0x1f494], [0x1f922, 0x1f922], [0x1f92c, 0x1f92c],
-];
-
-function hasEmojiIn(text, ranges) {
-  for (const character of text) {
-    const point = character.codePointAt(0);
-    if (ranges.some(([low, high]) => point >= low && point <= high)) return true;
-  }
-  return false;
-}
-
-function toneOf(text) {
-  const value = String(text || '');
-  if (!value.trim()) return 0;
-  // \p{M} keeps Devanagari matras attached to their consonant; a raw
-  // codepoint range would split "खुश" into three "words".
-  const words = value.toLowerCase().match(/[\p{L}\p{M}]+/gu) || [];
-  let score = 0;
-  words.forEach((word) => {
-    if (WARM.includes(word)) score += 1;
-    else if (COLD.includes(word)) score -= 1;
-  });
-  if (hasEmojiIn(value, WARM_EMOJI)) score += 1;
-  if (hasEmojiIn(value, COLD_EMOJI)) score -= 1;
-  // A run of exclamation marks is energy, not warmth, so it counts for less.
-  if (/!{2,}/.test(value)) score += 0.5;
-  return score;
-}
-
-export function computeToneSeries(messages = [], maxBuckets = 12) {
-  const dated = messages.filter((message) => message.timestamp && message.sender);
-  if (dated.length < 20) return null;
-
-  const senders = [...new Set(dated.map((message) => message.sender))];
-  if (senders.length < 2) return null;
-
-  const times = dated.map((message) => new Date(message.timestamp).getTime()).filter((t) => !Number.isNaN(t));
-  if (times.length < 20) return null;
-  const first = Math.min(...times);
-  const last = Math.max(...times);
-  const span = Math.max(1, last - first);
-  const bucketCount = Math.min(maxBuckets, Math.max(4, Math.round(span / DAY_MS / 14) || 4));
-  const width = span / bucketCount;
-
-  const buckets = Array.from({ length: bucketCount }, (_, index) => ({
-    index,
-    start: first + index * width,
-    end: first + (index + 1) * width,
-    bySender: new Map(senders.map((sender) => [sender, { total: 0, messages: 0 }])),
-  }));
-
-  dated.forEach((message) => {
-    const time = new Date(message.timestamp).getTime();
-    if (Number.isNaN(time)) return;
-    const index = Math.min(bucketCount - 1, Math.floor((time - first) / width));
-    const entry = buckets[index].bySender.get(message.sender);
-    if (!entry) return;
-    // rawBody, not message: `message` has been emoji-stripped by the parser,
-    // so scoring it meant the emoji half of this signal never fired at all.
-    entry.total += toneOf(message.rawBody ?? message.message);
-    entry.messages += 1;
-  });
-
-  const people = senders.map((sender) => ({
-    sender,
-    points: buckets.map((bucket) => {
-      const entry = bucket.bySender.get(sender);
-      // Per-message average, then scaled. A bucket where someone sent three
-      // messages is not evidence, so it reports null rather than a spike.
-      const value = entry.messages >= 3 ? entry.total / entry.messages : null;
-      return {
-        index: bucket.index,
-        label: prettyDate(new Date(bucket.start)),
-        messages: entry.messages,
-        // Clamped to -100..100. The raw range is roughly -2..2 per message.
-        score: value === null ? null : Math.max(-100, Math.min(100, Math.round(value * 50))),
-      };
-    }),
-  }));
-
-  // A series where nobody ever cleared the evidence bar is noise, not a chart.
-  const usable = people.some((person) => person.points.filter((point) => point.score !== null).length >= 3);
-  if (!usable) return null;
-
-  return {
-    people,
-    bucketCount,
-    from: prettyDate(new Date(first)),
-    to: prettyDate(new Date(last)),
-  };
-}
-
-/* ------------------------------------------------------------------ *
  * Milestones
  *
  * The handful of dates that are genuinely notable in any long chat.
@@ -319,7 +191,7 @@ export function computeMilestones(messages = []) {
  * there is one definition of "busiest day" in the product, not three
  * that disagree by a day.
  * ------------------------------------------------------------------ */
-export function computeQuickStats({ messages = [], effort = null, milestones = null, emojis = [], calls = null } = {}) {
+export function computeQuickStats({ messages = [], effort = null, milestones = null, emojis = [], calls = null, sentiment = null, burstiness = null } = {}) {
   const usable = messages.filter((message) => message.sender);
   if (!usable.length) return null;
 
@@ -385,6 +257,31 @@ export function computeQuickStats({ messages = [], effort = null, milestones = n
       label: 'Missed calls',
       value: calls.missed.toLocaleString(),
       hint: `${calls.missedShare}% of all calls`,
+    });
+  }
+
+  if (burstiness) {
+    stats.push({
+      key: 'rhythmShape',
+      label: 'Chat rhythm',
+      value: burstiness.label,
+      hint: `Longest run: ${burstiness.longestBurst} messages`,
+    });
+  }
+
+  if (sentiment?.people?.length === 2) {
+    const [lead] = sentiment.people;
+    stats.push({
+      key: 'positivity',
+      label: `${lead.sender}'s tone`,
+      value: `${lead.positiveShare}% positive`,
+      hint: `${lead.negativeShare}% negative`,
+    });
+    stats.push({
+      key: 'warmer',
+      label: 'Warmer overall',
+      value: sentiment.warmerPerson,
+      hint: sentiment.warmerBy > 0.05 ? 'Clear difference' : 'Close between you',
     });
   }
 
@@ -477,5 +374,87 @@ export function computeCallStats(rawText = '') {
     // The number worth reading: a high miss rate is the thing people
     // recognise instantly about a drifting relationship.
     missedShare: percent(missed, total),
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Burstiness
+ *
+ * Whether a chat trickles or erupts. Two relationships can send the
+ * same number of messages over the same year and feel nothing alike:
+ * one texts most days, the other goes quiet for a fortnight and then
+ * talks until 3am. People recognise which one they are instantly, and
+ * no message count shows it.
+ *
+ * Uses the standard burstiness parameter from network science,
+ * B = (σ − μ) / (σ + μ) over inter-message intervals:
+ *   B → −1  perfectly regular (a metronome)
+ *   B ≈  0  random / Poisson, which is what "normal" looks like
+ *   B → +1  highly bursty (long silences, then floods)
+ * ------------------------------------------------------------------ */
+const BURST_GAP_MINUTES = 45; // within this, messages belong to one burst
+
+export function computeBurstiness(messages = []) {
+  const times = messages
+    .map((message) => (message?.timestamp ? new Date(message.timestamp).getTime() : null))
+    .filter((time) => time && !Number.isNaN(time))
+    .sort((a, b) => a - b);
+  if (times.length < 30) return null;
+
+  const gaps = [];
+  for (let i = 1; i < times.length; i += 1) {
+    const gap = times[i] - times[i - 1];
+    if (gap > 0) gaps.push(gap);
+  }
+  if (gaps.length < 20) return null;
+
+  const mean = gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length;
+  const variance = gaps.reduce((sum, gap) => sum + (gap - mean) ** 2, 0) / gaps.length;
+  const sd = Math.sqrt(variance);
+  const burstiness = (sd + mean) === 0 ? 0 : (sd - mean) / (sd + mean);
+
+  // Bursts: runs of messages with no long pause between them.
+  const bursts = [];
+  let current = 1;
+  for (let i = 1; i < times.length; i += 1) {
+    if (times[i] - times[i - 1] <= BURST_GAP_MINUTES * 60000) {
+      current += 1;
+    } else {
+      bursts.push(current);
+      current = 1;
+    }
+  }
+  bursts.push(current);
+
+  const longest = Math.max(...bursts);
+  const longestIndex = bursts.indexOf(longest);
+  // Walk forward to the start of that burst so it can be dated.
+  let seen = 0;
+  for (let i = 0; i < longestIndex; i += 1) seen += bursts[i];
+  const longestStart = times[Math.min(seen, times.length - 1)];
+
+  const label = burstiness > 0.45
+    ? 'Bursty'
+    : burstiness > 0.15
+      ? 'Uneven'
+      : burstiness > -0.15
+        ? 'Natural'
+        : 'Steady';
+
+  const reading = {
+    Bursty: 'Long silences, then everything at once. This chat happens in floods.',
+    Uneven: 'Quiet stretches broken by busy days, more than a steady rhythm.',
+    Natural: 'The usual shape for a chat — busier some days, no strong pattern.',
+    Steady: 'Unusually regular. You two talk at close to the same rate throughout.',
+  }[label];
+
+  return {
+    burstiness: Math.round(burstiness * 100) / 100,
+    label,
+    reading,
+    bursts: bursts.length,
+    longestBurst: longest,
+    longestBurstOn: prettyDate(new Date(longestStart)),
+    medianGapMinutes: Math.round(gaps.slice().sort((a, b) => a - b)[Math.floor(gaps.length / 2)] / 60000),
   };
 }

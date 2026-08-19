@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  computeBurstiness,
   computeCallStats,
   computeMilestones,
   computeQuickStats,
   computeRhythm,
-  computeToneSeries,
 } from '../conversationRhythm.js';
 
 // 2024-01-01 was a Monday, which makes the day-index assertions readable.
@@ -20,20 +20,6 @@ function messagesAt(spec) {
     sender,
     message: text,
   }));
-}
-
-function longChat({ days = 40, perDay = 6, sender = 'Ana', other = 'Bo', text = 'ok sure' } = {}) {
-  const out = [];
-  for (let day = 1; day <= days; day += 1) {
-    for (let i = 0; i < perDay; i += 1) {
-      out.push({
-        timestamp: at(day, 9 + (i % 8)),
-        sender: i % 2 ? other : sender,
-        message: text,
-      });
-    }
-  }
-  return out;
 }
 
 describe('computeRhythm', () => {
@@ -70,49 +56,6 @@ describe('computeRhythm', () => {
   it('counts the 11pm hour as late night', () => {
     const messages = Array.from({ length: 20 }, () => ({ timestamp: at(3, 23), sender: 'Ana', message: 'x' }));
     expect(computeRhythm(messages).lateNightShare).toBe(100);
-  });
-});
-
-describe('computeToneSeries', () => {
-  it('returns null when there is only one participant', () => {
-    const solo = longChat({ other: 'Ana' });
-    expect(computeToneSeries(solo)).toBeNull();
-  });
-
-  it('scores warm language above cold language for the same person', () => {
-    const warm = computeToneSeries(longChat({ text: 'love you so much thanks' }));
-    const cold = computeToneSeries(longChat({ text: 'whatever im tired of this' }));
-    const first = (series) => series.people[0].points.find((point) => point.score !== null).score;
-    expect(first(warm)).toBeGreaterThan(0);
-    expect(first(cold)).toBeLessThan(0);
-    expect(first(warm)).toBeGreaterThan(first(cold));
-  });
-
-  it('reads Hinglish warmth, not just English', () => {
-    const series = computeToneSeries(longChat({ text: 'accha yaar bahut khush' }));
-    expect(series.people[0].points.find((point) => point.score !== null).score).toBeGreaterThan(0);
-  });
-
-  it('reports null for buckets with too few messages to be evidence', () => {
-    const messages = longChat({ days: 60, perDay: 6 });
-    // One straggler far in the future creates a sparse trailing bucket.
-    messages.push({ timestamp: at(300, 12), sender: 'Ana', message: 'hi' });
-    const series = computeToneSeries(messages);
-    const last = series.people[0].points[series.people[0].points.length - 1];
-    expect(last.messages).toBeLessThan(3);
-    expect(last.score).toBeNull();
-  });
-
-  it('clamps scores into the -100..100 range', () => {
-    const series = computeToneSeries(longChat({ text: 'love love love love thanks thanks happy happy best' }));
-    series.people.forEach((person) => {
-      person.points.forEach((point) => {
-        if (point.score !== null) {
-          expect(point.score).toBeLessThanOrEqual(100);
-          expect(point.score).toBeGreaterThanOrEqual(-100);
-        }
-      });
-    });
   });
 });
 
@@ -234,5 +177,53 @@ describe('computeCallStats', () => {
     expect(stats.total).toBe(5);
     expect(stats.missed).toBe(3);
     expect(stats.missedShare).toBe(60);
+  });
+});
+
+describe('computeBurstiness', () => {
+  const at = (day, hour, minute = 0) => new Date(2024, 0, day, hour, minute).toISOString();
+
+  it('returns null below the evidence floor', () => {
+    expect(computeBurstiness([])).toBeNull();
+    expect(computeBurstiness(Array.from({ length: 10 }, (_, i) => ({ timestamp: at(1, i) })))).toBeNull();
+  });
+
+  it('reports a perfectly regular chat as steady', () => {
+    // One message every hour, no variation at all.
+    const messages = Array.from({ length: 60 }, (_, i) => ({
+      timestamp: at(1 + Math.floor(i / 24), i % 24),
+    }));
+    const result = computeBurstiness(messages);
+    expect(result.burstiness).toBeLessThan(0);
+    expect(['Steady', 'Natural']).toContain(result.label);
+  });
+
+  it('reports floods separated by silence as bursty', () => {
+    // Three tight clusters, weeks apart — the shape people recognise as
+    // "we go quiet then talk all night".
+    const messages = [];
+    [1, 20, 45].forEach((day) => {
+      for (let i = 0; i < 20; i += 1) messages.push({ timestamp: at(day, 22, i) });
+    });
+    const result = computeBurstiness(messages);
+    expect(result.burstiness).toBeGreaterThan(0.45);
+    expect(result.label).toBe('Bursty');
+  });
+
+  it('counts the longest unbroken run of messages', () => {
+    const messages = [];
+    for (let i = 0; i < 25; i += 1) messages.push({ timestamp: at(1, 20, i) });   // one run
+    for (let i = 0; i < 10; i += 1) messages.push({ timestamp: at(9, 20, i) });   // shorter
+    const result = computeBurstiness(messages);
+    expect(result.longestBurst).toBe(25);
+    expect(result.bursts).toBe(2);
+  });
+
+  it('carries a plain-English reading for every label', () => {
+    const messages = [];
+    [1, 20, 45].forEach((day) => {
+      for (let i = 0; i < 20; i += 1) messages.push({ timestamp: at(day, 22, i) });
+    });
+    expect(computeBurstiness(messages).reading).toMatch(/floods/);
   });
 });

@@ -7,12 +7,13 @@
 // as ground truth so it interprets facts instead of guessing at them.
 
 import {
+  computeBurstiness,
   computeCallStats,
   computeMilestones,
   computeQuickStats,
   computeRhythm,
-  computeToneSeries,
 } from './conversationRhythm.js';
+import { computeSentimentProfile } from './sentiment.js';
 
 const SESSION_GAP_MINUTES = 360; // 6h without a message starts a new conversation
 const MAX_REPLY_GAP_MINUTES = 60 * 24 * 3; // ignore 3-day+ gaps when averaging
@@ -336,15 +337,20 @@ export function computeLocalMetrics({ messages = [], rawText = '' } = {}) {
   const milestones = computeMilestones(messages);
   // From the RAW upload: the parser drops call lines as export noise.
   const calls = computeCallStats(rawText);
+  // VADER-style, replacing the warm/cold word tally: it handles negation,
+  // intensifiers, caps and emoji, which the tally could not.
+  const sentiment = computeSentimentProfile(messages);
+  const burstiness = computeBurstiness(messages);
 
   return {
     emojis,
     activity: computeActivitySeries(messages),
     effort,
     rhythm: computeRhythm(messages),
-    tone: computeToneSeries(messages),
+    sentiment,
+    burstiness,
     milestones,
     calls,
-    quickStats: computeQuickStats({ messages, effort, milestones, emojis, calls }),
+    quickStats: computeQuickStats({ messages, effort, milestones, emojis, calls, sentiment, burstiness }),
   };
 }
