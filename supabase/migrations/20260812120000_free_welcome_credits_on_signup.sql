@@ -23,8 +23,22 @@
 -- untouched. Existing accounts are backfilled so people who signed up during
 -- the broken window are not permanently worse off.
 
--- 1) Widen the credit-type allowlist. This is the only change to the consume
---    function and it adds a value rather than altering any logic.
+-- 0) Widen the table's CHECK constraint.
+--
+--    `analysis_credits.credit_type` carries an inline CHECK from the original
+--    schema allowing only ('relationship_report', 'bestie_message'). Without
+--    this the inserts below fail with a constraint violation — which is
+--    exactly how the first attempt at this migration failed, cleanly and in
+--    full, before any row was written.
+alter table public.analysis_credits
+  drop constraint if exists analysis_credits_credit_type_check;
+
+alter table public.analysis_credits
+  add constraint analysis_credits_credit_type_check
+  check (credit_type in ('relationship_report', 'bestie_message', 'personality_card'));
+
+-- 1) Widen the credit-type allowlist in the consume function. This is the only
+--    change to it and it adds a value rather than altering any logic.
 create or replace function public.consume_analysis_credit(
   p_user_id uuid,
   p_credit_type text,
