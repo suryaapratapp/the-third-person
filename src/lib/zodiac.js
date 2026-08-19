@@ -147,6 +147,52 @@ export function getZodiacModality(sign) {
   return MODALITIES[sign] || '';
 }
 
+
+// Per-sign detail, so the zodiac card says something about THESE two people
+// rather than printing two glyphs and a number.
+//
+// Kept deliberately behavioural — how a sign is said to communicate, what it
+// is said to need, where it is said to struggle — because that is the only
+// part that sits alongside the rest of a communication report without looking
+// absurd. It is still astrology, and the card says so.
+const SIGN_PROFILE = {
+  Aries: { style: 'Says it immediately, then moves on', needs: 'Directness, and a quick answer', friction: 'Reads a slow reply as disinterest', gives: 'Momentum and nerve' },
+  Taurus: { style: 'Steady, warm, slow to change position', needs: 'Consistency and comfort', friction: 'Digs in rather than reconsiders', gives: 'Reliability you can plan around' },
+  Gemini: { style: 'Fast, funny, jumps between subjects', needs: 'Novelty and someone who keeps up', friction: 'Skates past a hard feeling with a joke', gives: 'Curiosity and lightness' },
+  Cancer: { style: 'Reads the mood before the words', needs: 'Reassurance that nothing has changed', friction: 'Withdraws instead of saying it hurt', gives: 'Care that notices before you ask' },
+  Leo: { style: 'Generous, expressive, wants a reaction', needs: 'To be seen and appreciated out loud', friction: 'Takes a flat reply personally', gives: 'Warmth and loyalty in public' },
+  Virgo: { style: 'Precise, practical, notices details', needs: 'Things done properly and on time', friction: 'Sounds critical when trying to help', gives: 'Fixing what nobody else noticed' },
+  Libra: { style: 'Diplomatic, keeps the peace', needs: 'Harmony and a fair share of effort', friction: 'Agrees rather than raise a problem', gives: 'Making other people comfortable' },
+  Scorpio: { style: 'Intense, private, all or nothing', needs: 'Honesty and proof of loyalty', friction: 'Goes quiet and keeps score', gives: 'Depth most people never reach' },
+  Sagittarius: { style: 'Blunt, restless, allergic to heaviness', needs: 'Freedom and a plan to look forward to', friction: 'Says the true thing at the wrong moment', gives: 'Perspective and adventure' },
+  Capricorn: { style: 'Measured, practical, low on drama', needs: 'Respect and a partner who follows through', friction: 'Works instead of talking about it', gives: 'Showing up, every time' },
+  Aquarius: { style: 'Detached, original, thinks out loud', needs: 'Space and intellectual respect', friction: 'Analyses a feeling instead of having it', gives: 'Seeing what everyone else missed' },
+  Pisces: { style: 'Gentle, intuitive, absorbs the room', needs: 'Softness and emotional safety', friction: 'Avoids conflict until it overflows', gives: 'Empathy without being asked' },
+};
+
+// Which pairings tend to run hot, and why — used to explain the SCORE rather
+// than just print it.
+const ELEMENT_DYNAMIC = {
+  'Fire-Fire': 'Two fire signs burn bright and burn out — lots of energy, not much cooling off.',
+  'Fire-Air': 'Air feeds fire. Fast, funny, and rarely boring; the risk is nobody slows down.',
+  'Fire-Earth': 'Fire wants to move, earth wants to settle. Each finds the other exhausting before they find them useful.',
+  'Fire-Water': 'Fire says it straight, water feels it first. Easy to hurt each other without meaning to.',
+  'Earth-Earth': 'Two earth signs build something solid, and can go a long time without saying anything real.',
+  'Earth-Air': 'Earth wants a plan, air wants options. Practical friction more than emotional.',
+  'Earth-Water': 'Earth gives water a shape to hold. One of the steadier combinations.',
+  'Air-Air': 'Endless conversation, plenty of ideas, and a shared habit of avoiding the heavy stuff.',
+  'Air-Water': 'Air explains the feeling, water lives in it. Each can make the other feel unseen.',
+  'Water-Water': 'Two water signs read each other instantly — and can sink together just as fast.',
+};
+
+export function signProfile(sign) {
+  return SIGN_PROFILE[sign] || null;
+}
+
+export function elementDynamic(a, b) {
+  return ELEMENT_DYNAMIC[`${a}-${b}`] || ELEMENT_DYNAMIC[`${b}-${a}`] || '';
+}
+
 export function buildZodiacMatch(userSign, otherSign) {
   if (!userSign || !otherSign) return null;
   const userIndex = ORDER.indexOf(userSign);
@@ -187,6 +233,9 @@ export function buildZodiacMatch(userSign, otherSign) {
     modalityNote: sameModality
       ? `Both are ${MODALITIES[userSign]} signs, so you tend to approach change the same way — which can mean deadlock when you disagree.`
       : `${userSign} is ${MODALITIES[userSign]} and ${otherSign} is ${MODALITIES[otherSign]}, so you handle change differently — useful when you let it balance instead of compete.`,
+    userProfile: SIGN_PROFILE[userSign] || null,
+    otherProfile: SIGN_PROFILE[otherSign] || null,
+    elementDynamic: elementDynamic(userElement, otherElement),
     disclaimer: 'For fun and reflection only. Everything else in this report comes from the actual conversation — that is the part worth trusting.',
   };
 }

@@ -7,7 +7,6 @@ import CoachDialog from '../components/CoachDialog.jsx';
 import { buildAnalysisChainContext, buildReportCoachContext, getChainById, groupReports } from '../lib/reportsStore.js';
 import QuickStats from '../components/QuickStats.jsx';
 import RhythmHeatmap from '../components/RhythmHeatmap.jsx';
-import ToneOverTime from '../components/ToneOverTime.jsx';
 import KeyMoments from '../components/KeyMoments.jsx';
 import WordCloud from '../components/WordCloud.jsx';
 import Recommendations from '../components/Recommendations.jsx';
@@ -748,6 +747,62 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
             <ActivityBars activity={metrics.activity} />
           </CardShell>
 
+          {metrics.rhythm && (
+            <CardShell
+              id="conversation-rhythm"
+              title="When You Talk"
+              emoji="🕒"
+              summary={`Busiest ${metrics.rhythm.peakLabel}.`}
+            >
+              <p className="max-w-3xl text-sm leading-7 text-smoke">
+                Counted straight from the timestamps. No model was asked for any
+                of this — it is arithmetic on your own chat.
+              </p>
+              <div className="mt-5">
+                <RhythmHeatmap rhythm={metrics.rhythm} />
+              </div>
+            </CardShell>
+          )}
+
+          {/* Vocabulary, in one place. The per-person cloud and the top-five
+              list were two separate sections answering the same question with
+              the same data — the cloud shows the shape, the list gives the
+              exact counts, and neither is worth its own heading. */}
+          {(wordsBySender.length > 0 || topWords.length > 0) && (
+            <CardShell id="word-cloud" title="Words You Both Use" emoji="☁️" summary="The words each of you reaches for most.">
+              {wordsBySender.length > 0 && <WordCloud bySender={wordsBySender} colorFor={colorFor} />}
+
+              {topWords.length > 0 && (
+                <div className="mt-6 border-t border-line pt-5">
+                  <p className="tech-label">Most used across the whole chat</p>
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                    {topWords.map((item, index) => (
+                      <div key={item.word} className="rounded-lg border border-line bg-paper p-3 text-center">
+                        <p className="text-xs text-ash">#{index + 1}</p>
+                        <p className="mt-1.5 break-words text-lg font-semibold text-ink">{item.word}</p>
+                        <p className="mt-1 text-xs text-smoke">{item.count}×</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardShell>
+          )}
+
+          {emojis.length > 0 && (
+            <CardShell id="top-emojis" title="Top Emojis" emoji="😊" summary="The nine emojis used most in this chat.">
+              <p className="max-w-2xl text-sm leading-7 text-smoke">Counted directly from the uploaded chat.</p>
+              <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
+                {emojis.map((item) => (
+                  <div key={item.emoji} className="rounded-sm border border-line bg-paper p-3 text-center">
+                    <p className="text-3xl leading-none">{item.emoji}</p>
+                    <p className="mt-2 font-mono text-xs text-bone">{item.count}×</p>
+                  </div>
+                ))}
+              </div>
+            </CardShell>
+          )}
+
           {signatureMetrics.length > 0 && (
               <CardShell
                 id="signature-metrics"
@@ -859,19 +914,6 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
             </CardShell>
           )}
 
-          {emojis.length > 0 && (
-            <CardShell id="top-emojis" title="Top Emojis" emoji="😊" summary="The nine emojis used most in this chat.">
-              <p className="max-w-2xl text-sm leading-7 text-smoke">Counted directly from the uploaded chat.</p>
-              <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
-                {emojis.map((item) => (
-                  <div key={item.emoji} className="rounded-sm border border-line bg-paper p-3 text-center">
-                    <p className="text-3xl leading-none">{item.emoji}</p>
-                    <p className="mt-2 font-mono text-xs text-bone">{item.count}×</p>
-                  </div>
-                ))}
-              </div>
-            </CardShell>
-          )}
 
           {keyMoments.length > 0 && (
             <CardShell
@@ -891,51 +933,7 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
             </CardShell>
           )}
 
-          {subtext.length > 0 && (
-            <CardShell
-              id="between-the-lines"
-              title="Between The Lines"
-              emoji="🎭"
-              summary="Lines that do not mean what they say."
-              accent="purple"
-            >
-              <p className="max-w-3xl text-sm leading-7 text-smoke">
-                Read literally, these say one thing. Read the way the two of you
-                actually talk, they say another.
-              </p>
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                {subtext.slice(0, 8).map((item, index) => (
-                  <div key={`${item.line}-${index}`} className="rounded-lg border border-line bg-paper p-4">
-                    <p className="text-sm font-medium leading-6 text-ink">“{safe(item.line)}”</p>
-                    <p className="mt-2 text-xs leading-5 text-ash">
-                      <span className="font-medium">Sounds like: </span>{safe(item.literalReading)}
-                    </p>
-                    <p className="mt-1.5 text-sm leading-6 text-smoke">
-                      <span className="font-medium text-ink">Actually: </span>{safe(item.actualMeaning)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardShell>
-          )}
 
-          {(metrics.rhythm || metrics.tone) && (
-            <CardShell
-              id="conversation-patterns"
-              title="Patterns Over Time"
-              emoji="📈"
-              summary={metrics.rhythm ? `Busiest ${metrics.rhythm.peakLabel}.` : 'How the tone moved.'}
-            >
-              <p className="max-w-3xl text-sm leading-7 text-smoke">
-                Counted from the timestamps and the words themselves. No model
-                was asked for any of this — it is arithmetic on your own chat.
-              </p>
-              <div className="mt-5 grid gap-6">
-                {metrics.rhythm && <RhythmHeatmap rhythm={metrics.rhythm} />}
-                {metrics.tone && <ToneOverTime tone={metrics.tone} colorFor={colorFor} />}
-              </div>
-            </CardShell>
-          )}
 
           {zodiacMatch && (
             <CardShell id="zodiac-match" title="Zodiac Layer" emoji="✨" summary={`${zodiacMatch.userSign} + ${zodiacMatch.otherSign}: ${zodiacMatch.label}`}>
@@ -963,10 +961,11 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
                 <div className="grid gap-3">
                   {[
                     ['Aspect', `${zodiacMatch.aspect} — ${zodiacMatch.aspectNote}`],
+                    ['Elements', zodiacMatch.elementDynamic],
                     ['Where you flow', zodiacMatch.strength],
                     ['Where you rub', zodiacMatch.friction],
                     ['Pace', zodiacMatch.modalityNote],
-                  ].map(([label, value]) => (
+                  ].filter(([, value]) => value).map(([label, value]) => (
                     <div key={label} className="rounded-2xl border border-line bg-paper p-4">
                       <p className="tech-label text-ash">{label}</p>
                       <p className="mt-2 text-sm leading-6 text-smoke">{value}</p>
@@ -975,27 +974,38 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
                   <p className="text-xs leading-6 text-ash">{zodiacMatch.disclaimer}</p>
                 </div>
               </div>
-            </CardShell>
+            
+              {(zodiacMatch.userProfile || zodiacMatch.otherProfile) && (
+                <div className="mt-5 grid gap-3 border-t border-line pt-5 sm:grid-cols-2">
+                  {[
+                    ['You', zodiacMatch.userSign, zodiacMatch.userGlyph, zodiacMatch.userProfile, 'var(--you)'],
+                    [personName, zodiacMatch.otherSign, zodiacMatch.otherGlyph, zodiacMatch.otherProfile, 'var(--them)'],
+                  ].filter(([, , , profile]) => profile).map(([who, sign, glyph, profile, colour]) => (
+                    <div key={who} className="rounded-lg border border-line bg-paper p-4">
+                      <p className="flex items-center gap-2 text-sm font-semibold" style={{ color: colour }}>
+                        <span aria-hidden="true" className="text-lg">{glyph}</span>
+                        {who} · {sign}
+                      </p>
+                      <dl className="mt-3 grid gap-2.5">
+                        {[
+                          ['How they talk', profile.style],
+                          ['What they need', profile.needs],
+                          ['Where it goes wrong', profile.friction],
+                          ['What they bring', profile.gives],
+                        ].map(([label, value]) => (
+                          <div key={label}>
+                            <dt className="text-xs text-ash">{label}</dt>
+                            <dd className="mt-0.5 text-sm leading-6 text-smoke">{value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  ))}
+                </div>
+              )}
+</CardShell>
           )}
 
-          <CardShell id="word-cloud" title="Top Words" emoji="☁️" summary="The five words used most across this conversation.">
-            <p className="max-w-2xl text-sm leading-7 text-smoke">
-              The five words that came up most across this conversation, counted directly from the messages.
-            </p>
-            {topWords.length ? (
-              <div className="mt-5 grid gap-3 sm:grid-cols-5">
-                {topWords.map((item, index) => (
-                  <div key={item.word} className="rounded-sm border border-line bg-paper p-4 text-center">
-                    <p className=" text-xs text-ash">#{index + 1}</p>
-                    <p className="mt-2 break-words text-xl text-bone">{item.word}</p>
-                    <p className="mt-2 font-mono text-xs text-smoke">{item.count}×</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-5"><EmptyHint>Not enough message text yet to count word frequency.</EmptyHint></div>
-            )}
-          </CardShell>
 
           <div className="grid gap-5 lg:grid-cols-2">
             <CardShell id="red-flags" title="Red Flags" emoji="🚩" summary="Gentle red flag reflections.">
@@ -1101,12 +1111,6 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
             </CardShell>
           )}
 
-
-          {wordsBySender.length > 0 && (
-            <CardShell id="word-cloud-pair" title="Word Cloud" emoji="☁️" summary="The words each of you reaches for." accent="blue">
-              <WordCloud bySender={wordsBySender} colorFor={colorFor} />
-            </CardShell>
-          )}
 
           {recommendations && (
             <CardShell
