@@ -2,13 +2,21 @@ import TopNav from './TopNav.jsx';
 import BottomNav from './BottomNav.jsx';
 import SiteFooter from './SiteFooter.jsx';
 import CookieConsentBanner from './CookieConsentBanner.jsx';
+import { useAuth } from '../state/AuthContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
-// Routes that wear the deep theme: the ones that are about the person rather
-// than about the product. Applied at the shell rather than inside each page so
-// the header, tab bar and footer come with it — a dark page inside white chrome
-// reads as a rendering fault, not as a design.
-function usesDeepTheme(path) {
+// The deep theme covers every signed-in surface, not just the report.
+//
+// Signed out, this is a website selling something and white reads as
+// trustworthy. Signed in, it is a tool someone opens to look at their own
+// relationships — usually at night, usually about something that matters — and
+// the violet-black ground suits that far better. It also lets the dashboard
+// carry saturation and glow that would be garish on a marketing page.
+//
+// Applied at the shell so the header, tab bar and footer come with it: a dark
+// page inside white chrome reads as a rendering fault, not as a design.
+function usesDeepTheme(path, signedIn) {
+  if (signedIn) return true;
   return path.startsWith('/reports') || path === '/personality-card';
 }
 
@@ -23,7 +31,8 @@ function usesDeepTheme(path) {
 // identically without creating one.
 export default function AppShell({ children }) {
   const { path } = useRouter();
-  const deep = usesDeepTheme(path);
+  const { user } = useAuth();
+  const deep = usesDeepTheme(path, Boolean(user));
 
   return (
     <div className={`relative min-h-screen [overflow-x:clip] bg-canvas pb-[76px] text-bone md:pb-0 ${deep ? 'theme-deep' : ''}`}>

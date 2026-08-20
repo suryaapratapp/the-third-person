@@ -715,6 +715,78 @@ select:focus-visible,
 }
 
 /* -------------------------------------------------------------------- *
+ * Dashboard tiles
+ *
+ * The signed-in surfaces run on `.theme-deep`, so these sit on a
+ * violet-black ground and can afford real saturation and glow — the
+ * treatment that would be garish on the white marketing pages is what
+ * makes a dark app feel alive rather than flat.
+ *
+ * Depth is a lit edge plus a coloured bloom, not a drop shadow: a black
+ * shadow on a near-black ground is invisible.
+ * -------------------------------------------------------------------- */
+.tile-hero {
+  background: linear-gradient(135deg, rgb(var(--accent-rgb)), rgb(var(--you-rgb)));
+  box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.5), 0 12px 40px rgb(var(--accent-rgb) / 0.35);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.tile-hero:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / 0.7), 0 18px 56px rgb(var(--accent-rgb) / 0.5);
+}
+
+.tile-hero:active { transform: translateY(0); }
+
+.tile {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.tile:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--tile-tone) 55%, transparent);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--tile-tone) 22%, transparent);
+}
+
+.tile:active { transform: translateY(0); }
+
+/* Kindred gets an animated edge — the only moving gradient in the app,
+   spent on the one thing that is not shippable yet and therefore has to
+   earn attention some other way.
+
+   Two background layers with different clips, NOT a ::before. A
+   pseudo-element at z-index:-1 painted through the panel here and
+   dropped the body text to unreadable over a moving gradient; the
+   padding-box layer is an opaque fill that the border-box gradient can
+   never bleed into. */
+.kindred-panel {
+  background:
+    linear-gradient(var(--paper), var(--paper)) padding-box,
+    linear-gradient(115deg,
+      rgb(var(--you-rgb)),
+      rgb(var(--accent-rgb)),
+      rgb(var(--them-rgb)),
+      rgb(var(--you-rgb))) border-box;
+  background-size: auto, 300% 100%;
+  border: 2px solid transparent;
+  animation: kindredEdge 9s linear infinite;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.kindred-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgb(var(--you-rgb) / 0.25);
+}
+
+@keyframes kindredEdge {
+  /* Only the second layer moves; the first is the opaque fill. */
+  from { background-position: 0 0, 0% 50%; }
+  to { background-position: 0 0, -300% 50%; }
+}
+
+/* -------------------------------------------------------------------- *
  * CoachBot mascot
  * The one piece of character that survives. Motion only, no glow.
  * -------------------------------------------------------------------- */

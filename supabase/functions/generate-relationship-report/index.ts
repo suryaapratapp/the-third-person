@@ -762,11 +762,14 @@ async function openAiAnalysis(body: Record<string, any>) {
   // could be given to anyone is worse than no gift idea, so each carries the
   // reason it fits.
   const recommendationsFor = (who: string) => S.obj({
-    // No artist field. Attribution was wrong often enough that it cost more
-    // trust than it added, and a title alone still searches correctly.
+    // No artist field — attribution was wrong often enough that it cost more
+    // trust than it added. Removing it left the shape under-constrained
+    // though, and the model started returning COMMON WORDS FROM THE CHAT as
+    // song titles ("Kal", "Ghar") with reasons that described the word rather
+    // than any song. The description now has to carry that weight alone.
     music: S.arr(S.obj({
-      title: S.str('Exact song title, no artist name'),
-      why: S.str('One line tying it to something they actually said or like'),
+      title: S.str('The full title of a REAL, released song that exists and can be found on Spotify. Never a word lifted from the conversation, never a single common word, and never a description of a mood. If you cannot name a real song you are confident exists, omit the entry entirely.'),
+      why: S.str('One line tying THIS SONG to something they actually said or like. If the sentence would still make sense with the title replaced by a different song, it is too vague.'),
     }), `4 songs ${who} would plausibly love, in a language and genre their messages support`),
     movies: S.arr(S.obj({
       title: S.str('Film or series title only'),
@@ -995,7 +998,7 @@ async function openAiAnalysis(body: Record<string, any>) {
   // and folding them into the persona pass made that schema large enough that
   // the model started thinning both halves.
   const recommendationMessages = messagesForChatCompletions(promptFor(
-    'THIS REQUEST PRODUCES RECOMMENDATIONS ONLY. ACCURACY FIRST: only name a song, film or book you are genuinely confident exists, and only pair it with an artist or author you are confident is correct. Song titles only — do NOT name the artist anywhere, including inside the title or the reason. Never invent a title. For EACH of the two people separately, suggest music, films or series, books, and gifts. Ground every single one in something the messages actually show about that person — the work they do, the things they complain about, what they find funny, where they live, what they are saving for, a hobby they mentioned. Match the language and culture of their own taste: if they quote Punjabi rap, recommend Punjabi rap, not a Billboard chart. A gift that could be given to any human being is a failed suggestion — the "why" must name the specific detail from the conversation that makes it land. Do not produce report narrative, flags, scores, or personality content here.',
+    'THIS REQUEST PRODUCES RECOMMENDATIONS ONLY. ACCURACY FIRST: only name a song, film or book you are genuinely confident exists, and only pair it with an artist or author you are confident is correct. Song titles only — do NOT name the artist anywhere, including inside the title or the reason. Every music entry must be a REAL RELEASED SONG. Do NOT take words from the conversation and present them as songs: "Kal", "Ghar", "Hello" and similar single common words are chat vocabulary, not recommendations, and a reason that explains what a WORD means in their chat proves the entry is wrong. Prefer full multi-word titles, which are far harder to confuse with vocabulary. Four confident real songs is the target; three is better than four with one invented. For EACH of the two people separately, suggest music, films or series, books, and gifts. Ground every single one in something the messages actually show about that person — the work they do, the things they complain about, what they find funny, where they live, what they are saving for, a hobby they mentioned. Match the language and culture of their own taste: if they quote Punjabi rap, recommend Punjabi rap, not a Billboard chart. A gift that could be given to any human being is a failed suggestion — the "why" must name the specific detail from the conversation that makes it land. Do not produce report narrative, flags, scores, or personality content here.',
   ));
 
   const [reportCorePart, reportSignalsPart, personaPart, personPart, recommendationPart] = await Promise.all([

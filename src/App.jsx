@@ -1,9 +1,11 @@
 import AppShell from './components/AppShell.jsx';
 import { Suspense, lazy, useEffect } from 'react';
 import HomePage from './pages/HomePage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { useRouter } from './state/RouterContext.jsx';
+import { useAuth } from './state/AuthContext.jsx';
 import { applyRouteSeo } from './lib/seo.js';
 import { getBlogPostMetaBySlug } from './lib/blogPostsMeta.js';
 
@@ -36,6 +38,7 @@ function PageLoading() {
 
 function RouteSwitch() {
   const { path } = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
     applyRouteSeo(path);
@@ -73,7 +76,9 @@ function RouteSwitch() {
       ? <BlogPostPage slug={slug} />
       : <NotFoundPage path={path} />;
   }
-  if (path === '/') return <HomePage />;
+  // Signed-in users get the dashboard at the root. Landing a signed-in user on
+  // the marketing page is selling them something they already bought.
+  if (path === '/') return user ? <DashboardPage /> : <HomePage />;
   // Anything else is a real 404. This used to return <HomePage />, which meant
   // every broken or mistyped URL silently rendered the front page.
   return <NotFoundPage path={path} />;
