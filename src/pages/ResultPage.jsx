@@ -9,7 +9,7 @@ import QuickStats from '../components/QuickStats.jsx';
 import RhythmHeatmap from '../components/RhythmHeatmap.jsx';
 import KeyMoments from '../components/KeyMoments.jsx';
 import WordCloud from '../components/WordCloud.jsx';
-import RelationshipFingerprint from '../components/RelationshipFingerprint.jsx';
+import ReportImage from '../components/ReportImage.jsx';
 import Recommendations from '../components/Recommendations.jsx';
 import { buildZodiacMatch } from '../lib/zodiac.js';
 import { shareCardSummary } from '../lib/exportElementAsImage.js';
@@ -534,6 +534,20 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
     dateRange: prepared.estimatedDateRange,
   });
   const keyMoments = list(analysis?.relationshipReport?.keyMoments);
+  // What the image model is allowed to see. Conclusions the first model wrote,
+  // plus counted metrics — deliberately no quotes, no message text, no names
+  // beyond the relationship type. Assembled here so the boundary is one object
+  // that can be read in full.
+  const imageContext = {
+    relationshipType: meta.relationshipType || source?.relationshipType || 'relationship',
+    vibeLabel: relationshipReport.vibeLabel || analysis?.screenshotWorthySummary || '',
+    emotionalTone: relationshipReport.emotionalTone || summary.mainEmotionalPattern || '',
+    timelineArc: relationshipReport.timelineArc || '',
+    keyMomentTitles: list(analysis?.relationshipReport?.keyMoments).map((moment) => moment.title).filter(Boolean),
+    topWords: list(prepared.topWords).map((entry) => entry.word).filter(Boolean),
+    positivity: metrics.sentiment?.people?.[0]?.positiveShare,
+    rhythmShape: metrics.burstiness?.label || '',
+  };
   const wordsBySender = list(prepared.topWordsBySender);
   const recommendations = analysis?.recommendations || null;
   const effort = metrics.effort || null;
@@ -618,30 +632,28 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
             </CardShell>
           )}
 
-          {/* The report's signature image, generated from this relationship's
-              own numbers. Placed second — after the counted facts, before the
-              interpretation — because it is a picture OF those facts. */}
-          {metrics.effort?.people?.length >= 2 && (
+          {source?.reportSource || reportId ? (
             <CardShell
-              id="relationship-fingerprint"
-              title="Your Fingerprint"
-              emoji="🌀"
-              summary="A mark generated from this conversation alone."
+              id="report-image"
+              title="This Relationship, As A Picture"
+              emoji="🎨"
+              summary="An image generated from what this report found."
             >
               <p className="max-w-2xl text-sm leading-7 text-smoke">
-                Drawn entirely from your own numbers — who spoke, when, how
-                warmly, and how often a call went unanswered. No two
-                conversations produce the same shape.
+                A second model reads the conclusions above — the mood, the arc,
+                the moments that mattered — and paints what they look like.
               </p>
-              <div className="mt-5">
-                <RelationshipFingerprint
-                  metrics={metrics}
-                  colorFor={colorFor}
-                  compatibility={scores.compatibility}
+              <div className="mt-5 mx-auto max-w-md">
+                <ReportImage
+                  reportId={reportId || source?.reportSource}
+                  imageContext={imageContext}
+                  initialUrl={fetchedReport?.imageUrl}
+                  initialStatus={fetchedReport?.imageStatus}
+                  personName={personName}
                 />
               </div>
             </CardShell>
-          )}
+          ) : null}
 
           <CardShell id="report-summary-card" title="Relationship Summary" emoji="✨" summary={analysis.screenshotWorthySummary || summary.currentDynamic}>
             <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">

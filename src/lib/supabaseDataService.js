@@ -62,6 +62,8 @@ export function rowToReport(row) {
     participants: row.participants || [],
     messageCount: row.message_count || 0,
     analysisJson: row.analysis_json || {},
+    imageUrl: row.image_url || null,
+    imageStatus: row.image_status || null,
     preparedConversation: row.prepared_conversation || {},
     bestieContextSummary: row.bestie_context_summary || row.analysis_json?.bestieContextSummary || {},
     reportSummaryForFutureUse: row.report_summary_for_future_use || row.analysis_json?.reportSummaryForFutureUse || {},

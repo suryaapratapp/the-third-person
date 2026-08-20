@@ -66,3 +66,29 @@ export async function generatePersonalityCardViaSupabase(payload) {
   }
   return data || null;
 }
+
+// Kicks off the report image, and reads its state.
+//
+// Separate from report generation on purpose: an image takes 10-40s on top of
+// a report that already runs close to the 150s edge ceiling, and a picture is
+// never worth risking the report it illustrates. The report is shown the
+// moment it exists; this fills in behind it.
+export async function requestReportImage({ reportId, imageContext }) {
+  if (!isSupabaseConfigured || !supabase) return { status: 'failed' };
+  const { data, error } = await supabase.functions.invoke('generate-relationship-image', {
+    body: { reportId, imageContext },
+  });
+  if (error) return { status: 'failed' };
+  return data || { status: 'failed' };
+}
+
+export async function fetchReportImageState(reportId) {
+  if (!isSupabaseConfigured || !supabase || !reportId) return null;
+  const { data, error } = await supabase
+    .from('relationship_reports')
+    .select('image_url, image_status')
+    .eq('id', reportId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return { imageUrl: data.image_url, imageStatus: data.image_status };
+}
