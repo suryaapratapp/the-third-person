@@ -60,10 +60,14 @@ function mergeAnalysisFallback(fallback, candidate) {
   };
 }
 
+// Stage KEYS, not prose. The progress bar used to infer its stage by pattern
+// matching the sentence shown to the user, which broke silently the moment a
+// sentence was added that matched none of its patterns — the bar sat at 34%
+// for the whole model call and then jumped straight to a finished report.
 function progressStageForRoute(route) {
-  if (route === 'chunked_synthesis') return 'Understanding each conversation period…';
-  if (route === 'long_async_ready') return 'Preparing a deeper long-chat report…';
-  return 'Preparing private relationship intelligence…';
+  if (route === 'chunked_synthesis') return 'periods';
+  if (route === 'long_async_ready') return 'slice';
+  return 'slice';
 }
 
 export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
@@ -71,7 +75,11 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
   const { user } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
-  const [processingStage, setProcessingStage] = useState('');
+  const [processingStage, setProcessingStage] = useState('read');
+  // Where to go once the progress bar has finished running to 100%. Holding the
+  // route here rather than navigating immediately is what lets the wait end on
+  // a completed bar instead of cutting away mid-count.
+  const [finishedRoute, setFinishedRoute] = useState('');
   const [creditBlock, setCreditBlock] = useState(null);
   const [isPaying, setIsPaying] = useState(false);
   const [entitlements, setEntitlements] = useState(null);
@@ -138,18 +146,20 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       cacheNotice: '',
       reportSource: reportId,
     });
-    setIsGenerating(false);
-    setProcessingStage('');
     // Deep-link to the persisted report so a refresh or shared link re-fetches
     // it. Fall back to the in-memory route only when no id exists (local/offline
     // save with no Supabase row).
-    onStart(reportId ? `/reports/${encodeURIComponent(reportId)}` : '/analysis/result');
+    //
+    // Handed to the progress bar rather than navigated to now: it finishes its
+    // count to 100 and then calls back. The overlay stays up until it does.
+    setFinishedRoute(reportId ? `/reports/${encodeURIComponent(reportId)}` : '/analysis/result');
   }
 
   async function startAnalysis() {
     setIsGenerating(true);
     setAnalysisError('');
-    setProcessingStage('Preparing private relationship intelligence…');
+    setFinishedRoute('');
+    setProcessingStage('read');
     const sensitiveData = filterSensitiveData(flow.chatText);
     const scan = detectPromptInjection(sensitiveData.protectedText);
     const preparedConversationBase = prepareConversationForAnalysis(scan.cleanedText, {
@@ -202,9 +212,9 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
             analysisError: '',
             reportSource: cached.reportId,
           });
-          setIsGenerating(false);
-          setProcessingStage('');
-          onStart(`/reports/${encodeURIComponent(cached.reportId)}`);
+          // Instant, but still ridden to 100% by the progress bar. A cached
+          // hit that flashed the overlay for one frame looked like a glitch.
+          setFinishedRoute(`/reports/${encodeURIComponent(cached.reportId)}`);
           return;
         }
         removeCachedAnalysis(cached.fingerprint);
@@ -252,11 +262,9 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
     // still held by early users (the free offer has since been withdrawn).
     // Know Yourself and Coach gate on paid-only balances elsewhere.
     if (latestEntitlements.relationshipReportsLeft > 0) {
-      setProcessingStage(
-        preparedConversation.analysisPipeline?.route === 'single_compressed'
-          ? 'Creating paid relationship intelligence…'
-          : 'Combining timeline signals into your report…',
-      );
+      // This one call is the whole model run — a minute or more with nothing
+      // to report from inside it. The bar advances on its own from here.
+      setProcessingStage('periods');
       const backendResult = await generateRelationshipReportViaSupabase({
         preparedConversation,
         promptScan: scan,
@@ -274,13 +282,13 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       if (backendResult?.blocked) {
         setAnalysisError(backendResult.error);
         setIsGenerating(false);
-        setProcessingStage('');
+        setProcessingStage('read');
         return;
       }
       if (!backendResult?.analysis || !backendResult?.report) {
         setAnalysisError('Paid relationship intelligence is temporarily unavailable. Please try again in a moment.');
         setIsGenerating(false);
-        setProcessingStage('');
+        setProcessingStage('read');
         return;
       }
       aiResult = {
@@ -297,7 +305,7 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       // No credits: take payment right here instead of bouncing the user to the
       // pricing page and losing the conversation they just prepared.
       setIsGenerating(false);
-      setProcessingStage('');
+      setProcessingStage('read');
       if (!user) {
         navigate('/auth?next=/analysis/new');
         return;
@@ -360,7 +368,16 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
         />
       )}
       {isGenerating && (
-        <AnalysisProgress stage={processingStage} messageCount={flow?.preparedConversation?.messageCount || 0} />
+        <AnalysisProgress
+          stageKey={processingStage}
+          done={Boolean(finishedRoute)}
+          onFinished={() => {
+            setIsGenerating(false);
+            setProcessingStage('read');
+            onStart(finishedRoute);
+          }}
+          messageCount={flow?.preparedConversation?.messageCount || 0}
+        />
       )}
 
       <div className="rounded-lg border border-line bg-paper p-4 sm:p-5">

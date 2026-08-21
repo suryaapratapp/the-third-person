@@ -19,6 +19,14 @@ import { createAdminClient, getAuthenticatedUser } from '../_shared/usage.ts';
 const IMAGE_MODEL = Deno.env.get('OPENAI_IMAGE_MODEL') || 'gpt-image-1';
 const IMAGE_SIZE = Deno.env.get('OPENAI_IMAGE_SIZE') || '1024x1024';
 
+function moodOf(input: Record<string, any>) {
+  const warmth = Number(input.positivity);
+  if (!Number.isFinite(warmth)) return 'balanced';
+  if (warmth > 60) return 'warm, bright, close';
+  if (warmth < 35) return 'cool, distant, muted';
+  return 'mixed, uncertain';
+}
+
 // Anything that could carry a quote or a name is excluded by construction.
 // Key-moment TITLES are allowed (they are our own 5-8 word summaries); their
 // quotes and descriptions are not.
@@ -31,12 +39,9 @@ function buildPrompt(input: Record<string, any>) {
     .map((title: string) => String(title).slice(0, 60));
   const words = (input.topWords || []).slice(0, 8)
     .map((word: string) => String(word).slice(0, 24));
-  const warmth = Number(input.positivity);
   const rhythm = String(input.rhythmShape || '').slice(0, 24);
 
-  const mood = Number.isFinite(warmth)
-    ? warmth > 60 ? 'warm, bright, close' : warmth < 35 ? 'cool, distant, muted' : 'mixed, uncertain'
-    : 'balanced';
+  const mood = moodOf(input);
 
   return [
     'Create a single abstract, symbolic artwork that represents the emotional shape of a relationship.',
@@ -63,7 +68,19 @@ const FALLBACK_MODEL = 'dall-e-3';
 function isModelAccessError(status: number, body: string) {
   if (status === 404) return true;
   const text = body.toLowerCase();
-  return status === 403 && (text.includes('verif') || text.includes('model') || text.includes('access'));
+  // A content-policy 400 is not a model-access problem, and treating it as one
+  // would burn the fallback call on a prompt the fallback will reject too.
+  if (text.includes('content_policy') || text.includes('safety system')) return false;
+  // OpenAI has returned the verification gate as both 400 and 403 depending on
+  // the endpoint, so the status alone cannot be the test.
+  if (status !== 400 && status !== 403) return false;
+  return text.includes('verif')
+    || text.includes('does not have access')
+    || text.includes('must be verified')
+    || text.includes('missing scopes')
+    || text.includes('insufficient permission')
+    || text.includes('model_not_found')
+    || text.includes('unsupported');
 }
 
 async function callImageApi(apiKey: string, model: string, prompt: string) {
@@ -77,14 +94,42 @@ async function callImageApi(apiKey: string, model: string, prompt: string) {
   return { response, body: response.ok ? '' : (await response.text()).slice(0, 400) };
 }
 
-async function generateImage(apiKey: string, prompt: string) {
+function isContentFilterError(status: number, body: string) {
+  const text = body.toLowerCase();
+  return status === 400 && (
+    text.includes('content_policy')
+    || text.includes('safety system')
+    || text.includes('content policy')
+  );
+}
+
+// The last resort. DALL·E 3's safety filter rejects prompts far more readily
+// than the report's own model does, and a relationship described honestly —
+// distance, conflict, the moment it changed — can trip it even though nothing
+// about the request is unsafe. Rather than lose the picture entirely, retry
+// with the mood and nothing else. A less specific image beats no image.
+function neutralPrompt(mood: string) {
+  return [
+    'Create a single abstract painterly artwork: two flowing colour presences interacting across a canvas.',
+    `Overall feeling: ${mood}.`,
+    'Style: abstract expressionism, layered colour, soft edges, a sense of space between two forms.',
+    'STRICT RULES: no text, no letters, no numbers, no faces, no logos, no charts or diagrams.',
+  ].join('\n');
+}
+
+async function generateImage(apiKey: string, prompt: string, mood: string) {
   let { response, body } = await callImageApi(apiKey, IMAGE_MODEL, prompt);
   let usedModel = IMAGE_MODEL;
 
   if (!response.ok && IMAGE_MODEL !== FALLBACK_MODEL && isModelAccessError(response.status, body)) {
-    console.warn(`IMAGE_MODEL_UNAVAILABLE model=${IMAGE_MODEL} status=${response.status} — falling back to ${FALLBACK_MODEL}`);
+    console.warn(`IMAGE_MODEL_UNAVAILABLE model=${IMAGE_MODEL} status=${response.status} body=${body}`);
     ({ response, body } = await callImageApi(apiKey, FALLBACK_MODEL, prompt));
     usedModel = FALLBACK_MODEL;
+  }
+
+  if (!response.ok && isContentFilterError(response.status, body)) {
+    console.warn(`IMAGE_PROMPT_REJECTED model=${usedModel} body=${body} — retrying with a neutral prompt`);
+    ({ response, body } = await callImageApi(apiKey, usedModel, neutralPrompt(mood)));
   }
 
   if (!response.ok) {
@@ -103,6 +148,45 @@ async function generateImage(apiKey: string, prompt: string) {
     return { bytes: new Uint8Array(await file.arrayBuffer()), usedModel };
   }
   throw new Error('Image API returned neither b64_json nor url');
+}
+
+// Every failure the user can see gets a sentence that names what happened.
+//
+// This list used to have three entries, two specific and one that swallowed
+// everything else as "The image could not be generated." — which is how a
+// broken deploy, a rejected prompt, an expired key and a missing bucket all
+// came to look identical from the outside. Ordered most specific first;
+// whatever still falls through carries `detail` alongside it, so the next
+// failure is diagnosable from the page rather than from the logs.
+function reasonFor(detail: string) {
+  if (/verif/i.test(detail)) {
+    return 'This OpenAI organisation is not verified for the image model. Verify it, or set OPENAI_IMAGE_MODEL to dall-e-3.';
+  }
+  if (/quota|billing|insufficient_quota|exceeded your current quota/i.test(detail)) {
+    return 'The OpenAI account has no image credit available.';
+  }
+  if (/content_policy|safety system|content policy/i.test(detail)) {
+    return 'The image model declined this prompt. Nothing is wrong with your report — this happens with some emotional descriptions.';
+  }
+  if (/insufficient permission|missing scopes|permission/i.test(detail)) {
+    return 'The OpenAI key is not permitted to generate images. A project key needs the model.request scope — or use a key with full access.';
+  }
+  if (/invalid_api_key|incorrect api key|401/i.test(detail)) {
+    return 'The OpenAI key was rejected. It may have been rotated or revoked.';
+  }
+  if (/rate.?limit|429/i.test(detail)) {
+    return 'The image model is rate limited right now. Try again in a minute.';
+  }
+  if (/Upload failed|Bucket not found|bucket/i.test(detail)) {
+    return 'The picture was generated but could not be saved to storage.';
+  }
+  if (/Image download failed/i.test(detail)) {
+    return 'The image model produced a picture but it could not be downloaded before the link expired.';
+  }
+  if (/timeout|timed out|deadline/i.test(detail)) {
+    return 'The image model took too long to answer.';
+  }
+  return 'The image model returned an error.';
 }
 
 Deno.serve(async (req) => {
@@ -149,8 +233,9 @@ Deno.serve(async (req) => {
       .update({ image_status: 'generating', image_updated_at: new Date().toISOString() })
       .eq('id', reportId);
 
-    const prompt = buildPrompt(body.imageContext || {});
-    const { bytes, usedModel } = await generateImage(apiKey, prompt);
+    const imageContext = body.imageContext || {};
+    const prompt = buildPrompt(imageContext);
+    const { bytes, usedModel } = await generateImage(apiKey, prompt, moodOf(imageContext));
 
     const path = `${user.id}/${reportId}.png`;
     const { error: uploadError } = await admin.storage
@@ -181,11 +266,6 @@ Deno.serve(async (req) => {
         .then(() => {}, () => {});
     }
     const detail = String(error).slice(0, 300);
-    const reason = /verif/i.test(detail)
-      ? 'This OpenAI organisation is not verified for the image model. Verify it, or set OPENAI_IMAGE_MODEL to dall-e-3.'
-      : /quota|billing|insufficient/i.test(detail)
-        ? 'The OpenAI account has no image credit available.'
-        : 'The image could not be generated.';
-    return jsonResponse({ status: 'failed', error: reason, detail }, 200, cors);
+    return jsonResponse({ status: 'failed', error: reasonFor(detail), detail }, 200, cors);
   }
 });

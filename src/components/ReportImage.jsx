@@ -31,6 +31,10 @@ export default function ReportImage({ reportId, imageContext, initialUrl, initia
   const [status, setStatus] = useState(initialStatus || (initialUrl ? 'ready' : 'pending'));
   const [line, setLine] = useState(0);
   const [reason, setReason] = useState('');
+  // The raw error behind the friendly sentence. Kept behind a disclosure rather
+  // than dropped: when someone reports "the picture didn't work", this is the
+  // one line that makes the difference between fixing it and guessing at it.
+  const [detail, setDetail] = useState('');
   const started = useRef(false);
   // Held in a ref, not a dep: the parent rebuilds this object every render, and
   // depending on it would re-run the kick-off effect on every single render.
@@ -51,10 +55,15 @@ export default function ReportImage({ reportId, imageContext, initialUrl, initia
           setStatus('ready');
         } else if (result?.status === 'failed') {
           setReason(result.error || '');
+          setDetail(result.detail || '');
           setStatus('failed');
         }
       })
-      .catch(() => setStatus('failed'));
+      .catch((error) => {
+        setReason('');
+        setDetail(String(error?.message || error || ''));
+        setStatus('failed');
+      });
   }, [reportId, url, status]);
 
   // Poll while generating. Covers the case where the request times out at the
@@ -66,6 +75,7 @@ export default function ReportImage({ reportId, imageContext, initialUrl, initia
       polls += 1;
       if (polls > MAX_POLLS) {
         window.clearInterval(timer);
+        setReason('The image is taking longer than expected. It may still finish — reopen this report in a few minutes.');
         setStatus('failed');
         return;
       }
@@ -75,6 +85,9 @@ export default function ReportImage({ reportId, imageContext, initialUrl, initia
         setStatus('ready');
         window.clearInterval(timer);
       } else if (state?.imageStatus === 'failed') {
+        // The row records the outcome, not the cause — the reason only exists
+        // in the response to the request that failed, which this poll is not.
+        setReason('The image model did not complete this one.');
         setStatus('failed');
         window.clearInterval(timer);
       }
@@ -91,23 +104,48 @@ export default function ReportImage({ reportId, imageContext, initialUrl, initia
   const retry = () => {
     started.current = false;
     setReason('');
+    setDetail('');
     setStatus('pending');
   };
 
   if (status === 'failed') {
+    // Shaped like the panel it replaces rather than an alert box dropped into
+    // the middle of a column. It keeps the square footprint the image would
+    // have had, so the report does not reflow around a failure.
     return (
-      <div className="rounded-lg border border-warn/40 bg-warn/10 p-5">
-        <p className="text-sm font-semibold text-warn">The picture did not come through</p>
-        <p className="mt-1.5 text-sm leading-6 text-smoke">
-          {reason || 'The image service did not respond.'}
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button type="button" onClick={retry} className="btn btn-secondary !min-h-[38px] !px-3 !py-1.5 !text-xs">
+      <div className="grid aspect-square w-full place-items-center rounded-lg border border-line bg-well p-6">
+        <div className="max-w-sm text-center">
+          <span
+            className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-warn/15 text-xl"
+            aria-hidden="true"
+          >
+            🎨
+          </span>
+          <p className="mt-4 text-sm font-semibold text-ink">This one stayed unpainted</p>
+          <p className="mt-1.5 text-sm leading-6 text-smoke">
+            {reason || 'The image service did not respond.'}
+          </p>
+          <button
+            type="button"
+            onClick={retry}
+            className="btn btn-secondary mt-4 !min-h-[38px] !px-4 !py-1.5 !text-xs"
+          >
             Try again
           </button>
-          <span className="text-xs leading-5 text-ash">
-            Everything else in your report is complete and unaffected.
-          </span>
+          <p className="mt-3 text-xs leading-5 text-ash">
+            Retrying is free — the picture is generated separately and costs you
+            no credit. Everything else in your report is complete.
+          </p>
+          {detail && (
+            <details className="mt-3 text-left">
+              <summary className="cursor-pointer text-xs text-ash hover:text-smoke">
+                Technical detail
+              </summary>
+              <p className="mt-1.5 break-words rounded border border-line bg-paper p-2 font-mono text-[0.68rem] leading-5 text-ash">
+                {detail}
+              </p>
+            </details>
+          )}
         </div>
       </div>
     );
