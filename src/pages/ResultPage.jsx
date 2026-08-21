@@ -299,6 +299,10 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
       analysisError: flow.analysisError,
       cacheNotice: flow.cacheNotice,
       chainId: flow.chainId || null,
+      // The saved row id. Missing here meant a freshly generated report had no
+      // id to hand the image function, so the card never rendered at all —
+      // only reports reopened from /reports/:id ever tried.
+      reportSource: flow.reportSource || null,
     }
     : fetchedReport
       ? {
@@ -310,6 +314,7 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
         analysisError: '',
         cacheNotice: '',
         chainId: fetchedReport.chainId || null,
+        reportSource: fetchedReport.id || null,
       }
       : null;
 

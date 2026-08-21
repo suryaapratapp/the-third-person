@@ -88,15 +88,27 @@ export default function ReportImage({ reportId, imageContext, initialUrl, initia
     return () => window.clearInterval(timer);
   }, [status]);
 
+  const retry = () => {
+    started.current = false;
+    setReason('');
+    setStatus('pending');
+  };
+
   if (status === 'failed') {
     return (
-      <div className="rounded-lg border border-line bg-well p-5 text-center">
-        <p className="text-sm leading-6 text-smoke">
-          {reason || 'The image could not be generated this time.'}
+      <div className="rounded-lg border border-warn/40 bg-warn/10 p-5">
+        <p className="text-sm font-semibold text-warn">The picture did not come through</p>
+        <p className="mt-1.5 text-sm leading-6 text-smoke">
+          {reason || 'The image service did not respond.'}
         </p>
-        <p className="mt-2 text-xs leading-5 text-ash">
-          Everything else in your report is unaffected.
-        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button type="button" onClick={retry} className="btn btn-secondary !min-h-[38px] !px-3 !py-1.5 !text-xs">
+            Try again
+          </button>
+          <span className="text-xs leading-5 text-ash">
+            Everything else in your report is complete and unaffected.
+          </span>
+        </div>
       </div>
     );
   }

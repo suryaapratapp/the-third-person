@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PiCheck, PiPencilSimple } from 'react-icons/pi';
 import { filterSensitiveData } from '../lib/sensitiveDataFilter.js';
 import { parseConversationText } from '../lib/conversationPreprocessor.js';
@@ -45,19 +45,30 @@ export default function WhoIsWhoStep({ flow, updateFlow }) {
   const mine = flow.mainUserSender || '';
   const theirs = flow.otherPersonSender || '';
 
-  // First render after upload: pick a sensible default so the common case is
-  // a single confirming tap rather than two selections.
+  // Re-detect whenever the PAIR changes, not just the first time.
+  //
+  // Two bugs lived here. The old guard was `if (mine && theirs) return`, so a
+  // second analysis in the same session kept the previous chat's people — and
+  // the name line read `flow.personName || them`, which preserved a stale name
+  // from an earlier report. Together they meant uploading a chat with Bittuuu
+  // in it still suggested "Kaushal" from the run before.
+  //
+  // Keyed on the participant signature so a fresh pair always re-suggests,
+  // while a manual edit inside the SAME chat is never clobbered.
+  const signature = participants.slice(0, 2).join('\u0000');
+  const filledFor = useRef('');
+
   useEffect(() => {
-    if (participants.length !== 2 || (mine && theirs)) return;
+    if (participants.length < 2 || filledFor.current === signature) return;
+    filledFor.current = signature;
     const guessed = guessMainUser(participants, profile);
     const me = guessed || participants[0];
     const them = participants.find((name) => name !== me) || participants[1];
-    updateFlow({
-      mainUserSender: me,
-      otherPersonSender: them,
-      personName: flow.personName?.trim() ? flow.personName : them,
-    });
-  }, [participants, mine, theirs, profile, updateFlow, flow.personName]);
+    // Always the detected name. It is a SUGGESTION from this chat, and the
+    // field below stays editable — carrying over a name from a different
+    // relationship is never the more helpful default.
+    updateFlow({ mainUserSender: me, otherPersonSender: them, personName: them });
+  }, [participants, signature, profile, updateFlow]);
 
   if (!participants.length) {
     return (

@@ -78,7 +78,21 @@ export async function requestReportImage({ reportId, imageContext }) {
   const { data, error } = await supabase.functions.invoke('generate-relationship-image', {
     body: { reportId, imageContext },
   });
-  if (error) return { status: 'failed' };
+  if (error) {
+    // A non-2xx makes supabase-js throw a FunctionsHttpError whose body holds
+    // the server's actual message — and discarding it, as this used to, turned
+    // every distinct failure into one useless "could not be generated". The
+    // body is the only place the real reason exists on the client.
+    let detail = error.message || '';
+    try {
+      const parsed = await error.context?.json?.();
+      if (parsed?.error) detail = parsed.error;
+      else if (parsed?.message) detail = parsed.message;
+    } catch {
+      /* not JSON — the message above is the best available */
+    }
+    return { status: 'failed', error: detail };
+  }
   return data || { status: 'failed' };
 }
 
