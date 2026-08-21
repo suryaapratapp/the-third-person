@@ -54,24 +54,53 @@ function buildPrompt(input: Record<string, any>) {
   ].filter(Boolean).join('\n');
 }
 
-async function generateImage(apiKey: string, prompt: string) {
+// gpt-image-1 is gated behind OpenAI ORGANISATION VERIFICATION. An unverified
+// org gets a 403 naming the model, which is indistinguishable from a broken
+// deploy unless the reason is surfaced — so the chain falls back to dall-e-3,
+// which has no such gate, and records which model actually produced the image.
+const FALLBACK_MODEL = 'dall-e-3';
+
+function isModelAccessError(status: number, body: string) {
+  if (status === 404) return true;
+  const text = body.toLowerCase();
+  return status === 403 && (text.includes('verif') || text.includes('model') || text.includes('access'));
+}
+
+async function callImageApi(apiKey: string, model: string, prompt: string) {
+  // dall-e-3 rejects sizes gpt-image-1 accepts, so the size follows the model.
+  const size = model === FALLBACK_MODEL ? '1024x1024' : IMAGE_SIZE;
   const response = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: IMAGE_MODEL, prompt, size: IMAGE_SIZE, n: 1 }),
+    body: JSON.stringify({ model, prompt, size, n: 1 }),
   });
+  return { response, body: response.ok ? '' : (await response.text()).slice(0, 400) };
+}
+
+async function generateImage(apiKey: string, prompt: string) {
+  let { response, body } = await callImageApi(apiKey, IMAGE_MODEL, prompt);
+  let usedModel = IMAGE_MODEL;
+
+  if (!response.ok && IMAGE_MODEL !== FALLBACK_MODEL && isModelAccessError(response.status, body)) {
+    console.warn(`IMAGE_MODEL_UNAVAILABLE model=${IMAGE_MODEL} status=${response.status} — falling back to ${FALLBACK_MODEL}`);
+    ({ response, body } = await callImageApi(apiKey, FALLBACK_MODEL, prompt));
+    usedModel = FALLBACK_MODEL;
+  }
+
   if (!response.ok) {
-    throw new Error(`Image API ${response.status}: ${(await response.text()).slice(0, 200)}`);
+    throw new Error(`Image API ${response.status} (${usedModel}): ${body}`);
   }
   const data = await response.json();
   const first = data?.data?.[0];
   // gpt-image-1 returns base64; DALL·E 3 returns a short-lived URL. Support
   // both so the model can be swapped with an env var and nothing else.
-  if (first?.b64_json) return Uint8Array.from(atob(first.b64_json), (c) => c.charCodeAt(0));
+  if (first?.b64_json) {
+    return { bytes: Uint8Array.from(atob(first.b64_json), (c) => c.charCodeAt(0)), usedModel };
+  }
   if (first?.url) {
     const file = await fetch(first.url);
     if (!file.ok) throw new Error(`Image download failed: ${file.status}`);
-    return new Uint8Array(await file.arrayBuffer());
+    return { bytes: new Uint8Array(await file.arrayBuffer()), usedModel };
   }
   throw new Error('Image API returned neither b64_json nor url');
 }
@@ -121,7 +150,7 @@ Deno.serve(async (req) => {
       .eq('id', reportId);
 
     const prompt = buildPrompt(body.imageContext || {});
-    const bytes = await generateImage(apiKey, prompt);
+    const { bytes, usedModel } = await generateImage(apiKey, prompt);
 
     const path = `${user.id}/${reportId}.png`;
     const { error: uploadError } = await admin.storage
@@ -140,7 +169,7 @@ Deno.serve(async (req) => {
       image_updated_at: new Date().toISOString(),
     }).eq('id', reportId);
 
-    return jsonResponse({ status: 'ready', imageUrl }, 200, cors);
+    return jsonResponse({ status: 'ready', imageUrl, model: usedModel }, 200, cors);
   } catch (error) {
     console.error('REPORT_IMAGE_FAILED', String(error).slice(0, 300));
     // Mark failed rather than leaving it 'generating' forever, or the client
@@ -151,6 +180,12 @@ Deno.serve(async (req) => {
         .eq('id', reportId)
         .then(() => {}, () => {});
     }
-    return jsonResponse({ status: 'failed', error: 'The image could not be generated.' }, 200, cors);
+    const detail = String(error).slice(0, 300);
+    const reason = /verif/i.test(detail)
+      ? 'This OpenAI organisation is not verified for the image model. Verify it, or set OPENAI_IMAGE_MODEL to dall-e-3.'
+      : /quota|billing|insufficient/i.test(detail)
+        ? 'The OpenAI account has no image credit available.'
+        : 'The image could not be generated.';
+    return jsonResponse({ status: 'failed', error: reason, detail }, 200, cors);
   }
 });

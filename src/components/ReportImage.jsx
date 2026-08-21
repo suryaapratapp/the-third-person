@@ -30,6 +30,7 @@ export default function ReportImage({ reportId, imageContext, initialUrl, initia
   const [url, setUrl] = useState(initialUrl || null);
   const [status, setStatus] = useState(initialStatus || (initialUrl ? 'ready' : 'pending'));
   const [line, setLine] = useState(0);
+  const [reason, setReason] = useState('');
   const started = useRef(false);
   // Held in a ref, not a dep: the parent rebuilds this object every render, and
   // depending on it would re-run the kick-off effect on every single render.
@@ -49,6 +50,7 @@ export default function ReportImage({ reportId, imageContext, initialUrl, initia
           setUrl(result.imageUrl);
           setStatus('ready');
         } else if (result?.status === 'failed') {
+          setReason(result.error || '');
           setStatus('failed');
         }
       })
@@ -90,8 +92,10 @@ export default function ReportImage({ reportId, imageContext, initialUrl, initia
     return (
       <div className="rounded-lg border border-line bg-well p-5 text-center">
         <p className="text-sm leading-6 text-smoke">
-          The image could not be generated this time. Everything else in your
-          report is unaffected.
+          {reason || 'The image could not be generated this time.'}
+        </p>
+        <p className="mt-2 text-xs leading-5 text-ash">
+          Everything else in your report is unaffected.
         </p>
       </div>
     );
