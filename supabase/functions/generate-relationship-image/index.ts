@@ -59,22 +59,40 @@ function buildPrompt(input: Record<string, any>) {
   ].filter(Boolean).join('\n');
 }
 
-// gpt-image-1 is gated behind OpenAI ORGANISATION VERIFICATION. An unverified
-// org gets a 403 naming the model, which is indistinguishable from a broken
-// deploy unless the reason is surfaced — so the chain falls back to dall-e-3,
-// which has no such gate, and records which model actually produced the image.
-const FALLBACK_MODEL = 'dall-e-3';
+// A CHAIN, not a spare.
+//
+// Which image models an OpenAI account can reach varies by org verification
+// status, project key scopes and whatever has since been retired — and the two
+// failures do not look alike: gpt-image-1 on an unverified org returns 403
+// "must be verified", while a model the account cannot address at all returns
+// 400 "The model 'x' does not exist."
+//
+// This was a single fallback to dall-e-3, and the logs showed the exact hole
+// that leaves: gpt-image-1 403'd, the fallback fired correctly, and dall-e-3
+// answered "does not exist" — so a working chain ended one link short of a
+// model this account can actually use. Ordered best-first; every link is tried
+// before the request is called a failure.
+const MODEL_CHAIN = ['gpt-image-1', 'gpt-image-1-mini', 'dall-e-3', 'dall-e-2'];
 
+function modelChain() {
+  // The configured model always leads, whether or not it is in the list.
+  return [IMAGE_MODEL, ...MODEL_CHAIN].filter((model, index, all) => all.indexOf(model) === index);
+}
+
+// "This account cannot use this model" — worth trying the next link.
+// Distinct from "this account cannot make images at all", which no amount of
+// walking the chain will fix.
 function isModelAccessError(status: number, body: string) {
   if (status === 404) return true;
   const text = body.toLowerCase();
   // A content-policy 400 is not a model-access problem, and treating it as one
-  // would burn the fallback call on a prompt the fallback will reject too.
+  // would burn every remaining link on a prompt they will all reject.
   if (text.includes('content_policy') || text.includes('safety system')) return false;
-  // OpenAI has returned the verification gate as both 400 and 403 depending on
-  // the endpoint, so the status alone cannot be the test.
+  // OpenAI returns the verification gate as 400 or 403 depending on the
+  // endpoint, so status alone cannot be the test.
   if (status !== 400 && status !== 403) return false;
   return text.includes('verif')
+    || text.includes('does not exist')          // the one that broke this
     || text.includes('does not have access')
     || text.includes('must be verified')
     || text.includes('missing scopes')
@@ -84,8 +102,9 @@ function isModelAccessError(status: number, body: string) {
 }
 
 async function callImageApi(apiKey: string, model: string, prompt: string) {
-  // dall-e-3 rejects sizes gpt-image-1 accepts, so the size follows the model.
-  const size = model === FALLBACK_MODEL ? '1024x1024' : IMAGE_SIZE;
+  // The DALL·E models reject sizes gpt-image-1 accepts, so the size follows the
+  // model. 1024x1024 is the one square every model in the chain supports.
+  const size = model.startsWith('gpt-image') ? IMAGE_SIZE : '1024x1024';
   const response = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
@@ -118,23 +137,34 @@ function neutralPrompt(mood: string) {
 }
 
 async function generateImage(apiKey: string, prompt: string, mood: string) {
-  let { response, body } = await callImageApi(apiKey, IMAGE_MODEL, prompt);
-  let usedModel = IMAGE_MODEL;
+  const chain = modelChain();
+  let response: Response | null = null;
+  let body = '';
+  let usedModel = chain[0];
+  // The FIRST failure is the one worth reporting. When every link is
+  // unreachable, "verify your organisation for gpt-image-1" is actionable in a
+  // way that "dall-e-2 does not exist either" is not.
+  let firstFailure = '';
 
-  if (!response.ok && IMAGE_MODEL !== FALLBACK_MODEL && isModelAccessError(response.status, body)) {
-    console.warn(`IMAGE_MODEL_UNAVAILABLE model=${IMAGE_MODEL} status=${response.status} body=${body}`);
-    ({ response, body } = await callImageApi(apiKey, FALLBACK_MODEL, prompt));
-    usedModel = FALLBACK_MODEL;
+  for (const model of chain) {
+    usedModel = model;
+    ({ response, body } = await callImageApi(apiKey, model, prompt));
+
+    if (!response.ok && isContentFilterError(response.status, body)) {
+      console.warn(`IMAGE_PROMPT_REJECTED model=${model} body=${body} — retrying with a neutral prompt`);
+      ({ response, body } = await callImageApi(apiKey, model, neutralPrompt(mood)));
+    }
+
+    if (response.ok) break;
+    if (!firstFailure) firstFailure = `${response.status} (${model}): ${body}`;
+    if (!isModelAccessError(response.status, body)) break;
+    console.warn(`IMAGE_MODEL_UNAVAILABLE model=${model} status=${response.status} body=${body}`);
   }
 
-  if (!response.ok && isContentFilterError(response.status, body)) {
-    console.warn(`IMAGE_PROMPT_REJECTED model=${usedModel} body=${body} — retrying with a neutral prompt`);
-    ({ response, body } = await callImageApi(apiKey, usedModel, neutralPrompt(mood)));
+  if (!response || !response.ok) {
+    throw new Error(`Image API ${firstFailure || 'failed'}`);
   }
-
-  if (!response.ok) {
-    throw new Error(`Image API ${response.status} (${usedModel}): ${body}`);
-  }
+  console.log(`IMAGE_MODEL_USED ${usedModel}`);
   const data = await response.json();
   const first = data?.data?.[0];
   // gpt-image-1 returns base64; DALL·E 3 returns a short-lived URL. Support
