@@ -9,7 +9,7 @@ import { getUserProfile } from '../lib/profileStore.js';
 import { buildZodiacCompatibility, getZodiacElement, getZodiacGlyph, getZodiacSign } from '../lib/zodiac.js';
 import { generateRelationshipReportViaSupabase } from '../lib/backendAiService.js';
 import { fetchUsageEntitlements } from '../lib/creditsService.js';
-import { runRazorpayCheckout } from '../lib/paymentsService.js';
+import { runCheckout } from '../lib/paymentsService.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import UsageWarningModal from './UsageWarningModal.jsx';
 import AnalysisProgress from './AnalysisProgress.jsx';
@@ -313,18 +313,18 @@ export default function ReviewAnalysisStep({ flow, updateFlow, onStart }) {
       setAnalysisError('');
       setIsPaying(true);
       try {
-        await runRazorpayCheckout({
-          reportCount: 1,
-          packId: 'report_only',
-          user,
-          description: `Relationship Report for ${flow.personName || 'this conversation'}`,
-        });
+        // Returns to the wizard rather than the pricing page, because a
+        // redirect payment (UPI, netbanking) leaves this page entirely and
+        // landing on /pricing afterwards would strand someone who was two
+        // clicks from a report.
+        await runCheckout({ reportCount: 1, packId: 'report_only', returnPath: '/analysis/new' });
         setIsPaying(false);
         setEntitlements(await fetchUsageEntitlements());
         // Payment succeeded — run the analysis they already asked for.
         await startAnalysis();
       } catch (paymentError) {
         setIsPaying(false);
+        if (paymentError.redirecting) return;
         if (!paymentError.cancelled) {
           setAnalysisError(paymentError.message || 'Payment could not be completed. Please try again.');
         }

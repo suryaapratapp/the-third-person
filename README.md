@@ -16,7 +16,7 @@ Vercel reads the same `engines` field, so local, CI and deploy stay aligned.
   (`src/state/RouterContext.jsx`), **plus a build-time prerender step** (below)
 - Supabase — Postgres, Auth, and Deno Edge Functions (`supabase/functions/`)
 - OpenAI, called only from Edge Functions, never from the browser
-- Razorpay for payments (orders, signature verification, webhook)
+- Cashfree PG for payments (orders, server-side status verification, webhook)
 - hCaptcha on sign-up / sign-in
 
 ## Local development
@@ -100,20 +100,29 @@ supabase db push                 # applies supabase/migrations/
 supabase functions deploy generate-relationship-report
 supabase functions deploy generate-personality-card
 supabase functions deploy ai-bestie-chat
-supabase functions deploy create-razorpay-order
-supabase functions deploy verify-razorpay-payment
-supabase functions deploy razorpay-webhook
+supabase functions deploy generate-relationship-image
+supabase functions deploy create-cashfree-order
+supabase functions deploy verify-cashfree-payment
+supabase functions deploy cashfree-webhook --no-verify-jwt
 ```
 
+`cashfree-webhook` MUST be deployed with `--no-verify-jwt`: the caller is
+Cashfree's servers, not a signed-in user. It authenticates the request by
+signature instead.
+
 Edge Function secrets: `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
-`SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `RAZORPAY_KEY_ID`,
-`RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, optionally
-`THIRDPERSON_REPORT_SYSTEM_PROMPT` and `ALLOWED_ORIGINS`.
+`SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `CASHFREE_APP_ID`,
+`CASHFREE_SECRET_KEY`, `CASHFREE_MODE` (`sandbox` or `production`; defaults to
+`sandbox`), optionally `THIRDPERSON_REPORT_SYSTEM_PROMPT` and
+`ALLOWED_ORIGINS`.
+
+Cashfree signs webhooks with the ordinary secret key, so there is no separate
+webhook secret to configure.
 
 ## Notes
 
 - **There is no free tier.** Every Relationship Report is paid. Credit granting
-  happens only through Razorpay. The `claim_test_credit_pack` RPC is
+  happens only through Cashfree. The `claim_test_credit_pack` RPC is
   service_role-only — do not grant it to `authenticated` (see the migration).
 - Reports are analysed by software, not read by staff. Sensitive details are
   stripped before anything reaches the AI provider — see the Privacy Policy.

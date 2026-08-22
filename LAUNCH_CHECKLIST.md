@@ -17,7 +17,7 @@ of 2026-08-06._
 | 5 | Flags lacked guaranteed evidence + confidence | ✅ Both required by the strict JSON schema |
 | 6 | ~11 orphaned components | ✅ Removed |
 
-Not from that audit, but shipped since: Razorpay payments end to end,
+Not from that audit, but shipped since: Cashfree payments end to end,
 relationship-type lenses, local metrics (effort, emoji, activity), the zodiac
 layer, mobile-first navigation, the coach mascot, the sci-fi theme, build-time
 prerendering, and per-route SEO.
@@ -33,7 +33,7 @@ prerendering, and per-route SEO.
       Fix: point Supabase Auth at Resend/SES/Brevo.
 - [ ] **SPF, DKIM and DMARC** on the sending domain. Three DNS TXT records,
       free. Without them the mail that does send lands in spam.
-- [ ] **Razorpay live keys.** Still on test credentials. Needs KYC — allow
+- [ ] **Cashfree production credentials.** Still on sandbox. Needs KYC — allow
       several days. Then swap the Supabase secrets and re-verify the webhook
       signature path.
 - [ ] **One real paid transaction on production**, start to finish: credit
@@ -105,7 +105,7 @@ prerendering, and per-route SEO.
 ## 📱 Mobile — read before building iOS
 
 India is roughly **95% Android**; iOS is ~4–5% of the installed base. Apple
-also mandates In-App Purchase for digital goods, so Razorpay cannot be used
+also mandates In-App Purchase for digital goods, so Cashfree cannot be used
 in-app and Apple takes 30% (15% under the Small Business Program) — on a ₹249
 report that is ₹37–75, plus the loss of UPI.
 

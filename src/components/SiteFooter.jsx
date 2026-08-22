@@ -3,7 +3,7 @@ import RouteLink from './RouteLink.jsx';
 
 // The site had no footer at all — Terms, Refund Policy and Contact lived only
 // inside a desktop nav dropdown, which is both a discoverability problem and a
-// gap for a product that takes payments (Razorpay expects these reachable from
+// gap for a product that takes payments (Cashfree expects these reachable from
 // every page). It also gives the long marketing pages a real ending instead of
 // stopping dead.
 

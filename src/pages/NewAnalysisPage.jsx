@@ -8,6 +8,7 @@ import UploadOrPasteChat from '../components/UploadOrPasteChat.jsx';
 import ReviewAnalysisStep from '../components/ReviewAnalysisStep.jsx';
 import { useAnalysis } from '../state/AnalysisContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
+import { pendingCashfreeOrder, resumeCashfreeOrder } from '../lib/paymentsService.js';
 
 // The analysis wizard, rebuilt around the phone.
 //
@@ -65,6 +66,40 @@ export default function NewAnalysisPage() {
     panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [step]);
 
+  // Coming back from a redirect payment.
+  //
+  // Topping up mid-analysis with UPI or netbanking leaves the site, and the
+  // wizard's state does not survive that — the uploaded conversation is gone.
+  // The CREDIT must not be. This confirms the payment on the way back in and
+  // says plainly that the credit is banked, so the only thing lost is the
+  // upload rather than the money.
+  const [paymentNotice, setPaymentNotice] = useState('');
+  useEffect(() => {
+    if (!pendingCashfreeOrder()) return undefined;
+    let mounted = true;
+    resumeCashfreeOrder()
+      .then((result) => {
+        if (!mounted || !result) return;
+        setPaymentNotice(result.success
+          ? 'Payment received and your credit has been added. Upload the conversation again to pick up where you left off.'
+          : result.error || 'We could not confirm that payment.');
+      })
+      .finally(() => {
+        try {
+          const url = new URL(window.location.href);
+          if (url.searchParams.has('cf_order')) {
+            url.searchParams.delete('cf_order');
+            window.history.replaceState({}, '', url.toString());
+          }
+        } catch {
+          /* leaving the parameter in place is harmless */
+        }
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const bodies = [
     <PlatformSelector key="platform" value={flow.platform} onChange={(platform) => {
       updateFlow({ platform });
@@ -94,6 +129,12 @@ export default function NewAnalysisPage() {
     </div>,
     <ReviewAnalysisStep key="review" flow={flow} updateFlow={updateFlow} onStart={(target = '/analysis/result') => navigate(target)} />,
   ];
+
+  const noticeBanner = paymentNotice ? (
+    <div className="mx-auto mb-4 max-w-[900px] rounded-sm border border-good/35 bg-good/10 p-4">
+      <p className="text-sm leading-7 text-smoke">{paymentNotice}</p>
+    </div>
+  ) : null;
 
   return (
     <section className="relative min-h-screen pb-32 pt-[var(--header-h)]">
@@ -187,6 +228,7 @@ export default function NewAnalysisPage() {
             <div className="mb-5 hidden lg:block">
               <h1 className="serif-title text-[1.75rem]">{steps[step].label}</h1>
             </div>
+            {noticeBanner}
             {bodies[step]}
           </div>
         </div>

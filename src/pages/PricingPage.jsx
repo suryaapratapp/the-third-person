@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PiCheck, PiMinus, PiPlus } from 'react-icons/pi';
 import { fetchCreditBalances } from '../lib/creditsService.js';
-import { runRazorpayCheckout } from '../lib/paymentsService.js';
+import { pendingCashfreeOrder, resumeCashfreeOrder, runCheckout } from '../lib/paymentsService.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { useRouter } from '../state/RouterContext.jsx';
 
@@ -60,6 +60,49 @@ export default function PricingPage() {
     };
   }, []);
 
+  // Picking a payment back up after a redirect.
+  //
+  // UPI and netbanking leave the site entirely, so for those methods this is
+  // not an edge case — it is the NORMAL return path, and without it someone
+  // would land back on the pricing page with no sign their money had done
+  // anything. Cashfree sends them to /pricing?cf_order=…; we confirm it
+  // server-side and clean the parameter out of the URL either way.
+  useEffect(() => {
+    if (!user || !pendingCashfreeOrder()) return undefined;
+    let mounted = true;
+    setPaying(true);
+    resumeCashfreeOrder()
+      .then(async (result) => {
+        if (!mounted || !result) return;
+        if (result.success) {
+          setBalances(await fetchCreditBalances());
+          setMessage(
+            result.alreadySettled
+              ? 'This payment was already processed — your credits are up to date.'
+              : 'Payment successful. Your credits have been added.',
+          );
+        } else if (result.error) {
+          setMessage(result.error);
+        }
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setPaying(false);
+        try {
+          const url = new URL(window.location.href);
+          if (url.searchParams.has('cf_order')) {
+            url.searchParams.delete('cf_order');
+            window.history.replaceState({}, '', url.toString());
+          }
+        } catch {
+          /* leaving the parameter in place is harmless */
+        }
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
+
   function updateReports(value) {
     setReportCount(clampReports(value));
   }
@@ -72,7 +115,7 @@ export default function PricingPage() {
     }
     setPaying(true);
     try {
-      const result = await runRazorpayCheckout({ reportCount, packId: 'clarity', user });
+      const result = await runCheckout({ reportCount, packId: 'clarity' });
       setBalances(await fetchCreditBalances());
       setMessage(
         result.alreadySettled
@@ -80,6 +123,10 @@ export default function PricingPage() {
           : 'Payment successful. Your credits have been added.',
       );
     } catch (error) {
+      // `redirecting` means a UPI or netbanking flow has taken the page over.
+      // Saying anything discouraging here would be wrong — the payment is
+      // still in progress and resumes on the way back.
+      if (error.redirecting) return;
       if (!error.cancelled) setMessage(error.message || 'Could not start checkout. Please try again.');
     } finally {
       setPaying(false);
