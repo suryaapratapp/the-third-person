@@ -16,7 +16,11 @@ import { createAdminClient, getAuthenticatedUser } from '../_shared/usage.ts';
 // 150s edge ceiling. Bundling them would push long chats over the limit and
 // cost someone their entire report for the sake of a picture.
 
-const IMAGE_MODEL = Deno.env.get('OPENAI_IMAGE_MODEL') || 'gpt-image-1';
+// gpt-image-1-mini by default: materially cheaper per image than gpt-image-1
+// and, for a symbolic scene with no text and no faces, close enough in quality
+// that the saving is worth it. OPENAI_IMAGE_MODEL overrides without a deploy,
+// so switching back is one secret away.
+const IMAGE_MODEL = Deno.env.get('OPENAI_IMAGE_MODEL') || 'gpt-image-1-mini';
 const IMAGE_SIZE = Deno.env.get('OPENAI_IMAGE_SIZE') || '1024x1024';
 
 function moodOf(input: Record<string, any>) {
@@ -126,7 +130,7 @@ function buildPrompt(input: Record<string, any>) {
 // answered "does not exist" — so a working chain ended one link short of a
 // model this account can actually use. Ordered best-first; every link is tried
 // before the request is called a failure.
-const MODEL_CHAIN = ['gpt-image-1', 'gpt-image-1-mini', 'dall-e-3', 'dall-e-2'];
+const MODEL_CHAIN = ['gpt-image-1-mini', 'gpt-image-1', 'dall-e-3', 'dall-e-2'];
 
 function modelChain() {
   // The configured model always leads, whether or not it is in the list.

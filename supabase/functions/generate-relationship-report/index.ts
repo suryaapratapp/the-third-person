@@ -34,15 +34,13 @@ const CODEBASE_REPORT_SYSTEM_PROMPT = [
   'Return valid JSON only.',
 ].join('\n');
 
-async function fetchOpenAiText({
-  apiKey,
-  model,
-  messages,
-  temperature = 0.55,
-  deadlineAt = 0,
-  jsonSchema,
-  schemaName = 'thirdperson_response',
-}: {
+// How many times a rate-limited call is retried before giving up. Two is
+// enough to ride out the burst six concurrent passes create, and few enough
+// that a genuinely over-budget request fails fast rather than eating the
+// deadline the whole report shares.
+const MAX_RATE_LIMIT_RETRIES = 2;
+
+interface OpenAiTextOptions {
   apiKey: string;
   model: string;
   messages: Array<{ role: string; content: string }>;
@@ -50,7 +48,20 @@ async function fetchOpenAiText({
   deadlineAt?: number;
   jsonSchema?: JsonSchema;
   schemaName?: string;
-}) {
+  attempt?: number;
+}
+
+async function fetchOpenAiText(options: OpenAiTextOptions): Promise<string> {
+  const {
+    apiKey,
+    model,
+    messages,
+    temperature = 0.55,
+    deadlineAt = 0,
+    jsonSchema,
+    schemaName = 'thirdperson_response',
+    attempt = 0,
+  } = options;
   // Bound by the SHARED deadline, not a fixed per-call value: each part may
   // make up to three calls (JSON-repair retry, then model fallback), so a
   // per-call cap of 60s still allowed 180s and blew the 150s edge limit.
@@ -97,6 +108,29 @@ async function fetchOpenAiText({
   });
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
+    // 429 IS USUALLY SURVIVABLE, and until now it was not survived.
+    //
+    // Six passes fire at once, so they contend for the same tokens-per-minute
+    // budget and OpenAI rejects whichever arrives over the line. A 429 threw
+    // straight out; the non-critical parts then degraded to {}, which is how a
+    // report came back with no recommendations and nothing user-visible to say
+    // why. Waiting a couple of seconds and asking again clears it, as long as
+    // there is deadline left to spend — the report still matters more than any
+    // one section of it.
+    if (response.status === 429 && attempt < MAX_RATE_LIMIT_RETRIES) {
+      const headerWait = Number(response.headers.get('retry-after')) * 1000;
+      const backoff = Number.isFinite(headerWait) && headerWait > 0
+        ? Math.min(headerWait, 8_000)
+        // Jittered, so six concurrent passes do not all retry in lockstep and
+        // rebuild the exact burst that rate-limited them.
+        : 1_500 * (attempt + 1) + Math.random() * 1_000;
+      const budgetLeft = deadlineAt ? deadlineAt - Date.now() : 60_000;
+      if (budgetLeft > backoff + 8_000) {
+        console.warn(`OPENAI_RATE_LIMITED attempt=${attempt} waiting=${Math.round(backoff)}ms`);
+        await new Promise((resolve) => setTimeout(resolve, backoff));
+        return await fetchOpenAiText({ ...options, attempt: attempt + 1 });
+      }
+    }
     throw new Error(`OPENAI_REPORT_HTTP_${response.status}:${detail.slice(0, 160)}`);
   }
   const data = await response.json();
@@ -768,23 +802,23 @@ async function openAiAnalysis(body: Record<string, any>) {
     // song titles ("Kal", "Ghar") with reasons that described the word rather
     // than any song. The description now has to carry that weight alone.
     music: S.arr(S.obj({
-      title: S.str('The full title of a REAL, released song that exists and can be found on Spotify. Never a word lifted from the conversation, never a single common word, and never a description of a mood. If you cannot name a real song you are confident exists, omit the entry entirely.'),
+      title: S.str('The full title of a REAL, released song that exists and can be found on Spotify. Never a word lifted from the conversation, never a single common word, and never a description of a mood. If one candidate is not a real song you are confident exists, replace it with one that is — do not leave the list short.'),
       why: S.str('One line tying THIS SONG to something they actually said or like. If the sentence would still make sense with the title replaced by a different song, it is too vague.'),
-    }), `4 songs ${who} would plausibly love, in a language and genre their messages support`),
+    }), `EXACTLY 4 songs ${who} would plausibly love, in a language and genre their messages support. Never fewer than 3, and never an empty list.`),
     movies: S.arr(S.obj({
       title: S.str('Film or series title only'),
       year: S.str('Release year if known, else empty string'),
       why: S.str('One line tying it to their taste or situation'),
-    }), `4 films or series for ${who}`),
+    }), `EXACTLY 4 films or series for ${who}. Never fewer than 3, and never an empty list.`),
     books: S.arr(S.obj({
       title: S.str(),
       author: S.str('The real author of THIS book. Empty string if unsure — a wrong attribution is worse than none.'),
       why: S.str('One line tying it to their interests or what they are going through'),
-    }), `4 books for ${who}`),
+    }), `EXACTLY 4 books for ${who}. Never fewer than 3, and never an empty list.`),
     gifts: S.arr(S.obj({
       idea: S.str('A specific, buyable thing — not a category'),
       why: S.str('The exact detail from the conversation that makes this land'),
-    }), `4 gift ideas for ${who}, each traceable to something specific they said`),
+    }), `BETWEEN 5 AND 8 gift ideas for ${who}, each traceable to something specific they said. A gift is an idea rather than a fact about the world, so there is no such thing as being unsure one exists — this list must never be short and must never be empty.`),
   });
 
   // THE VISUAL STORY — the picture, its title, and the verse.
@@ -1027,9 +1061,44 @@ async function openAiAnalysis(body: Record<string, any>) {
   // from the rest of the report — taste and circumstance rather than dynamics —
   // and folding them into the persona pass made that schema large enough that
   // the model started thinning both halves.
-  const recommendationMessages = messagesForChatCompletions(promptFor(
-    'THIS REQUEST PRODUCES RECOMMENDATIONS ONLY. ACCURACY FIRST: only name a song, film or book you are genuinely confident exists, and only pair it with an artist or author you are confident is correct. Song titles only — do NOT name the artist anywhere, including inside the title or the reason. Every music entry must be a REAL RELEASED SONG. Do NOT take words from the conversation and present them as songs: "Kal", "Ghar", "Hello" and similar single common words are chat vocabulary, not recommendations, and a reason that explains what a WORD means in their chat proves the entry is wrong. Prefer full multi-word titles, which are far harder to confuse with vocabulary. Four confident real songs is the target; three is better than four with one invented. For EACH of the two people separately, suggest music, films or series, books, and gifts. Ground every single one in something the messages actually show about that person — the work they do, the things they complain about, what they find funny, where they live, what they are saving for, a hobby they mentioned. Match the language and culture of their own taste: if they quote Punjabi rap, recommend Punjabi rap, not a Billboard chart. A gift that could be given to any human being is a failed suggestion — the "why" must name the specific detail from the conversation that makes it land. Do not produce report narrative, flags, scores, or personality content here.',
-  ));
+  const recommendationsInstruction = 'THIS REQUEST PRODUCES RECOMMENDATIONS ONLY. Do not produce report narrative, flags, scores, or personality content here.\n'
+    + 'RETURNING AN EMPTY LIST IS A FAILED RESPONSE. Every one of the eight lists — music, films, books and gifts, for EACH of the two people — must be filled. A thin conversation is not a reason to return nothing; it is a reason to lean on what little it does show. If the messages reveal almost nothing about someone, use what you do have (the language they text in, their age range, their humour, their city, the relationship itself) and say so honestly in the "why". Silence is the one answer that helps nobody.\n'
+    + 'GIFTS: between 5 and 8 for each person. A gift is an IDEA, not a fact about the world, so the accuracy caution below does not apply to it and there is never a reason for this list to be short. Each must be a specific, buyable thing rather than a category — "a good espresso cup" not "kitchenware" — and the "why" must name the detail from the conversation that makes it land. A gift that could be given to any human being is a failed suggestion.\n'
+    + 'ACCURACY, for titles only: only name a song, film or book you are genuinely confident exists, and only pair it with an author you are confident is correct. Song titles only — do NOT name the artist anywhere, including inside the title or the reason. Do NOT take words from the conversation and present them as songs: "Kal", "Ghar", "Hello" and similar single common words are chat vocabulary, not recommendations, and a reason that explains what a WORD means in their chat proves the entry is wrong. Prefer full multi-word titles, which are far harder to confuse with vocabulary. If a candidate turns out to be one you are unsure of, REPLACE it with one you are sure of rather than dropping it — the answer to doubt is a different title, never a shorter list.\n'
+    + 'Ground every suggestion in something the messages actually show about that person — the work they do, the things they complain about, what they find funny, where they live, what they are saving for, a hobby they mentioned. Match the language and culture of their own taste: if they quote Punjabi rap, recommend Punjabi rap, not a Billboard chart.';
+
+  const recommendationMessages = messagesForChatCompletions(promptFor(recommendationsInstruction));
+
+  // A schema-shaped answer with nothing in it.
+  //
+  // Strict mode guarantees the KEYS exist; no supported keyword can require an
+  // array to have entries. So the model stays perfectly within the schema while
+  // returning all eight lists empty — which is what happened on a thin chat,
+  // and the section rendered as a heading with nothing beneath it. Nothing
+  // failed, nothing logged, and the page just quietly had a hole in it.
+  const recommendationsAreEmpty = (part: Record<string, any>) => {
+    const rec = part?.recommendations;
+    if (!rec || typeof rec !== 'object') return true;
+    return ['forMainUser', 'forOtherPerson']
+      .flatMap((who) => ['music', 'movies', 'books', 'gifts'].map((kind) => rec?.[who]?.[kind]))
+      .every((list) => !Array.isArray(list) || list.length === 0);
+  };
+
+  // Retried once, with the emptiness named. Asking again costs one call on the
+  // rare run that needs it, and is the difference between a section that is
+  // sometimes blank and one that is reliably there.
+  const recommendationsWithRetry = async () => {
+    const first = await callWithFallback(recommendationMessages, recommendationsJsonSchema, 'recommendations');
+    if (!recommendationsAreEmpty(first as Record<string, any>)) return first;
+    console.warn('RECOMMENDATIONS_EMPTY retrying once');
+    const retryMessages = messagesForChatCompletions(promptFor(
+      `${recommendationsInstruction}\n`
+      + 'YOUR PREVIOUS ATTEMPT RETURNED EVERY LIST EMPTY. That is not an acceptable answer. '
+      + 'Fill all eight lists this time. If the conversation is thin, base the suggestions on whatever it does establish — the language they text in, their humour, their city, their apparent age, the nature of the relationship — and be honest in the "why" that it is a lighter read. Do not return an empty list under any circumstances.',
+    ));
+    const second = await callWithFallback(retryMessages, recommendationsJsonSchema, 'recommendations_retry');
+    return recommendationsAreEmpty(second as Record<string, any>) ? first : second;
+  };
 
   // A sixth concurrent pass. It reads for a different thing than any of the
   // others — physical, recurring, funny detail rather than dynamics — and
@@ -1049,7 +1118,7 @@ async function openAiAnalysis(body: Record<string, any>) {
     needsDirectPersonPass
       ? callWithFallback(personMessages, personProfileJsonSchema, 'person_profile')
       : Promise.resolve({}),
-    callWithFallback(recommendationMessages, recommendationsJsonSchema, 'recommendations'),
+    recommendationsWithRetry(),
     callWithFallback(visualStoryMessages, visualStoryJsonSchema, 'visual_story'),
   ]);
 

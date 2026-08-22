@@ -4,14 +4,32 @@
     {
       "name": "thirdperson-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 5173
     },
     {
       "name": "thirdperson-preview-unlock",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "--port", "5174"],
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5174"
+      ],
       "port": 5174
+    },
+    {
+      "name": "thirdperson-preview-build",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--port",
+        "4173"
+      ],
+      "port": 4173
     }
   ]
 }

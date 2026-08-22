@@ -16,9 +16,13 @@ import { PiBook, PiFilmSlate, PiGift, PiMusicNotes } from 'react-icons/pi';
 
 const q = (value) => encodeURIComponent(String(value || '').trim());
 
+// `max` per kind, not one shared cap. Gifts now come back 5-8 deep because
+// they are ideas rather than real-world titles — a blanket slice(0, 4) would
+// have silently thrown half of them away.
 const KINDS = {
   music: {
     label: 'Music',
+    max: 4,
     Icon: PiMusicNotes,
     title: (item) => item.title,
     // No artist line. The model's attributions were wrong often enough that
@@ -32,6 +36,7 @@ const KINDS = {
   },
   movies: {
     label: 'Watch',
+    max: 4,
     Icon: PiFilmSlate,
     title: (item) => item.title,
     subtitle: (item) => item.year,
@@ -42,6 +47,7 @@ const KINDS = {
   },
   books: {
     label: 'Read',
+    max: 4,
     Icon: PiBook,
     title: (item) => item.title,
     subtitle: (item) => item.author || '',
@@ -52,6 +58,7 @@ const KINDS = {
   },
   gifts: {
     label: 'Gift',
+    max: 8,
     Icon: PiGift,
     title: (item) => item.idea,
     subtitle: () => '',
@@ -63,20 +70,20 @@ const KINDS = {
 
 const ORDER = ['music', 'movies', 'books', 'gifts'];
 
-function Panel({ kind, items, color }) {
+function Panel({ kind, items, color, className = '' }) {
   const spec = KINDS[kind];
   if (!spec || !items?.length) return null;
   const { Icon } = spec;
 
   return (
-    <div className="rounded-lg border border-line bg-paper p-4">
+    <div className={`rounded-lg border border-line bg-paper p-4 ${className}`}>
       <h4 className="flex items-center gap-2 text-sm font-semibold" style={{ color }}>
         <Icon className="text-base" aria-hidden="true" />
         {spec.label}
       </h4>
 
-      <ul className="mt-3 grid gap-2">
-        {items.slice(0, 4).map((item, index) => {
+      <ul className={`mt-3 grid gap-2 ${kind === 'gifts' ? 'sm:grid-cols-2' : ''}`}>
+        {items.slice(0, spec.max || 4).map((item, index) => {
           const title = spec.title(item);
           if (!title) return null;
           const subtitle = spec.subtitle(item);
@@ -149,9 +156,18 @@ export default function Recommendations({ recommendations, youName = 'You', them
         </div>
       )}
 
+      {/* Gifts span both columns. At 5-8 entries it is twice the height of
+          any other panel, and boxed into one column it left a ragged hole
+          beside it. */}
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {ORDER.map((kind) => (
-          <Panel key={kind} kind={kind} items={person.data?.[kind]} color={color} />
+          <Panel
+            key={kind}
+            kind={kind}
+            items={person.data?.[kind]}
+            color={color}
+            className={kind === 'gifts' ? 'sm:col-span-2' : ''}
+          />
         ))}
       </div>
 
