@@ -787,6 +787,36 @@ async function openAiAnalysis(body: Record<string, any>) {
     }), `4 gift ideas for ${who}, each traceable to something specific they said`),
   });
 
+  // THE VISUAL STORY — the picture, its title, and the verse.
+  //
+  // The abstract-expressionism brief that came before produced competent
+  // abstraction and nothing anyone recognised as THEIR relationship: two
+  // coloured shapes could belong to any two people alive. What makes a picture
+  // land is the specific stuff — the scooter, the 2am call, the running joke
+  // about being five minutes away — so this pass reads for exactly that.
+  //
+  // It is written HERE, by the model that has read the conversation, and not by
+  // the image model, which never sees a message. Motifs are this model's own
+  // shorthand for recurring themes, in the same category as a key-moment title.
+  // The schema forbids quotes and names precisely so the boundary survives the
+  // extra specificity: the image gets richer, the transcript still never leaves.
+  const visualStoryJsonSchema = S.obj({
+    visualStory: S.obj({
+      title: S.str('A title for this artwork, 3-7 words, in the same language mix the two of them actually text in. It should read like a song or film title and land as a small joke or ache that only these two would recognise. Never their names.'),
+      setting: S.str('One concrete place this relationship feels like it lives, drawn from where they actually are in the messages — a specific street, a rooftop, a hostel room, a train platform, a kitchen at night. Not "a warm space".'),
+      timeOfDay: S.str('The hour this relationship belongs to, from when they actually talk'),
+      weather: S.str('Weather or atmosphere that matches the emotional tone — rain, heat haze, fog, clear winter light'),
+      figures: S.str('How the two people should appear: their posture toward each other, distance, whether they face each other or away. Describe them as unnamed silhouettes or figures seen from behind — never faces, never likenesses.'),
+      motifs: S.arr(S.obj({
+        object: S.str('A concrete, drawable OBJECT or symbol standing for something that genuinely recurs between them — a scooter, a cracked phone screen, a stopwatch, a chai glass, a shared playlist, an unread notification. A physical thing, never a feeling and never a sentence.'),
+        meaning: S.str('One short line on what it stands for in this relationship'),
+      }), '5-8 objects. Together they should be unmistakably THIS relationship: someone who knows these two should recognise it. Draw them from real recurring details — never generic hearts, roses or clocks unless the chat truly earns them.'),
+      palette: S.str('3-4 named colours and how they should sit together, chosen to match the emotional tone'),
+      artNote: S.str('4-6 sentences in the voice of an art critic reading this piece: what the composition is doing, what the motifs translate into, what the light and colour are saying about these two. Confident and specific, never a description of the plot.'),
+      verse: S.arr(S.str('One line of verse'), '4-6 lines. Write in the SAME language mix they text in — if they write Hinglish, the verse is Hinglish. It should sound like it was written by someone who read every message: use their running jokes and their rhythm, land the ache under the comedy, and never merely restate the summary. Never quote a message verbatim and never use either person\'s name.'),
+    }),
+  });
+
   const recommendationsJsonSchema = S.obj({
     recommendations: S.obj({
       forMainUser: recommendationsFor('the main user'),
@@ -1001,7 +1031,18 @@ async function openAiAnalysis(body: Record<string, any>) {
     'THIS REQUEST PRODUCES RECOMMENDATIONS ONLY. ACCURACY FIRST: only name a song, film or book you are genuinely confident exists, and only pair it with an artist or author you are confident is correct. Song titles only — do NOT name the artist anywhere, including inside the title or the reason. Every music entry must be a REAL RELEASED SONG. Do NOT take words from the conversation and present them as songs: "Kal", "Ghar", "Hello" and similar single common words are chat vocabulary, not recommendations, and a reason that explains what a WORD means in their chat proves the entry is wrong. Prefer full multi-word titles, which are far harder to confuse with vocabulary. Four confident real songs is the target; three is better than four with one invented. For EACH of the two people separately, suggest music, films or series, books, and gifts. Ground every single one in something the messages actually show about that person — the work they do, the things they complain about, what they find funny, where they live, what they are saving for, a hobby they mentioned. Match the language and culture of their own taste: if they quote Punjabi rap, recommend Punjabi rap, not a Billboard chart. A gift that could be given to any human being is a failed suggestion — the "why" must name the specific detail from the conversation that makes it land. Do not produce report narrative, flags, scores, or personality content here.',
   ));
 
-  const [reportCorePart, reportSignalsPart, personaPart, personPart, recommendationPart] = await Promise.all([
+  // A sixth concurrent pass. It reads for a different thing than any of the
+  // others — physical, recurring, funny detail rather than dynamics — and
+  // folding it into another schema thinned both halves when tried.
+  const visualStoryMessages = messagesForChatCompletions(promptFor(
+    'THIS REQUEST PRODUCES THE VISUAL STORY ONLY: one artwork brief, its title, and a verse. Do not produce report narrative, flags, scores, recommendations or personality content here.\n'
+    + 'You are looking for the STUFF of this relationship — the physical, repeated, specific things. The vehicle someone always arrives on. The food they argue about. The app they share. The object one of them broke. The joke that has survived years. The hour they always end up talking. Read for what RECURS, not for what was dramatic once.\n'
+    + 'The test for the motifs: someone who knows these two should look at the finished picture and know instantly whose it is. Generic romantic symbols — hearts, roses, sunsets, clocks — fail that test unless the conversation genuinely earns them. Every motif must be a physical object a painter could draw.\n'
+    + 'The verse is the other half of the piece. Write it in the language they actually text in, including their mix of languages, and let it carry their humour and their rhythm. It should feel written FOR them, not ABOUT them.\n'
+    + 'TWO HARD RULES, no exceptions. Never use either person\'s name anywhere in this response. Never quote a message word for word — everything here is your own phrasing of what recurs, because this is the one part of the report that is sent to a second model that must never receive the conversation.',
+  ));
+
+  const [reportCorePart, reportSignalsPart, personaPart, personPart, recommendationPart, visualStoryPart] = await Promise.all([
     callWithFallback(reportCoreMessages, reportCoreJsonSchema, 'relationship_report_core', { critical: true }),
     callWithFallback(reportSignalsMessages, reportSignalsJsonSchema, 'relationship_report_signals'),
     callWithFallback(personaMessages, personaJsonSchema, 'personality_layer'),
@@ -1009,6 +1050,7 @@ async function openAiAnalysis(body: Record<string, any>) {
       ? callWithFallback(personMessages, personProfileJsonSchema, 'person_profile')
       : Promise.resolve({}),
     callWithFallback(recommendationMessages, recommendationsJsonSchema, 'recommendations'),
+    callWithFallback(visualStoryMessages, visualStoryJsonSchema, 'visual_story'),
   ]);
 
   const personProfile = mergePersonFacts([
@@ -1024,6 +1066,7 @@ async function openAiAnalysis(body: Record<string, any>) {
     relationshipReport: mergedReport,
     personProfile,
     recommendations: (recommendationPart as Record<string, any>).recommendations || {},
+    visualStory: (visualStoryPart as Record<string, any>).visualStory || null,
   });
   return {
     ...analysis,

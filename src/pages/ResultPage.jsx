@@ -543,6 +543,10 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
   // plus counted metrics — deliberately no quotes, no message text, no names
   // beyond the relationship type. Assembled here so the boundary is one object
   // that can be read in full.
+  const visualStory = analysis?.visualStory && typeof analysis.visualStory === 'object'
+    ? analysis.visualStory
+    : null;
+  const verse = list(visualStory?.verse).map((line) => String(line || '').trim()).filter(Boolean);
   const imageContext = {
     relationshipType: meta.relationshipType || source?.relationshipType || 'relationship',
     vibeLabel: relationshipReport.vibeLabel || analysis?.screenshotWorthySummary || '',
@@ -552,6 +556,15 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
     topWords: list(prepared.topWords).map((entry) => entry.word).filter(Boolean),
     positivity: metrics.sentiment?.people?.[0]?.positiveShare,
     rhythmShape: metrics.burstiness?.label || '',
+    // The scene brief the report model wrote after reading the chat. Its
+    // presence is what switches the image from abstract to a real scene.
+    visualStory: visualStory || null,
+    // Passed ONLY so the edge function can strip them from the prompt. The
+    // schema forbids names, but a boundary this important should not depend on
+    // a model having followed an instruction.
+    participantNames: [...list(prepared.participants), meta.likelyMainUser, meta.selectedOtherPerson, personName]
+      .map((name) => String(name || '').trim())
+      .filter(Boolean),
   };
   const wordsBySender = list(prepared.topWordsBySender);
   const recommendations = analysis?.recommendations || null;
@@ -642,13 +655,21 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
               id="report-image"
               title="This Relationship, As A Picture"
               emoji="🎨"
-              summary="An image generated from what this report found."
+              summary={visualStory?.title || 'An image generated from what this report found.'}
             >
-              <p className="max-w-2xl text-sm leading-7 text-smoke">
-                A second model reads the conclusions above — the mood, the arc,
-                the moments that mattered — and paints what they look like.
-              </p>
-              <div className="mt-5 mx-auto max-w-md">
+              {/* The title is set in real type rather than asked of the image
+                  model. Generated lettering garbles, and this is the line most
+                  likely to be screenshotted. */}
+              {visualStory?.title ? (
+                <h3 className="serif-title text-3xl leading-tight sm:text-4xl">{visualStory.title}</h3>
+              ) : (
+                <p className="max-w-2xl text-sm leading-7 text-smoke">
+                  A second model reads the conclusions above — the mood, the arc,
+                  the moments that mattered — and paints what they look like.
+                </p>
+              )}
+
+              <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,28rem)_1fr] lg:items-start">
                 <ReportImage
                   reportId={reportId || source?.reportSource}
                   imageContext={imageContext}
@@ -656,6 +677,27 @@ export default function ResultPage({ reportId = '', openCoach = false }) {
                   initialStatus={fetchedReport?.imageStatus}
                   personName={personName}
                 />
+
+                {(visualStory?.artNote || verse.length) ? (
+                  <div className="grid gap-5">
+                    {visualStory?.artNote && (
+                      <p className="text-base leading-8 text-smoke">{visualStory.artNote}</p>
+                    )}
+                    {verse.length > 0 && (
+                      <div>
+                        <p className="tech-label">Inspired verse</p>
+                        {/* Left border rather than quote marks: these lines are
+                            written FOR the two of them, not quoted from them —
+                            and nothing here is ever a real message. */}
+                        <blockquote className="mt-3 border-l-2 border-signal/50 pl-4">
+                          {verse.map((line, index) => (
+                            <p key={index} className="text-base italic leading-8 text-ink">{line}</p>
+                          ))}
+                        </blockquote>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </div>
             </CardShell>
           ) : null}

@@ -161,9 +161,9 @@ export default function ReportImage({ reportId, imageContext, initialUrl, initia
           loading="lazy"
         />
         <figcaption className="mt-3 text-xs leading-5 text-ash">
-          Generated from your report’s conclusions — the mood, the arc, the
-          moments that mattered. Never from the conversation itself, which was
-          discarded once this report existed.
+          Painted from the scene your report describes — the setting, the mood,
+          the things that kept coming up. The conversation itself is never sent
+          to the image model, and no names ever reach it.
         </figcaption>
       </figure>
     );

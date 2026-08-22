@@ -27,6 +27,60 @@ function moodOf(input: Record<string, any>) {
   return 'mixed, uncertain';
 }
 
+// Belt and braces on the boundary.
+//
+// The report model is told never to put a name in the visual story, and it
+// obeys — but "the prompt contains no names" is too important to rest on a
+// model following an instruction. The participant names are passed in for the
+// sole purpose of being stripped here, so a slip upstream cannot become a name
+// sent to an image endpoint.
+function redactNames(text: string, names: string[]) {
+  return names.reduce((carry, name) => {
+    const clean = String(name || '').trim();
+    if (clean.length < 3) return carry;   // initials would match half the words
+    const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return carry.replace(new RegExp(escaped, 'gi'), 'someone');
+  }, text);
+}
+
+// THE SCENE.
+//
+// The first version of this asked for abstract expressionism and got exactly
+// that: two coloured presences, competently painted, that could have belonged
+// to any two people who ever texted. Recognisable beats beautiful — what makes
+// someone keep this picture is the scooter, the cracked screen, the hour they
+// always talk. So the brief is now a SCENE, built from the visual story the
+// report model wrote after reading the conversation.
+//
+// Still no transcript: motifs are the report model's own shorthand for what
+// recurs, names are stripped above, and quotes were never in the schema.
+function buildScenePrompt(story: Record<string, any>, names: string[]) {
+  const line = (value: unknown, max = 200) => String(value || '').slice(0, max).trim();
+  const motifs = (story.motifs || [])
+    .slice(0, 8)
+    .map((motif: any) => `${line(motif?.object, 60)} (${line(motif?.meaning, 80)})`)
+    .filter((entry: string) => entry.length > 4);
+
+  const prompt = [
+    'A cinematic symbolic illustration telling the story of one relationship — a single painted scene, richly detailed, in the style of a modern narrative book cover.',
+    `Setting: ${line(story.setting) || 'a quiet street at night'}.`,
+    `Time: ${line(story.timeOfDay, 60) || 'late evening'}. Atmosphere: ${line(story.weather, 60) || 'still air'}.`,
+    `The two figures: ${line(story.figures) || 'two people seen from behind, close but not touching'}.`,
+    motifs.length
+      ? `Woven through the scene as symbolic objects, floating or embedded in the composition: ${motifs.join('; ')}.`
+      : '',
+    `Palette: ${line(story.palette, 160) || 'deep blues against warm amber'}.`,
+    'Composition: the two figures anchor the frame; the objects orbit them like memory, glowing softly against the dark. Depth, warm rim light, bokeh, painterly texture. Beautiful and specific rather than generic.',
+    // Faces are the line here. A likeness of a real person is not something an
+    // image model can be trusted to avoid inventing, and this picture belongs
+    // to a private relationship — silhouettes carry the feeling without it.
+    'STRICT RULES: the figures must be silhouettes, shadowed, or seen from behind — no facial features, no recognisable likeness of any real person. No lettering, no words, no captions, no signatures, no logos, no watermark. Not a chart, diagram, infographic, collage or UI mockup.',
+  ].filter(Boolean).join('\n');
+
+  return redactNames(prompt, names);
+}
+
+// The fallback brief, for reports written before the visual story existed.
 // Anything that could carry a quote or a name is excluded by construction.
 // Key-moment TITLES are allowed (they are our own 5-8 word summaries); their
 // quotes and descriptions are not.
@@ -270,7 +324,11 @@ Deno.serve(async (req) => {
       .eq('id', reportId);
 
     const imageContext = body.imageContext || {};
-    const prompt = buildPrompt(imageContext);
+    const story = imageContext.visualStory;
+    const names = Array.isArray(imageContext.participantNames) ? imageContext.participantNames : [];
+    const prompt = story && typeof story === 'object'
+      ? buildScenePrompt(story, names)
+      : buildPrompt(imageContext);
     const { bytes, usedModel } = await generateImage(apiKey, prompt, moodOf(imageContext));
 
     const path = `${user.id}/${reportId}.png`;
