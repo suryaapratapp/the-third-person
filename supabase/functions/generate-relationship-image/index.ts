@@ -192,6 +192,12 @@ function reasonFor(detail: string) {
   if (/verif/i.test(detail)) {
     return 'This OpenAI organisation is not verified for the image model. Verify it, or set OPENAI_IMAGE_MODEL to dall-e-3.';
   }
+  // Distinct from the verification gate above: the ORG is verified, but the
+  // PROJECT this key belongs to has no image model on its allowlist. Worth its
+  // own sentence because the fix is in a different settings page entirely.
+  if (/does not have access to model|model_not_found|does not exist/i.test(detail)) {
+    return 'The OpenAI project behind this API key has no image model enabled. In the OpenAI dashboard, open that project → Limits → Model access, and enable gpt-image-1.';
+  }
   if (/quota|billing|insufficient_quota|exceeded your current quota/i.test(detail)) {
     return 'The OpenAI account has no image credit available.';
   }
